@@ -1,0 +1,155 @@
+---
+output:
+  word_document: 
+    reference_docx: reference.docx
+---
+
+```{r setup, message=FALSE, warning=FALSE, include=FALSE}
+suppressWarnings(suppressMessages(library(ggplot2)))
+RAWmisc::Initialise()
+suppressWarnings(suppressMessages(library(data.table)))
+suppressWarnings(suppressMessages(library(ggplot2)))
+suppressWarnings(suppressMessages(library(foreach)))
+suppressWarnings(suppressMessages(library(pomp)))
+suppressWarnings(suppressMessages(library(doRedis)))
+assign("RUN_ALL", F, envir=globalenv())
+
+knitr::opts_chunk$set(echo = FALSE, include=FALSE, fig.width = 8.27*1.5, fig.height = 5.845*1.5)
+
+d <- WP2Data(initialDataCall=TRUE)
+```
+
+# WP2
+
+## Descriptives
+
+### Analyses using all municipality data 
+
+```{r, results='asis', include=TRUE}
+tab <- d$data[,.(
+  N=.N,
+  s_outbreakLege=sum(s_outbreakLege,na.rm=T),
+  wp950_a_runoff0_0=sum(wp950_a_runoff0_0,na.rm=T),
+  wp950_a_precipCorr0_0=sum(wp950_a_precipCorr0_0,na.rm=T),
+  wp950_c_rain0_0=sum(wp950_c_rain0_0,na.rm=T)
+  ),by=.(season,age)]
+setnames(tab,c("Season","Age","# weeks","Outbreaks","Extreme runoff","Extreme precip","Extreme rain"))
+cat(pander::pandoc.table.return(tab,style="simple", split.tables=Inf, split.cells=Inf))
+```
+
+Note that some of the Ns are different, as weeks where there were no consultations recorded within a municipality/age-group were removed from the dataset.
+
+### Analyses using waterwork exposure data
+
+```{r, results='asis', include=TRUE}
+d <- WP2WaterworkRawData()
+
+tab <- d[!is.na(value) & age=="Totalt",.(
+  N=.N,
+  s_outbreakLege=sum(s_outbreakLege,na.rm=T),
+  value=format(round(mean(value,na.rm=T),2),nsmall=2)
+  ),by=.(season,variable)]
+setnames(tab,c("Season","Variable","# weeks","Outbreaks","Mean value"))
+cat(pander::pandoc.table.return(tab,style="simple", split.tables=Inf, split.cells=Inf))
+```
+
+## Analyses using all municipality data
+
+These analyses used data from all municipalities in Norway. The exposure data was obtained by NVE (runoff) and MET (rain and precipitation). The daily exposure data was recoded into "normal" (under 95th percentile) and "extreme" (over 95th percentile). The daily exposure data was then collapsed into weekly data, and the continuous number of extreme days per week was taken as the primary exposure variable. The exposure data was then lagged by 0, 1, 2, 3, and 4 weeks, creating 5 new variables for analyses. Separate analyses were run for each of the exposure parameters (runoff, rain, and precipitation), for each lag value (0, 1, 2, 3, 4 weeks), for each of the age groups (all ages, 0-4, 5-14, 15-64, 65+), and for each of the seasons as defined by month (all seasons, spring, summer, autumn, winter).
+
+### Using outbreak as the outcome
+
+These analyses used the Sykdomspulsen algorithm to define weeks where gastro consultations exceeded a threshold of "normal activity". Weeks where this occurred were defined as "outbreaks" (i.e. outcome=1) while other weeks were defined as "normal" (i.e. outcome=0).
+
+Within each analysis, a linear regression with random intercepts for municipality was run, with outcome and exposure as specificed previously, and further adjustments for month as dummy variables included. Finally, the Bonferroni correction was applied to account for the multiple testing. Significant results (pvalue < 0.05) are indicated by a red or green square. Significant results after Bonferroni correction are indicated by a white and black cross.
+
+The above procedures were repeated for all municipalities, municipalities where the average waterwork size was under 10,000 people, municipalities where the average waterwork size was over or equal to 10,000 people, *UNDER 500??*, and 50%+??.
+
+```{r, message=FALSE, warning=FALSE, include=FALSE}
+d <- WP2Data()
+
+if(RUN_ALL) unlink("results_baked/WP2_res.RDS")
+bake("results_baked/WP2_res.RDS",{
+  WP2Analyses(d,ExtractValues=ExtractValues)
+}) -> all
+```
+
+```{r, include=TRUE}
+plots <- WP2Graphs(all)
+for (i in 1:5) {
+  print(plots[[i]])
+}
+```
+
+### Using number of consultations as the outcome
+
+Using person-level data, within each analysis, a poisson regression with random intercepts for municipality was run, with outcome the number of gastroenteritis consultations (and offset of total number of consultations), and exposure as specificed previously, and further adjustments for month as dummy variables included. Finally, the Bonferroni correction was applied to account for the multiple testing. Significant results (pvalue < 0.05) are indicated by a red or green square. Significant results after Bonferroni correction are indicated by a white and black cross.
+
+```{r, message=FALSE, warning=FALSE, include=FALSE}
+d <- WP2Data()
+
+if(RUN_ALL) unlink("results_baked/WP2_res_people.RDS")
+bake("results_baked/WP2_res_people.RDS",{
+  WP2Analyses(d,ExtractValues=ExtractValues,useWeights=T)
+}) -> all
+```
+
+```{r, include=TRUE}
+plots <- WP2Graphs(all)
+for (i in 1:1) {
+  print(plots[[i]])
+}
+```
+
+## Analyses using waterwork exposure data
+
+These analyses used data from `r length(unique(d$municip))` municipalities in Norway. The exposure data was obtained by contacting X waterworks and obtaining raw water measurements (internal and external) from the waterworks. For municipalities where over 85% of the population was served water by one of these waterworks, we took the mean measurements for that week and assigned it to the muncipality of interest. The exposure data was then lagged by 0, 1, 2, 3, and 4 weeks, creating 5 new variables for analyses. Separate analyses were run for each of the exposure parameters (X, Y, Z), for each lag value (0, 1, 2, 3, 4 weeks), for each of the age groups (all ages, 0-4, 5-14, 15-64, 65+), and for each of the seasons as defined by month (all seasons, spring, summer, autumn, winter).
+
+### Using outbreak as the outcome
+
+These analyses used the Sykdomspulsen algorithm to define weeks where gastro consultations exceeded a threshold of "normal activity". Weeks where this occurred were defined as "outbreaks" (i.e. outcome=1) while other weeks were defined as "normal" (i.e. outcome=0).
+
+Within each analysis, a linear regression with random intercepts for municipality was run, with outcome and exposure as specificed previously, and further adjustments for month as dummy variables included. Finally, the Bonferroni correction was applied to account for the multiple testing. Significant results (pvalue < 0.05) are indicated by a red or green square. Significant results after Bonferroni correction are indicated by a white and black cross.
+
+```{r, message=FALSE, warning=FALSE, include=FALSE}
+d <- WP2WaterworkRawData()
+
+if(RUN_ALL) unlink("results_baked/WP2_waterwork_raw_res.RDS")
+bake("results_baked/WP2_waterwork_raw_res.RDS",{
+  WP2WaterworkRawAnalyses(d,ExtractValues=ExtractValues)
+}) -> res
+```
+
+```{r, include=TRUE}
+print(PlotWP2WaterworkRawDataAnalyses(res))
+```
+
+
+### Using number of consultations as the outcome
+
+Using person-level data, within each analysis, a poisson regression with random intercepts for municipality was run, with outcome the number of gastroenteritis consultations (and offset of total number of consultations), and exposure as specificed previously, and further adjustments for month as dummy variables included. Finally, the Bonferroni correction was applied to account for the multiple testing. Significant results (pvalue < 0.05) are indicated by a red or green square. Significant results after Bonferroni correction are indicated by a white and black cross.
+
+
+```{r, message=FALSE, warning=FALSE, include=FALSE}
+d <- WP2WaterworkRawData()
+
+cases <- copy(d)#splitstackshape::expandRows(d,"cases")
+controls <- copy(d)#splitstackshape::expandRows(d,"controls")
+cases[,weight:=s_gastro]
+controls[,weight:=s_pop-s_gastro]
+cases[,sick:=1]
+controls[,sick:=0]
+
+data <- d#rbind(cases,controls)
+
+if(RUN_ALL) unlink("results_baked/WP2_waterwork_raw_people_res.RDS")
+bake("results_baked/WP2_waterwork_raw_people_res.RDS",{
+  WP2WaterworkRawAnalyses(data,ExtractValues=ExtractValues,useWeights=TRUE)
+}) -> res
+```
+
+```{r, include=TRUE}
+print(PlotWP2WaterworkRawDataAnalyses(res))
+```
+
+
