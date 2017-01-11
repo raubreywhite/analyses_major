@@ -451,7 +451,7 @@ CleanDataWaterworksInternal <- function(){
   
   
   ## ALTA
-  CleanWP1SpecificWaterWorkLong(fileIn="data_raw/WP1_waterworks/Alta_Elvestrand/Rådata/Rapport siste 9 år Alta vannverk.xlsx", 
+  CleanWP1SpecificWaterWorkLong(fileIn=file.path(RPROJ$PROJRAW,"WP1_waterworks/Alta_Elvestrand/Rådata/Rapport siste 9 år Alta vannverk.xlsx"), 
                                 fileOut="Rapport siste 9 år Alta vannverk.RDS",
                                       sheet=1,
                                       type="Accredited",
@@ -466,7 +466,7 @@ CleanDataWaterworksInternal <- function(){
   ########
   
   d <- data.table(readxl::read_excel(
-    "data_raw/WP1_waterworks/Arendal_Rore/Rådata/edited_data.xlsx",
+    file.path(RPROJ$PROJRAW,"WP1_waterworks/Arendal_Rore/Rådata/edited_data.xlsx"),
                                      sheet=1,
                                      skip=1,
                                      col_names=FALSE,
@@ -502,7 +502,7 @@ CleanDataWaterworksInternal <- function(){
   d[, waterwork := "Arendal_Rore"]
   d[, waterType := "Raw"]
   
-  saveRDS(d, "data_clean/WP1_waterworks/Arendal_Rore.RDS")
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/Arendal_Rore.RDS"))
   
   ########
   ########
@@ -519,7 +519,7 @@ CleanDataWaterworksInternal <- function(){
   ########
   
   d <- data.table(readxl::read_excel(
-    "data_raw/WP1_waterworks/Asker og Bærum vannverk IKS_Aurevann/Rådata/Historiske data fra 2006_Aurevann.xlsx",
+    file.path(RPROJ$PROJRAW,"WP1_waterworks/Asker og Bærum vannverk IKS_Aurevann/Rådata/Historiske data fra 2006_Aurevann.xlsx"),
                                      sheet="Akk.Mikro",
                                      skip=6,
                                      col_names=FALSE,
@@ -539,7 +539,7 @@ CleanDataWaterworksInternal <- function(){
   d[, point := ""]
   d[, waterType := "Raw"]
 
-  saveRDS(d,"data_clean/WP1_waterworks/Asker og Bærum vannverk IKS_Aurevann_accredited_micro.RDS")
+  saveRDS(d,file.path(RPROJ$PROJCLEAN,"WP1_waterworks/Asker og Bærum vannverk IKS_Aurevann_accredited_micro.RDS"))
   
   ########
   # data_raw/WP1_waterworks/Asker og Bærum vannverk IKS_Aurevann/Rådata/Historiske data fra 2006_Aurevann.xlsx
@@ -548,7 +548,7 @@ CleanDataWaterworksInternal <- function(){
   ########
   
   d <- data.table(readxl::read_excel(
-    "data_raw/WP1_waterworks/Asker og Bærum vannverk IKS_Aurevann/Rådata/Historiske data fra 2006_Aurevann.xlsx",
+    file.path(RPROJ$PROJRAW,"WP1_waterworks/Asker og Bærum vannverk IKS_Aurevann/Rådata/Historiske data fra 2006_Aurevann.xlsx"),
                                      sheet="Akk.Fys-kjem",
                                      skip=6,
                                      col_names=FALSE,
@@ -567,7 +567,7 @@ CleanDataWaterworksInternal <- function(){
   d[, point := ""]
   d[, waterType := "Raw"]
 
-  saveRDS(d,"data_clean/WP1_waterworks/Asker og Bærum vannverk IKS_Aurevann_accredited_chem.RDS")
+  saveRDS(d,file.path(RPROJ$PROJCLEAN,"WP1_waterworks/Asker og Bærum vannverk IKS_Aurevann_accredited_chem.RDS"))
   
   ########
   # data_raw/WP1_waterworks/Asker og Bærum vannverk IKS_Aurevann/Rådata/Historiske data fra 2006_Aurevann.xlsx
@@ -575,7 +575,7 @@ CleanDataWaterworksInternal <- function(){
   # Intern Fys-kjem
   ########
   
-  d <- data.table(readxl::read_excel("data_raw/WP1_waterworks/Asker og Bærum vannverk IKS_Aurevann/Rådata/Historiske data fra 2006_Aurevann.xlsx",
+  d <- data.table(readxl::read_excel(file.path(RPROJ$PROJRAW,"WP1_waterworks/Asker og Bærum vannverk IKS_Aurevann/Rådata/Historiske data fra 2006_Aurevann.xlsx"),
                                      sheet="Intern Fys-kjem",
                                      skip=6,
                                      col_names=FALSE,
@@ -594,7 +594,7 @@ CleanDataWaterworksInternal <- function(){
   d[, point := ""]
   d[, waterType := "Raw"]
 
-  saveRDS(d,"data_clean/WP1_waterworks/Asker og Bærum vannverk IKS_Aurevann_intern_chem.RDS")
+  saveRDS(d,file.path(RPROJ$PROJCLEAN,"WP1_waterworks/Asker og Bærum vannverk IKS_Aurevann_intern_chem.RDS"))
   
   ########
   # data_raw/WP1_waterworks/Asker og Bærum vannverk IKS_Aurevann/Rådata/Historiske data fra 2006_Aurevann.xlsx
@@ -602,7 +602,7 @@ CleanDataWaterworksInternal <- function(){
   # Intern Mikro
   ########
   
-  d <- data.table(readxl::read_excel("data_raw/WP1_waterworks/Asker og Bærum vannverk IKS_Aurevann/Rådata/Historiske data fra 2006_Aurevann.xlsx",
+  d <- data.table(readxl::read_excel(file.path(RPROJ$PROJRAW,"WP1_waterworks/Asker og Bærum vannverk IKS_Aurevann/Rådata/Historiske data fra 2006_Aurevann.xlsx"),
                                      sheet="Intern Mikro",
                                      skip=5,
                                      col_names=FALSE,
@@ -619,7 +619,7 @@ CleanDataWaterworksInternal <- function(){
   d[, point := ""]
   d[, waterType := "Raw"]
 
-  saveRDS(d,"data_clean/WP1_waterworks/Asker og Bærum vannverk IKS_Aurevann_intern_micro.RDS")
+  saveRDS(d,file.path(RPROJ$PROJCLEAN,"WP1_waterworks/Asker og Bærum vannverk IKS_Aurevann_intern_micro.RDS"))
   
   ########
   # data_raw/WP1_waterworks/Asker og Bærum vannverk IKS_Aurevann/Rådata/Historiske data fra 2006_Aurevann.xlsx
@@ -627,7 +627,7 @@ CleanDataWaterworksInternal <- function(){
   # Online
   ########
   
-  d <- data.table(readxl::read_excel("data_raw/WP1_waterworks/Asker og Bærum vannverk IKS_Aurevann/Rådata/Historiske data fra 2006_Aurevann.xlsx",
+  d <- data.table(readxl::read_excel(file.path(RPROJ$PROJRAW,"WP1_waterworks/Asker og Bærum vannverk IKS_Aurevann/Rådata/Historiske data fra 2006_Aurevann.xlsx"),
                                      sheet="Online",
                                      skip=4,
                                      col_names=FALSE,
@@ -645,7 +645,7 @@ CleanDataWaterworksInternal <- function(){
   d[, point := ""]
   d[, waterType := "Raw"]
 
-  saveRDS(d,"data_clean/WP1_waterworks/Asker og Bærum vannverk IKS_Aurevann_online.RDS")
+  saveRDS(d,file.path(RPROJ$PROJCLEAN,"WP1_waterworks/Asker og Bærum vannverk IKS_Aurevann_online.RDS"))
   
   ########
   ########
@@ -661,7 +661,7 @@ CleanDataWaterworksInternal <- function(){
   # external
   ########
   
-  d <- data.table(readxl::read_excel("data_raw/WP1_waterworks/Asker og Bærum vannverk IKS_Kattås/Rådata/Historiske data fra 2006_Holsfjorden.xlsx",
+  d <- data.table(readxl::read_excel(file.path(RPROJ$PROJRAW,"WP1_waterworks/Asker og Bærum vannverk IKS_Kattås/Rådata/Historiske data fra 2006_Holsfjorden.xlsx"),
                                      sheet="fra 2006 eks lab",
                                      skip=3,
                                      col_names=FALSE,
@@ -686,7 +686,7 @@ CleanDataWaterworksInternal <- function(){
   d[, point := ""]
   d[, waterType := "Raw"]
 
-  saveRDS(d,"data_clean/WP1_waterworks/Asker og Bærum vannverk IKS_Kattås_extern.RDS")
+  saveRDS(d,file.path(RPROJ$PROJCLEAN,"WP1_waterworks/Asker og Bærum vannverk IKS_Kattås_extern.RDS"))
   
   ########
   # data_raw/WP1_waterworks/Asker og Bærum vannverk IKS_Kattås/Rådata/Historiske data fra 2006_Holsfjorden.xlsx
@@ -694,7 +694,7 @@ CleanDataWaterworksInternal <- function(){
   # internal
   ########
   
-  d <- data.table(readxl::read_excel("data_raw/WP1_waterworks/Asker og Bærum vannverk IKS_Kattås/Rådata/Historiske data fra 2006_Holsfjorden.xlsx",
+  d <- data.table(readxl::read_excel(file.path(RPROJ$PROJRAW,"WP1_waterworks/Asker og Bærum vannverk IKS_Kattås/Rådata/Historiske data fra 2006_Holsfjorden.xlsx"),
                                      sheet="fra 2006 int lab",
                                      skip=2,
                                      col_names=FALSE,
@@ -712,7 +712,7 @@ CleanDataWaterworksInternal <- function(){
   d[, point := ""]
   d[, waterType := "Raw"]
 
-  saveRDS(d, "data_clean/WP1_waterworks/Asker og Bærum vannverk IKS_Kattås_internal.RDS")
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/Asker og Bærum vannverk IKS_Kattås_internal.RDS"))
 
   ########
   # data_raw/WP1_waterworks/Asker og Bærum vannverk IKS_Kattås/Rådata/Historiske data fra 2006_Holsfjorden.xlsx
@@ -720,7 +720,7 @@ CleanDataWaterworksInternal <- function(){
   # internal2
   ########
 
-  d <- data.table(readxl::read_excel("data_raw/WP1_waterworks/Asker og Bærum vannverk IKS_Kattås/Rådata/Historiske data fra 2006_Holsfjorden.xlsx",
+  d <- data.table(readxl::read_excel(file.path(RPROJ$PROJRAW,"WP1_waterworks/Asker og Bærum vannverk IKS_Kattås/Rådata/Historiske data fra 2006_Holsfjorden.xlsx"),
                                        sheet = "kimtall int lab",
                                        skip = 3,
                                        col_names = FALSE,
@@ -736,7 +736,7 @@ CleanDataWaterworksInternal <- function(){
   d[, point := ""]
   d[, waterType := "Raw"]
 
-  saveRDS(d, "data_clean/WP1_waterworks/Asker og Bærum vannverk IKS_Kattås_internal2.RDS")
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/Asker og Bærum vannverk IKS_Kattås_internal2.RDS"))
 
   ########
   # data_raw/WP1_waterworks/Asker og Bærum vannverk IKS_Kattås/Rådata/Historiske data fra 2006_Holsfjorden.xlsx
@@ -744,7 +744,7 @@ CleanDataWaterworksInternal <- function(){
   # online
   ########
 
-  d <- data.table(readxl::read_excel("data_raw/WP1_waterworks/Asker og Bærum vannverk IKS_Kattås/Rådata/Historiske data fra 2006_Holsfjorden.xlsx",
+  d <- data.table(readxl::read_excel(file.path(RPROJ$PROJRAW,"WP1_waterworks/Asker og Bærum vannverk IKS_Kattås/Rådata/Historiske data fra 2006_Holsfjorden.xlsx"),
                                          sheet = "turb online",
                                          skip = 3,
                                          col_names = FALSE,
@@ -760,7 +760,7 @@ CleanDataWaterworksInternal <- function(){
   d[, point := ""]
   d[, waterType := "Raw"]
 
-  saveRDS(d, "data_clean/WP1_waterworks/Asker og Bærum vannverk IKS_Kattås_online.RDS")
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/Asker og Bærum vannverk IKS_Kattås_online.RDS"))
 
   ########
   # data_raw/WP1_waterworks/Bergen_Espeland/Rådata/FHI_vannkvalitetsdata_Bergen vannverkOppdatertSvartediket170316.xlsx
@@ -769,7 +769,7 @@ CleanDataWaterworksInternal <- function(){
   ########
 
   d <- data.table(readxl::read_excel(
-    "data_raw/WP1_waterworks/Bergen_Espeland/Rådata/FHI_vannkvalitetsdata_Bergen vannverkOppdatertSvartediket170316.xlsx",
+    file.path(RPROJ$PROJRAW,"WP1_waterworks/Bergen_Espeland/Rådata/FHI_vannkvalitetsdata_Bergen vannverkOppdatertSvartediket170316.xlsx"),
                                            sheet = "Svartediket",
                                            skip = 3,
                                            col_names = FALSE,
@@ -806,7 +806,7 @@ CleanDataWaterworksInternal <- function(){
   d[, waterType := "Raw"]
   d[, point:="Svartediket"]
 
-  saveRDS(d, "data_clean/WP1_waterworks/Bergen_Espeland_Svartediket_1.RDS")
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/Bergen_Espeland_Svartediket_1.RDS"))
 
   d <- bigData[, 8:10, with = F]
   d <- melt.data.table(d, id = c("date", "point"), variable.factor = FALSE)
@@ -818,7 +818,7 @@ CleanDataWaterworksInternal <- function(){
   d[, waterType := "Raw"]
   d[, point:="Svartediket"]
 
-  saveRDS(d, "data_clean/WP1_waterworks/Bergen_Espeland_Svartediket_2.RDS")
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/Bergen_Espeland_Svartediket_2.RDS"))
 
   d <- bigData[, 11:14, with = F]
   d <- melt.data.table(d, id = c("date", "point"), variable.factor = FALSE)
@@ -831,10 +831,10 @@ CleanDataWaterworksInternal <- function(){
   d[, waterType := "Raw"]
   d[, point:="Svartediket"]
 
-  saveRDS(d, "data_clean/WP1_waterworks/Bergen_Espeland_Svartediket_3.RDS")
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/Bergen_Espeland_Svartediket_3.RDS"))
 
   #ONLINE
-  CleanWP1SpecificWaterWork(fileIn="data_raw/WP1_waterworks/Bergen_Svartediket/Rådata/svartediket råvann.xls",
+  CleanWP1SpecificWaterWork(fileIn=file.path(RPROJ$PROJRAW,"WP1_waterworks/Bergen_Svartediket/Rådata/svartediket råvann.xls"),
                             fileOut="Bergen_Espeland_Svartediket_online.RDS",
                             sheet=1,
                             skip=6,
@@ -864,7 +864,7 @@ CleanDataWaterworksInternal <- function(){
   ########
 
   d <- data.table(readxl::read_excel(
-    "data_raw/WP1_waterworks/Bergen_Espeland/Rådata/FHI_vannkvalitetsdata_Bergen vannverkOppdatertSvartediket170316.xlsx",
+    file.path(RPROJ$PROJRAW,"WP1_waterworks/Bergen_Espeland/Rådata/FHI_vannkvalitetsdata_Bergen vannverkOppdatertSvartediket170316.xlsx"),
                                             sheet = "Espeland",
                                             skip = 3,
                                             col_names = FALSE,
@@ -899,7 +899,7 @@ CleanDataWaterworksInternal <- function(){
   d[, waterwork := "Bergen_Espeland"]
   d[, waterType := "Raw"]
 
-  saveRDS(d, "data_clean/WP1_waterworks/Bergen_Espeland_Espeland_1.RDS")
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/Bergen_Espeland_Espeland_1.RDS"))
 
   d <- bigData[, 8:10, with = F]
   d <- melt.data.table(d, id = c("date", "point"), variable.factor = FALSE)
@@ -910,7 +910,7 @@ CleanDataWaterworksInternal <- function(){
   d[, waterwork := "Bergen_Espeland"]
   d[, waterType := "Raw"]
 
-  saveRDS(d, "data_clean/WP1_waterworks/Bergen_Espeland_Espeland_2.RDS")
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/Bergen_Espeland_Espeland_2.RDS"))
 
   d <- bigData[, 11:14, with = F]
   d <- melt.data.table(d, id = c("date", "point"), variable.factor = FALSE)
@@ -922,11 +922,11 @@ CleanDataWaterworksInternal <- function(){
   d[, waterwork := "Bergen_Espeland"]
   d[, waterType := "Raw"]
 
-  saveRDS(d, "data_clean/WP1_waterworks/Bergen_Espeland_Espeland_3.RDS")
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/Bergen_Espeland_Espeland_3.RDS"))
 
   
   #ONLINE
-  CleanWP1SpecificWaterWork(fileIn="data_raw/WP1_waterworks/Bergen_Espeland/Rådata/espeland råvann.xls",
+  CleanWP1SpecificWaterWork(fileIn=file.path(RPROJ$PROJRAW,"WP1_waterworks/Bergen_Espeland/Rådata/espeland råvann.xls"),
                             fileOut="Bergen_Espeland_Espeland_online.RDS",
                             sheet=1,
                             skip=1,
@@ -949,7 +949,7 @@ CleanDataWaterworksInternal <- function(){
   ########
 
   d <- data.table(readxl::read_excel(
-    "data_raw/WP1_waterworks/Bergen_Espeland/Rådata/FHI_vannkvalitetsdata_Bergen vannverkOppdatertSvartediket170316.xlsx",
+    file.path(RPROJ$PROJRAW,"WP1_waterworks/Bergen_Espeland/Rådata/FHI_vannkvalitetsdata_Bergen vannverkOppdatertSvartediket170316.xlsx"),
                                               sheet = "Jordalsv",
                                               skip = 3,
                                               col_names = FALSE,
@@ -984,7 +984,7 @@ CleanDataWaterworksInternal <- function(){
   d[, waterwork := "Bergen_Espeland"]
   d[, waterType := "Raw"]
 
-  saveRDS(d, "data_clean/WP1_waterworks/Bergen_Espeland_Jordalsv_1.RDS")
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/Bergen_Espeland_Jordalsv_1.RDS"))
 
   d <- bigData[, 8:10, with = F]
   d <- melt.data.table(d, id = c("date", "point"), variable.factor = FALSE)
@@ -995,7 +995,7 @@ CleanDataWaterworksInternal <- function(){
   d[, waterwork := "Bergen_Espeland"]
   d[, waterType := "Raw"]
 
-  saveRDS(d, "data_clean/WP1_waterworks/Bergen_Espeland_Jordalsv_2.RDS")
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/Bergen_Espeland_Jordalsv_2.RDS"))
 
   d <- bigData[, 11:14, with = F]
   d <- melt.data.table(d, id = c("date", "point"), variable.factor = FALSE)
@@ -1007,9 +1007,9 @@ CleanDataWaterworksInternal <- function(){
   d[, waterwork := "Bergen_Espeland"]
   d[, waterType := "Raw"]
 
-  saveRDS(d, "data_clean/WP1_waterworks/Bergen_Espeland_Jordalsv_3.RDS")
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/Bergen_Espeland_Jordalsv_3.RDS"))
 
-  CleanWP1SpecificWaterWork(fileIn="data_raw/WP1_waterworks/Bergen_Jordalsvatnet/Rådata/jordalsvatnet råvann.xls",
+  CleanWP1SpecificWaterWork(fileIn=file.path(RPROJ$PROJRAW,"WP1_waterworks/Bergen_Jordalsvatnet/Rådata/jordalsvatnet råvann.xls"),
                             fileOut="Bergen_Espeland_jordalsvatnet_online.RDS",
                             sheet=1,
                             skip=6,
@@ -1036,7 +1036,7 @@ CleanDataWaterworksInternal <- function(){
   # Kismul
   ########
 
-  d <- data.table(readxl::read_excel("data_raw/WP1_waterworks/Bergen_Espeland/Rådata/FHI_vannkvalitetsdata_Bergen vannverkOppdatertSvartediket170316.xlsx",
+  d <- data.table(readxl::read_excel(file.path(RPROJ$PROJRAW,"WP1_waterworks/Bergen_Espeland/Rådata/FHI_vannkvalitetsdata_Bergen vannverkOppdatertSvartediket170316.xlsx"),
                                                 sheet = "Kismul",
                                                 skip = 3,
                                                 col_names = FALSE,
@@ -1071,7 +1071,7 @@ CleanDataWaterworksInternal <- function(){
   d[, waterwork := "Bergen_Espeland"]
   d[, waterType := "Raw"]
 
-  saveRDS(d, "data_clean/WP1_waterworks/Bergen_Espeland_Kismul_1.RDS")
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/Bergen_Espeland_Kismul_1.RDS"))
 
   d <- bigData[, 8:10, with = F]
   d <- melt.data.table(d, id = c("date", "point"), variable.factor = FALSE)
@@ -1082,7 +1082,7 @@ CleanDataWaterworksInternal <- function(){
   d[, waterwork := "Bergen_Espeland"]
   d[, waterType := "Raw"]
 
-  saveRDS(d, "data_clean/WP1_waterworks/Bergen_Espeland_Kismul_2.RDS")
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/Bergen_Espeland_Kismul_2.RDS"))
 
   d <- bigData[, 11:14, with = F]
   d <- melt.data.table(d, id = c("date", "point"), variable.factor = FALSE)
@@ -1094,9 +1094,9 @@ CleanDataWaterworksInternal <- function(){
   d[, waterwork := "Bergen_Espeland"]
   d[, waterType := "Raw"]
 
-  saveRDS(d, "data_clean/WP1_waterworks/Bergen_Espeland_Kismul_3.RDS")
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/Bergen_Espeland_Kismul_3.RDS"))
 
-    CleanWP1SpecificWaterWork(fileIn="data_raw/WP1_waterworks/Bergen_Kismul/Rådata/kismul råvann.xls",
+    CleanWP1SpecificWaterWork(fileIn=file.path(RPROJ$PROJRAW,"WP1_waterworks/Bergen_Kismul/Rådata/kismul råvann.xls"),
                             fileOut="Bergen_Espeland_kismul_online.RDS",
                             sheet=1,
                             skip=6,
@@ -1120,7 +1120,7 @@ CleanDataWaterworksInternal <- function(){
   # Sædalen
   ########
 
-  d <- data.table(readxl::read_excel("data_raw/WP1_waterworks/Bergen_Espeland/Rådata/FHI_vannkvalitetsdata_Bergen vannverkOppdatertSvartediket170316.xlsx",
+  d <- data.table(readxl::read_excel(file.path(RPROJ$PROJRAW,"WP1_waterworks/Bergen_Espeland/Rådata/FHI_vannkvalitetsdata_Bergen vannverkOppdatertSvartediket170316.xlsx"),
                                                   sheet = "Sædalen",
                                                   skip = 3,
                                                   col_names = FALSE,
@@ -1155,7 +1155,7 @@ CleanDataWaterworksInternal <- function(){
   d[, waterwork := "Bergen_Espeland"]
   d[, waterType := "Raw"]
 
-  saveRDS(d, "data_clean/WP1_waterworks/Bergen_Espeland_Sædalen_1.RDS")
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/Bergen_Espeland_Sædalen_1.RDS"))
 
   d <- bigData[, 8:10, with = F]
   d <- melt.data.table(d, id = c("date", "point"), variable.factor = FALSE)
@@ -1166,7 +1166,7 @@ CleanDataWaterworksInternal <- function(){
   d[, waterwork := "Bergen_Espeland"]
   d[, waterType := "Raw"]
 
-  saveRDS(d, "data_clean/WP1_waterworks/Bergen_Espeland_Sædalen_2.RDS")
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/Bergen_Espeland_Sædalen_2.RDS"))
 
   d <- bigData[, 11:14, with = F]
   d <- melt.data.table(d, id = c("date", "point"), variable.factor = FALSE)
@@ -1178,10 +1178,10 @@ CleanDataWaterworksInternal <- function(){
   d[, waterwork := "Bergen_Espeland"]
   d[, waterType := "Raw"]
 
-  saveRDS(d, "data_clean/WP1_waterworks/Bergen_Espeland_Sædalen_3.RDS")
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/Bergen_Espeland_Sædalen_3.RDS"))
 
   
-    CleanWP1SpecificWaterWork(fileIn="data_raw/WP1_waterworks/Bergen_Sædalen/Rådata/sædalen råvann.xls",
+    CleanWP1SpecificWaterWork(fileIn=file.path(RPROJ$PROJRAW,"WP1_waterworks/Bergen_Sædalen/Rådata/sædalen råvann.xls"),
                             fileOut="Bergen_Espeland_saedalen_online.RDS",
                             sheet=1,
                             skip=6,
@@ -1207,7 +1207,7 @@ CleanDataWaterworksInternal <- function(){
   ########
   
   d <- data.table(readxl::read_excel(
-    "data_raw/WP1_waterworks/FREVAR_Høyfjell/Rådata/Akkrediterte laboratorier/accredited.xlsx",
+    file.path(RPROJ$PROJRAW,"WP1_waterworks/FREVAR_Høyfjell/Rådata/Akkrediterte laboratorier/accredited.xlsx"),
                                      sheet = 1,
                                      skip = 3,
                                      col_names = FALSE,
@@ -1248,7 +1248,7 @@ CleanDataWaterworksInternal <- function(){
   d[, waterwork := "FREVAR_Høyfjell"]
   d[, waterType := "Raw"]
   
-  saveRDS(d, "data_clean/WP1_waterworks/FREVAR_Høyfjell_accredited.RDS")
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/FREVAR_Høyfjell_accredited.RDS"))
   
   ########
   # FREVAR_Høyfjell\Rådata\Online_egenanalyser
@@ -1256,7 +1256,7 @@ CleanDataWaterworksInternal <- function(){
   # 
   ########
   
-  d <- data.table(readxl::read_excel("data_raw/WP1_waterworks/FREVAR_Høyfjell/Rådata/Online_egenanalyser/online_all.xlsx",
+  d <- data.table(readxl::read_excel(file.path(RPROJ$PROJRAW,"WP1_waterworks/FREVAR_Høyfjell/Rådata/Online_egenanalyser/online_all.xlsx"),
                                      sheet = 1,
                                      skip = 3,
                                      col_names = FALSE,
@@ -1285,7 +1285,7 @@ CleanDataWaterworksInternal <- function(){
   d[, waterwork := "FREVAR_Høyfjell"]
   d[, waterType := "Raw"]
   
-  saveRDS(d, "data_clean/WP1_waterworks/FREVAR_Høyfjell_online.RDS")
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/FREVAR_Høyfjell_online.RDS"))
   
   ########
   # FREVAR_Høyfjell\Rådata\Online_egenanalyser
@@ -1293,7 +1293,7 @@ CleanDataWaterworksInternal <- function(){
   # 
   ########
   
-  d <- data.table(readxl::read_excel("data_raw/WP1_waterworks/FREVAR_Høyfjell/Rådata/Online_egenanalyser/online_all.xlsx",
+  d <- data.table(readxl::read_excel(file.path(RPROJ$PROJRAW,"WP1_waterworks/FREVAR_Høyfjell/Rådata/Online_egenanalyser/online_all.xlsx"),
                                      sheet = 1,
                                      skip = 3,
                                      col_names = FALSE,
@@ -1327,7 +1327,7 @@ CleanDataWaterworksInternal <- function(){
   d[, waterwork := "FREVAR_Høyfjell"]
   d[, waterType := "Raw"]
   
-  saveRDS(d, "data_clean/WP1_waterworks/FREVAR_Høyfjell_internal.RDS")
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/FREVAR_Høyfjell_internal.RDS"))
   
   
   ########
@@ -1337,7 +1337,7 @@ CleanDataWaterworksInternal <- function(){
   ########
 
   d <- data.table(readxl::read_excel(
-    "data_raw/WP1_waterworks/Glitrevannverket IKS_Kleivdammen/Rådata/Glitre råvann 2000-16.xlsx",
+    file.path(RPROJ$PROJRAW,"WP1_waterworks/Glitrevannverket IKS_Kleivdammen/Rådata/Glitre råvann 2000-16.xlsx"),
                                                       sheet = "Landfall",
                                                       skip = 1,
                                                       col_names = FALSE,
@@ -1382,7 +1382,7 @@ CleanDataWaterworksInternal <- function(){
   d[, waterType := "Raw"]
   d[, point := "Landfall"]
 
-  saveRDS(d, "data_clean/WP1_waterworks/Glitrevannverket IKS_Kleivdammen_Landfall_online_turbidity.RDS")
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/Glitrevannverket IKS_Kleivdammen_Landfall_online_turbidity.RDS"))
   
   ########
   # data_raw/WP1_waterworks/Glitrevannverket IKS_Landfall/Rådata/online_turbidity.xlsx
@@ -1391,7 +1391,7 @@ CleanDataWaterworksInternal <- function(){
   ########
   
   d <- data.table(readxl::read_excel(
-    "data_raw/WP1_waterworks/Glitrevannverket IKS_Landfall/Rådata/online_turbidity.xlsx",
+    file.path(RPROJ$PROJRAW,"WP1_waterworks/Glitrevannverket IKS_Landfall/Rådata/online_turbidity.xlsx"),
                                      sheet = 1,
                                      skip = 2,
                                      col_names = FALSE,
@@ -1410,7 +1410,7 @@ CleanDataWaterworksInternal <- function(){
   d[, waterType := "Raw"]
   d[, point := "Landfall"]
   
-  saveRDS(d, "data_clean/WP1_waterworks/Glitrevannverket IKS_Kleivdammen_Landfall.RDS")
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/Glitrevannverket IKS_Kleivdammen_Landfall.RDS"))
 
 
   ########
@@ -1419,7 +1419,7 @@ CleanDataWaterworksInternal <- function(){
   # Eggevollen
   ########
 
-  d <- data.table(readxl::read_excel("data_raw/WP1_waterworks/Glitrevannverket IKS_Kleivdammen/Rådata/Glitre råvann 2000-16.xlsx",
+  d <- data.table(readxl::read_excel(file.path(RPROJ$PROJRAW,"WP1_waterworks/Glitrevannverket IKS_Kleivdammen/Rådata/Glitre råvann 2000-16.xlsx"),
                                                         sheet = "Eggevollen",
                                                         skip = 1,
                                                         col_names = FALSE,
@@ -1469,7 +1469,7 @@ CleanDataWaterworksInternal <- function(){
   d[, waterType := "Raw"]
   d[, point := "Eggevollen"]
 
-  saveRDS(d, "data_clean/WP1_waterworks/Glitrevannverket IKS_Kleivdammen_Eggevollen.RDS")
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/Glitrevannverket IKS_Kleivdammen_Eggevollen.RDS"))
 
   ########
   # data_raw/WP1_waterworks/Glitrevannverket IKS_Kleivdammen/Rådata/Glitre råvann 2000-16.xlsx
@@ -1477,7 +1477,7 @@ CleanDataWaterworksInternal <- function(){
   # Kleivdammen
   ########
 
-  d <- data.table(readxl::read_excel("data_raw/WP1_waterworks/Glitrevannverket IKS_Kleivdammen/Rådata/Glitre råvann 2000-16.xlsx",
+  d <- data.table(readxl::read_excel(file.path(RPROJ$PROJRAW,"WP1_waterworks/Glitrevannverket IKS_Kleivdammen/Rådata/Glitre råvann 2000-16.xlsx"),
                                                           sheet = "Kleivdammen",
                                                           skip = 1,
                                                           col_names = FALSE,
@@ -1508,7 +1508,7 @@ CleanDataWaterworksInternal <- function(){
   d[, waterType := "Raw"]
   d[, point := "Kleivdammen"]
 
-  saveRDS(d, "data_clean/WP1_waterworks/Glitrevannverket IKS_Kleivdammen_Kleivdammen.RDS")
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/Glitrevannverket IKS_Kleivdammen_Kleivdammen.RDS"))
 
   ########
   # data_raw/WP1_waterworks/Halden_Lille Erte/Rådata/Periodisk rapport, 01.01.2011 - 31.12.2012, Råvann Vannbehandlingsanlegg.xlsx
@@ -1517,7 +1517,7 @@ CleanDataWaterworksInternal <- function(){
   ########
 
   d <- data.table(readxl::read_excel(
-    "data_raw/WP1_waterworks/Halden_Lille Erte/Rådata/Periodisk rapport, 01.01.2011 - 31.12.2012, Råvann Vannbehandlingsanlegg.xlsx",
+    file.path(RPROJ$PROJRAW,"WP1_waterworks/Halden_Lille Erte/Rådata/Periodisk rapport, 01.01.2011 - 31.12.2012, Råvann Vannbehandlingsanlegg.xlsx"),
                                                             sheet = "Periodisk rapport, 01.01.2011 -",
                                                             skip = 3,
                                                             col_names = FALSE,
@@ -1546,7 +1546,7 @@ CleanDataWaterworksInternal <- function(){
   d[, waterType := "Raw"]
   d[, point := ""]
 
-  saveRDS(d, "data_clean/WP1_waterworks/Halden_Lille Erte_1.RDS")
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/Halden_Lille Erte_1.RDS"))
 
   ########
   # data_raw/WP1_waterworks/Halden_Lille Erte/Rådata/Periodisk rapport, 01.01.2011 - 31.12.2012, Råvann Vannbehandlingsanlegg.xlsx
@@ -1555,7 +1555,7 @@ CleanDataWaterworksInternal <- function(){
   ########
 
   d <- data.table(readxl::read_excel(
-    "data_raw/WP1_waterworks/Halden_Lille Erte/Rådata/Periodisk rapport, 01.01.2013 - 31.12.2014, Råvann Vannbehandlingsanlegg.xlsx",
+    file.path(RPROJ$PROJRAW,"WP1_waterworks/Halden_Lille Erte/Rådata/Periodisk rapport, 01.01.2013 - 31.12.2014, Råvann Vannbehandlingsanlegg.xlsx"),
                                                               sheet = "Periodisk rapport, 01.01.2013 -",
                                                               skip = 3,
                                                               col_names = FALSE,
@@ -1584,7 +1584,7 @@ CleanDataWaterworksInternal <- function(){
   d[, waterType := "Raw"]
   d[, point := ""]
 
-  saveRDS(d, "data_clean/WP1_waterworks/Halden_Lille Erte_2.RDS")
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/Halden_Lille Erte_2.RDS"))
 
   ########
   # data_raw/WP1_waterworks/Halden_Lille Erte/Rådata/Periodisk rapport, 01.01.2015 - 31.12.2015, Råvann Vannbehandlingsanlegg.xlsx
@@ -1592,7 +1592,7 @@ CleanDataWaterworksInternal <- function(){
   # Periodisk rapport, 01.01.2013 -
   ########
 
-  d <- data.table(readxl::read_excel("data_raw/WP1_waterworks/Halden_Lille Erte/Rådata/Periodisk rapport, 01.01.2015 - 31.12.2015, Råvann Vannbehandlingsanlegg.xlsx",
+  d <- data.table(readxl::read_excel(file.path(RPROJ$PROJRAW,"WP1_waterworks/Halden_Lille Erte/Rådata/Periodisk rapport, 01.01.2015 - 31.12.2015, Råvann Vannbehandlingsanlegg.xlsx"),
                                                                 sheet = "Periodisk rapport, 01.01.2015 -",
                                                                 skip = 3,
                                                                 col_names = FALSE,
@@ -1621,7 +1621,7 @@ CleanDataWaterworksInternal <- function(){
   d[, waterType := "Raw"]
   d[, point := ""]
 
-  saveRDS(d, "data_clean/WP1_waterworks/Halden_Lille Erte_3.RDS")
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/Halden_Lille Erte_3.RDS"))
 
   ########
   # data_raw/WP1_waterworks/HIAS_Hamar/Rådata/Råvannskvalitet Hamar VBA2003-2015-31aug.xlsx
@@ -1629,7 +1629,7 @@ CleanDataWaterworksInternal <- function(){
   # 2015-2014
   ########
 
-  d <- data.table(readxl::read_excel("data_raw/WP1_waterworks/HIAS_Hamar/Rådata/edited_Råvannskvalitet Hamar VBA2003-2015-31aug.xlsx",
+  d <- data.table(readxl::read_excel(file.path(RPROJ$PROJRAW,"WP1_waterworks/HIAS_Hamar/Rådata/edited_Råvannskvalitet Hamar VBA2003-2015-31aug.xlsx"),
                                                                       sheet = 1,
                                                                       skip = 10,
                                                                       col_names = FALSE,
@@ -1667,10 +1667,10 @@ CleanDataWaterworksInternal <- function(){
   d[, waterType := "Raw"]
   d[, point := ""]
 
-  saveRDS(d, "data_clean/WP1_waterworks/HIAS_Hamar.RDS")
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/HIAS_Hamar.RDS"))
   
   
-  CleanWP1SpecificWaterWorkLongSingle(fileIn="data_raw/WP1_waterworks/HIAS_Hamar/Rådata/Fhi råvann VBA 180516.xlsx",
+  CleanWP1SpecificWaterWorkLongSingle(fileIn=file.path(RPROJ$PROJRAW,"WP1_waterworks/HIAS_Hamar/Rådata/Fhi råvann VBA 180516.xlsx"),
                             fileOut="hamar_VBA 180516.RDS",
                             sheet=1,
                             skip=8,
@@ -1686,7 +1686,7 @@ CleanDataWaterworksInternal <- function(){
   )
   
   
-  CleanWP1SpecificWaterWorkLongSingle(fileIn="data_raw/WP1_waterworks/HIAS_Hamar/Rådata/Fhi råvann VBA 180516.xlsx",
+  CleanWP1SpecificWaterWorkLongSingle(fileIn=file.path(RPROJ$PROJRAW,"WP1_waterworks/HIAS_Hamar/Rådata/Fhi råvann VBA 180516.xlsx"),
                             fileOut="hamar_VBA turbidity180516.RDS",
                             sheet=2,
                             skip=8,
@@ -1713,7 +1713,7 @@ CleanDataWaterworksInternal <- function(){
   ########
 
   d <- data.table(readxl::read_excel(
-    "data_raw/WP1_waterworks/HIAS_Stange/Rådata/SVBA_Online_Fargetall.xlsx",
+    file.path(RPROJ$PROJRAW,"WP1_waterworks/HIAS_Stange/Rådata/SVBA_Online_Fargetall.xlsx"),
                                                                       sheet = "2015-2014",
                                                                       skip = 1,
                                                                       col_names = FALSE,
@@ -1734,7 +1734,7 @@ CleanDataWaterworksInternal <- function(){
   d[, waterType := "Raw"]
   d[, point := ""]
 
-  saveRDS(d, "data_clean/WP1_waterworks/HIAS_Stange_colour.RDS")
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/HIAS_Stange_colour.RDS"))
 
   ########
   # data_raw/WP1_waterworks/HIAS_Stange/Rådata/SVBA_Online_Turbiditet.xlsx
@@ -1742,7 +1742,7 @@ CleanDataWaterworksInternal <- function(){
   # 2015-2004
   ########
 
-  d <- data.table(readxl::read_excel("data_raw/WP1_waterworks/HIAS_Stange/Rådata/SVBA_Online_Turbiditet.xlsx",
+  d <- data.table(readxl::read_excel(file.path(RPROJ$PROJRAW,"WP1_waterworks/HIAS_Stange/Rådata/SVBA_Online_Turbiditet.xlsx"),
                                                                           sheet = "2015-2004",
                                                                           skip = 1,
                                                                           col_names = FALSE,
@@ -1763,7 +1763,7 @@ CleanDataWaterworksInternal <- function(){
   d[, waterType := "Raw"]
   d[, point := ""]
 
-  saveRDS(d, "data_clean/WP1_waterworks/HIAS_Stange_turbidity.RDS")
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/HIAS_Stange_turbidity.RDS"))
 
 
   ########
@@ -1772,7 +1772,7 @@ CleanDataWaterworksInternal <- function(){
   # 2015-2014
   ########
 
-  d <- data.table(readxl::read_excel("data_raw/WP1_waterworks/HIAS_Stange/Rådata/edited_Råvannskvalitet Stange VBA2003-2015-31aug.xlsx",
+  d <- data.table(readxl::read_excel(file.path(RPROJ$PROJRAW,"WP1_waterworks/HIAS_Stange/Rådata/edited_Råvannskvalitet Stange VBA2003-2015-31aug.xlsx"),
                                                                         sheet = 1,
                                                                         skip = 12,
                                                                         col_names = FALSE,
@@ -1809,7 +1809,7 @@ CleanDataWaterworksInternal <- function(){
   d[, waterType := "Raw"]
   d[, point := ""]
 
-  saveRDS(d, "data_clean/WP1_waterworks/HIAS_Stange.RDS")
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/HIAS_Stange.RDS"))
 
   ##########################################
   ##########################################
@@ -1823,7 +1823,7 @@ CleanDataWaterworksInternal <- function(){
   ########
   
   
-  CleanWP1SpecificWaterWork(fileIn="data_raw/WP1_waterworks/IVAR IKS_Langevatn/IVAR Råvann analyseresultater 2010-2016.xlsx",
+  CleanWP1SpecificWaterWork(fileIn=file.path(RPROJ$PROJRAW,"WP1_waterworks/IVAR IKS_Langevatn/IVAR Råvann analyseresultater 2010-2016.xlsx"),
                             fileOut="IVAR Råvann analyseresultaterStolsvatn.RDS",
                             sheet="Analyseresultater Stølsvatn ve",
                             skip=3,
@@ -1852,7 +1852,7 @@ CleanDataWaterworksInternal <- function(){
                             point="Stolsvatn"
   )
   
-  CleanWP1SpecificWaterWork(fileIn="data_raw/WP1_waterworks/IVAR IKS_Langevatn/IVAR Råvann analyseresultater 2010-2016.xlsx",
+  CleanWP1SpecificWaterWork(fileIn=file.path(RPROJ$PROJRAW,"WP1_waterworks/IVAR IKS_Langevatn/IVAR Råvann analyseresultater 2010-2016.xlsx"),
                             fileOut="IVAR Råvann analyseresultaterStorevatn.RDS",
                             sheet="Analyseresultater Storevatn",
                             skip=3,
@@ -1882,7 +1882,7 @@ CleanDataWaterworksInternal <- function(){
   )
   
   
-  CleanWP1SpecificWaterWork(fileIn="data_raw/WP1_waterworks/IVAR IKS_Langevatn/IVAR Råvann analyseresultater 2010-2016.xlsx",
+  CleanWP1SpecificWaterWork(fileIn=file.path(RPROJ$PROJRAW,"WP1_waterworks/IVAR IKS_Langevatn/IVAR Råvann analyseresultater 2010-2016.xlsx"),
                             fileOut="IVAR Råvann analyseresultater 2010-2016_online_stolsvatn.RDS",
                             sheet="Stølsvatn - onlinemålinger",
                             skip=3,
@@ -1906,7 +1906,7 @@ CleanDataWaterworksInternal <- function(){
                             point="Stolsvatn"
   )
   
-  CleanWP1SpecificWaterWork(fileIn="data_raw/WP1_waterworks/IVAR IKS_Langevatn/IVAR Råvann analyseresultater 2010-2016.xlsx",
+  CleanWP1SpecificWaterWork(fileIn=file.path(RPROJ$PROJRAW,"WP1_waterworks/IVAR IKS_Langevatn/IVAR Råvann analyseresultater 2010-2016.xlsx"),
                             fileOut="IVAR Råvann analyseresultater 2010-2016_online_storevatn.RDS",
                             sheet="Storevatn Onlinemålinger",
                             skip=3,
@@ -1935,7 +1935,7 @@ CleanDataWaterworksInternal <- function(){
   # kimtall
   ########
 
-  d <- data.table(readxl::read_excel("data_raw/WP1_waterworks/Karmøy_Brekke/Rådata/Råvannskvalitet.xlsx",
+  d <- data.table(readxl::read_excel(file.path(RPROJ$PROJRAW,"WP1_waterworks/Karmøy_Brekke/Rådata/Råvannskvalitet.xlsx"),
                                                                           sheet = "Kimtall",
                                                                           skip = 1,
                                                                           col_names = FALSE,
@@ -1958,7 +1958,7 @@ CleanDataWaterworksInternal <- function(){
   d[, waterType := "Raw"]
   d[, point := ""]
 
-  saveRDS(d, "data_clean/WP1_waterworks/Karmøy_Brekke_colony_count.RDS")
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/Karmøy_Brekke_colony_count.RDS"))
 
   ########
   # data_raw/WP1_waterworks/Karmøy_Brekke/Rådata/Råvannskvalitet.xlsx
@@ -1966,7 +1966,7 @@ CleanDataWaterworksInternal <- function(){
   # kimtall
   ########
 
-  d <- data.table(readxl::read_excel("data_raw/WP1_waterworks/Karmøy_Brekke/Rådata/Råvannskvalitet.xlsx",
+  d <- data.table(readxl::read_excel(file.path(RPROJ$PROJRAW,"WP1_waterworks/Karmøy_Brekke/Rådata/Råvannskvalitet.xlsx"),
                                                                             sheet = "Koliforme bakterier",
                                                                             skip = 1,
                                                                             col_names = FALSE,
@@ -1989,7 +1989,7 @@ CleanDataWaterworksInternal <- function(){
   d[, waterType := "Raw"]
   d[, point := ""]
 
-  saveRDS(d, "data_clean/WP1_waterworks/Karmøy_Brekke_coliform_bacteria.RDS")
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/Karmøy_Brekke_coliform_bacteria.RDS"))
 
   ########
   # data_raw/WP1_waterworks/Karmøy_Brekke/Rådata/Råvannskvalitet.xlsx
@@ -1997,7 +1997,7 @@ CleanDataWaterworksInternal <- function(){
   # E.coli
   ########
 
-  d <- data.table(readxl::read_excel("data_raw/WP1_waterworks/Karmøy_Brekke/Rådata/Råvannskvalitet.xlsx",
+  d <- data.table(readxl::read_excel(file.path(RPROJ$PROJRAW,"WP1_waterworks/Karmøy_Brekke/Rådata/Råvannskvalitet.xlsx"),
                                                                               sheet = "E.coli",
                                                                               skip = 1,
                                                                               col_names = FALSE,
@@ -2020,7 +2020,7 @@ CleanDataWaterworksInternal <- function(){
   d[, waterType := "Raw"]
   d[, point := ""]
 
-  saveRDS(d, "data_clean/WP1_waterworks/Karmøy_Brekke_ecoli.RDS")
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/Karmøy_Brekke_ecoli.RDS"))
 
   ########
   # data_raw/WP1_waterworks/Karmøy_Brekke/Rådata/Råvannskvalitet.xlsx
@@ -2028,7 +2028,7 @@ CleanDataWaterworksInternal <- function(){
   # Intestinale
   ########
 
-  d <- data.table(readxl::read_excel("data_raw/WP1_waterworks/Karmøy_Brekke/Rådata/Råvannskvalitet.xlsx",
+  d <- data.table(readxl::read_excel(file.path(RPROJ$PROJRAW,"WP1_waterworks/Karmøy_Brekke/Rådata/Råvannskvalitet.xlsx"),
                                                                                 sheet = "Intestinale",
                                                                                 skip = 1,
                                                                                 col_names = FALSE,
@@ -2051,7 +2051,7 @@ CleanDataWaterworksInternal <- function(){
   d[, waterType := "Raw"]
   d[, point := ""]
 
-  saveRDS(d, "data_clean/WP1_waterworks/Karmøy_Brekke_intestinal.RDS")
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/Karmøy_Brekke_intestinal.RDS"))
 
   ########
   # data_raw/WP1_waterworks/Karmøy_Brekke/Rådata/Råvannskvalitet.xlsx
@@ -2059,7 +2059,7 @@ CleanDataWaterworksInternal <- function(){
   # pH
   ########
 
-  d <- data.table(readxl::read_excel("data_raw/WP1_waterworks/Karmøy_Brekke/Rådata/Råvannskvalitet.xlsx",
+  d <- data.table(readxl::read_excel(file.path(RPROJ$PROJRAW,"WP1_waterworks/Karmøy_Brekke/Rådata/Råvannskvalitet.xlsx"),
                                                                                   sheet = "pH",
                                                                                   skip = 1,
                                                                                   col_names = FALSE,
@@ -2082,7 +2082,7 @@ CleanDataWaterworksInternal <- function(){
   d[, waterType := "Raw"]
   d[, point := ""]
 
-  saveRDS(d, "data_clean/WP1_waterworks/Karmøy_Brekke_ph.RDS")
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/Karmøy_Brekke_ph.RDS"))
 
   ########
   # data_raw/WP1_waterworks/Karmøy_Brekke/Rådata/Råvannskvalitet.xlsx
@@ -2090,7 +2090,7 @@ CleanDataWaterworksInternal <- function(){
   # Konduktivitet
   ########
 
-  d <- data.table(readxl::read_excel("data_raw/WP1_waterworks/Karmøy_Brekke/Rådata/Råvannskvalitet.xlsx",
+  d <- data.table(readxl::read_excel(file.path(RPROJ$PROJRAW,"WP1_waterworks/Karmøy_Brekke/Rådata/Råvannskvalitet.xlsx"),
                                                                                     sheet = "Konduktivitet",
                                                                                     skip = 1,
                                                                                     col_names = FALSE,
@@ -2113,7 +2113,7 @@ CleanDataWaterworksInternal <- function(){
   d[, waterType := "Raw"]
   d[, point := ""]
 
-  saveRDS(d, "data_clean/WP1_waterworks/Karmøy_Brekke_conductivity.RDS")
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/Karmøy_Brekke_conductivity.RDS"))
 
   ########
   # data_raw/WP1_waterworks/Karmøy_Brekke/Rådata/Råvannskvalitet.xlsx
@@ -2121,7 +2121,7 @@ CleanDataWaterworksInternal <- function(){
   # Turbiditet
   ########
 
-  d <- data.table(readxl::read_excel("data_raw/WP1_waterworks/Karmøy_Brekke/Rådata/Råvannskvalitet.xlsx",
+  d <- data.table(readxl::read_excel(file.path(RPROJ$PROJRAW,"WP1_waterworks/Karmøy_Brekke/Rådata/Råvannskvalitet.xlsx"),
                                                                                       sheet = "Turbiditet",
                                                                                       skip = 1,
                                                                                       col_names = FALSE,
@@ -2144,7 +2144,7 @@ CleanDataWaterworksInternal <- function(){
   d[, waterType := "Raw"]
   d[, point := ""]
 
-  saveRDS(d, "data_clean/WP1_waterworks/Karmøy_Brekke_turbidity.RDS")
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/Karmøy_Brekke_turbidity.RDS"))
 
   ########
   # data_raw/WP1_waterworks/Karmøy_Brekke/Rådata/Råvannskvalitet.xlsx
@@ -2152,7 +2152,7 @@ CleanDataWaterworksInternal <- function(){
   # Farge
   ########
 
-  d <- data.table(readxl::read_excel("data_raw/WP1_waterworks/Karmøy_Brekke/Rådata/Råvannskvalitet.xlsx",
+  d <- data.table(readxl::read_excel(file.path(RPROJ$PROJRAW,"WP1_waterworks/Karmøy_Brekke/Rådata/Råvannskvalitet.xlsx"),
                                                                                         sheet = "Farge",
                                                                                         skip = 1,
                                                                                         col_names = FALSE,
@@ -2175,7 +2175,7 @@ CleanDataWaterworksInternal <- function(){
   d[, waterType := "Raw"]
   d[, point := ""]
 
-  saveRDS(d, "data_clean/WP1_waterworks/Karmøy_Brekke_colour.RDS")
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/Karmøy_Brekke_colour.RDS"))
 
   ##########################################
   ##########################################
@@ -2187,7 +2187,7 @@ CleanDataWaterworksInternal <- function(){
   # 
   ########
   
-  d <- data.table(readxl::read_excel("data_raw/WP1_waterworks/Kongsvinger_Granli_GIVAS/Rådata/Kongsvinger_råvann brønn 1-3 og 5-6_akkreditert.xlsx",
+  d <- data.table(readxl::read_excel(file.path(RPROJ$PROJRAW,"WP1_waterworks/Kongsvinger_Granli_GIVAS/Rådata/Kongsvinger_råvann brønn 1-3 og 5-6_akkreditert.xlsx"),
                                      sheet = 1,
                                      skip = 1,
                                      col_names = FALSE,
@@ -2221,7 +2221,7 @@ CleanDataWaterworksInternal <- function(){
   d[, waterwork := "Kongsvinger_Granli_GIVAS"]
   d[, waterType := "Raw"]
   
-  saveRDS(d, "data_clean/WP1_waterworks/Kongsvinger_Granli_GIVAS.RDS")
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/Kongsvinger_Granli_GIVAS.RDS"))
   
   ########
   # data_raw/WP1_waterworks/Kristiansand_Rossevann/Rådata/Klimaprosjekt 2016.xlsx
@@ -2229,7 +2229,7 @@ CleanDataWaterworksInternal <- function(){
   # 
   ########
   
-  d <- data.table(readxl::read_excel("data_raw/WP1_waterworks/Kristiansand_Rossevann/Rådata/Klimaprosjekt 2016.xlsx",
+  d <- data.table(readxl::read_excel(file.path(RPROJ$PROJRAW,"WP1_waterworks/Kristiansand_Rossevann/Rådata/Klimaprosjekt 2016.xlsx"),
                                      sheet = 1,
                                      skip = 1,
                                      col_names = FALSE,
@@ -2262,7 +2262,7 @@ CleanDataWaterworksInternal <- function(){
   d[, waterwork := "Kristiansand_Rossevann"]
   d[, waterType := "Raw"]
   
-  saveRDS(d, "data_clean/WP1_waterworks/Kristiansand_Rossevann.RDS")
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/Kristiansand_Rossevann.RDS"))
   
   ########
   # data_raw/WP1_waterworks/\Kristiansand_Tronstadvann/Rådata/Klimaprosjekt 2016.xlsx
@@ -2270,7 +2270,7 @@ CleanDataWaterworksInternal <- function(){
   # 
   ########
   
-  d <- data.table(readxl::read_excel("data_raw/WP1_waterworks/Kristiansand_Tronstadvann/Rådata/Klimaprosjekt 2016.xlsx",
+  d <- data.table(readxl::read_excel(file.path(RPROJ$PROJRAW,"WP1_waterworks/Kristiansand_Tronstadvann/Rådata/Klimaprosjekt 2016.xlsx"),
                                      sheet = 2,
                                      skip = 1,
                                      col_names = FALSE,
@@ -2303,7 +2303,7 @@ CleanDataWaterworksInternal <- function(){
   d[, waterwork := "Kristiansand_Tronstadvann"]
   d[, waterType := "Raw"]
   
-  saveRDS(d, "data_clean/WP1_waterworks/Kristiansand_Tronstadvann.RDS")
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/Kristiansand_Tronstadvann.RDS"))
   
 
   ########
@@ -2312,7 +2312,7 @@ CleanDataWaterworksInternal <- function(){
   # Farge
   ########
 
-  d <- data.table(readxl::read_excel("data_raw/WP1_waterworks/Lillehammer/Rådata/edited_Kopi av export 2011.xlsx",
+  d <- data.table(readxl::read_excel(file.path(RPROJ$PROJRAW,"WP1_waterworks/Lillehammer/Rådata/edited_Kopi av export 2011.xlsx"),
                                   sheet = 1,
                                   skip = 3,
                                   col_names = FALSE,
@@ -2353,7 +2353,7 @@ CleanDataWaterworksInternal <- function(){
   dim(d)
   d <- d[which(d$point=="LILLEHAMMER-KORGEN-RÅVANN")]
   dim(d)
-  saveRDS(d, "data_clean/WP1_waterworks/Lillehammer_2011.RDS")
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/Lillehammer_2011.RDS"))
 
  
   ########
@@ -2362,7 +2362,7 @@ CleanDataWaterworksInternal <- function(){
   # Farge
   ########
 
-  d <- data.table(readxl::read_excel("data_raw/WP1_waterworks/Lillehammer/Rådata/edited_Kopi av export 2012.xlsx",
+  d <- data.table(readxl::read_excel(file.path(RPROJ$PROJRAW,"WP1_waterworks/Lillehammer/Rådata/edited_Kopi av export 2012.xlsx"),
                                     sheet = 1,
                                     skip = 3,
                                     col_names = FALSE,
@@ -2401,7 +2401,7 @@ CleanDataWaterworksInternal <- function(){
   d <- d[which(d$point=="LILLEHAMMER-KORGEN-RÅVANN")]
   dim(d)
 
-  saveRDS(d, "data_clean/WP1_waterworks/Lillehammer_2012.RDS")
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/Lillehammer_2012.RDS"))
 
 
   ########
@@ -2410,7 +2410,7 @@ CleanDataWaterworksInternal <- function(){
   # Farge
   ########
 
-  d <- data.table(readxl::read_excel("data_raw/WP1_waterworks/Lillehammer/Rådata/edited_Kopi av export 2013.xlsx",
+  d <- data.table(readxl::read_excel(file.path(RPROJ$PROJRAW,"WP1_waterworks/Lillehammer/Rådata/edited_Kopi av export 2013.xlsx"),
                                         sheet = 1,
                                         skip = 3,
                                         col_names = FALSE,
@@ -2452,7 +2452,7 @@ CleanDataWaterworksInternal <- function(){
   d <- d[which(d$point=="LILLEHAMMER-KORGEN-RÅVANN")]
   dim(d)
 
-  saveRDS(d, "data_clean/WP1_waterworks/Lillehammer_2013.RDS")
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/Lillehammer_2013.RDS"))
 
   ########
   # data_raw/WP1_waterworks/Lillehammer/Rådata/edited_Kopi av export 2014.xlsx
@@ -2460,7 +2460,7 @@ CleanDataWaterworksInternal <- function(){
   # Farge
   ########
 
-  d <- data.table(readxl::read_excel("data_raw/WP1_waterworks/Lillehammer/Rådata/edited_Kopi av export 2014.xlsx",
+  d <- data.table(readxl::read_excel(file.path(RPROJ$PROJRAW,"WP1_waterworks/Lillehammer/Rådata/edited_Kopi av export 2014.xlsx"),
                                           sheet = 1,
                                           skip = 3,
                                           col_names = FALSE,
@@ -2502,7 +2502,7 @@ CleanDataWaterworksInternal <- function(){
   d <- d[which(d$point=="LILLEHAMMER-KORGEN-RÅVANN")]
   dim(d)
 
-  saveRDS(d, "data_clean/WP1_waterworks/Lillehammer_2014.RDS")
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/Lillehammer_2014.RDS"))
 
   ########
   # data_raw/WP1_waterworks/Lillehammer/Rådata/edited_Kopi av export 2015.xlsx
@@ -2510,7 +2510,7 @@ CleanDataWaterworksInternal <- function(){
   # Farge
   ########
 
-  d <- data.table(readxl::read_excel("data_raw/WP1_waterworks/Lillehammer/Rådata/edited_Kopi av export 2015.xlsx",
+  d <- data.table(readxl::read_excel(file.path(RPROJ$PROJRAW,"WP1_waterworks/Lillehammer/Rådata/edited_Kopi av export 2015.xlsx"),
                                             sheet = 1,
                                             skip = 3,
                                             col_names = FALSE,
@@ -2554,7 +2554,7 @@ CleanDataWaterworksInternal <- function(){
   d <- d[which(d$point=="LILLEHAMMER-KORGEN-RÅVANN")]
   dim(d)
 
-  saveRDS(d, "data_clean/WP1_waterworks/Lillehammer_2015.RDS")
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/Lillehammer_2015.RDS"))
 
 
   ########
@@ -2563,7 +2563,7 @@ CleanDataWaterworksInternal <- function(){
   # Farge
   ########
 
-  d <- data.table(readxl::read_excel("data_raw/WP1_waterworks/Lillehammer/Rådata/Råvann Korgen 2006 - 2010.xlsx",
+  d <- data.table(readxl::read_excel(file.path(RPROJ$PROJRAW,"WP1_waterworks/Lillehammer/Rådata/Råvann Korgen 2006 - 2010.xlsx"),
                                               sheet = "aggregated",
                                               skip = 1,
                                               col_names = FALSE,
@@ -2598,7 +2598,7 @@ CleanDataWaterworksInternal <- function(){
   d[, waterType := "Raw"]
   d[, point := "LILLEHAMMER-KORGEN-RÅVANN"]
 
-  saveRDS(d, "data_clean/WP1_waterworks/Lillehammer.RDS")
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/Lillehammer.RDS"))
 
   ##########################################
   ##########################################
@@ -2610,7 +2610,7 @@ CleanDataWaterworksInternal <- function(){
   # online
   ########
 
-  d <- data.table(readxl::read_excel("data_raw/WP1_waterworks/MOVAR_Vansjø/Rådata/Online målinger av råvann - 2011 tom 2015.xlsx",
+  d <- data.table(readxl::read_excel(file.path(RPROJ$PROJRAW,"WP1_waterworks/MOVAR_Vansjø/Rådata/Online målinger av råvann - 2011 tom 2015.xlsx"),
                                                 sheet = 1,
                                                 skip = 2,
                                                 col_names = FALSE,
@@ -2634,7 +2634,7 @@ CleanDataWaterworksInternal <- function(){
   d[, waterType := "Raw"]
   d[, point := ""]
 
-  saveRDS(d, "data_clean/WP1_waterworks/MOVAR_Vansjø_online.RDS")
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/MOVAR_Vansjø_online.RDS"))
 
   ########
   # data_raw/WP1_waterworks/MOVAR_Vansjø/Rådata/external_2006_2012.xlsx
@@ -2642,7 +2642,7 @@ CleanDataWaterworksInternal <- function(){
   #
   ########
 
-  d <- data.table(readxl::read_excel("data_raw/WP1_waterworks/MOVAR_Vansjø/Rådata/external_2006_2012.xlsx",
+  d <- data.table(readxl::read_excel(file.path(RPROJ$PROJRAW,"WP1_waterworks/MOVAR_Vansjø/Rådata/external_2006_2012.xlsx"),
                                                   sheet = 1,
                                                   skip = 2,
                                                   col_names = FALSE,
@@ -2681,7 +2681,7 @@ CleanDataWaterworksInternal <- function(){
   d[, waterType := "Raw"]
   d[, point := ""]
 
-  saveRDS(d, "data_clean/WP1_waterworks/MOVAR_Vansjø_external_2006_2012.RDS")
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/MOVAR_Vansjø_external_2006_2012.RDS"))
 
   ########
   # data_raw/WP1_waterworks/MOVAR_Vansjø/Rådata/Eksterne råvannsanalyser - uke og måneds kontroll 2013 tom 2015.xlsx
@@ -2689,7 +2689,7 @@ CleanDataWaterworksInternal <- function(){
   #
   ########
 
-  d <- data.table(readxl::read_excel("data_raw/WP1_waterworks/MOVAR_Vansjø/Rådata/Eksterne råvannsanalyser - uke og måneds kontroll 2013 tom 2015.xlsx",
+  d <- data.table(readxl::read_excel(file.path(RPROJ$PROJRAW,"WP1_waterworks/MOVAR_Vansjø/Rådata/Eksterne råvannsanalyser - uke og måneds kontroll 2013 tom 2015.xlsx"),
                                                     sheet = 1,
                                                     skip = 2,
                                                     col_names = FALSE,
@@ -2719,10 +2719,10 @@ CleanDataWaterworksInternal <- function(){
   d[, waterType := "Raw"]
   d[, point := ""]
 
-  saveRDS(d, "data_clean/WP1_waterworks/MOVAR_Vansjø_external_2013_2015.RDS")
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/MOVAR_Vansjø_external_2013_2015.RDS"))
 
   
-  CleanWP1SpecificWaterWork(fileIn="data_raw/WP1_waterworks/MOVAR_Vansjø/Rådata/aggregated_internal.xlsx",
+  CleanWP1SpecificWaterWork(fileIn=file.path(RPROJ$PROJRAW,"WP1_waterworks/MOVAR_Vansjø/Rådata/aggregated_internal.xlsx"),
                             fileOut="movar_internal.RDS",
                             sheet=1,
                             skip=8,
@@ -2749,7 +2749,7 @@ CleanDataWaterworksInternal <- function(){
   #
   ########
 
-  d <- data.table(readxl::read_excel("data_raw/WP1_waterworks/Nedre Romerike Vannverk IKS_Hauglifjell/Rådata/Råvann analyser til Nominor.xlsx",
+  d <- data.table(readxl::read_excel(file.path(RPROJ$PROJRAW,"WP1_waterworks/Nedre Romerike Vannverk IKS_Hauglifjell/Rådata/Råvann analyser til Nominor.xlsx"),
     sheet = "Samlet data",
     skip = 6,
     col_names = FALSE,
@@ -2801,7 +2801,7 @@ CleanDataWaterworksInternal <- function(){
   d[, waterType := "Raw"]
   d[, point := ""]
 
-  saveRDS(d, "data_clean/WP1_waterworks/Nedre Romerike Vannverk IKS_Hauglifjell_Samlet data.RDS")
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/Nedre Romerike Vannverk IKS_Hauglifjell_Samlet data.RDS"))
 
   ########
   # data_raw/WP1_waterworks/Nedre Romerike Vannverk IKS_Hauglifjell/Rådata/Analysedata råvann 2006-2016.xlsx
@@ -2809,7 +2809,7 @@ CleanDataWaterworksInternal <- function(){
   #
   ########
 
-  d <- data.table(readxl::read_excel("data_raw/WP1_waterworks/Nedre Romerike Vannverk IKS_Hauglifjell/Rådata/Analysedata råvann 2006-2016.xlsx",
+  d <- data.table(readxl::read_excel(file.path(RPROJ$PROJRAW,"WP1_waterworks/Nedre Romerike Vannverk IKS_Hauglifjell/Rådata/Analysedata råvann 2006-2016.xlsx"),
       skip = 12,
       col_names = FALSE))
 
@@ -2844,7 +2844,7 @@ CleanDataWaterworksInternal <- function(){
   d <- d[!is.na(date)]
 
   #warning("Det var problemer i perioden 16.5.15  - 29.6.15 så her har ikke dataene særlig stor verdi")
-  saveRDS(d, "data_clean/WP1_waterworks/Nedre Romerike Vannverk IKS_Hauglifjell_silhus.RDS")
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/Nedre Romerike Vannverk IKS_Hauglifjell_silhus.RDS"))
 
   ########
   # data_raw/WP1_waterworks/Nedre Romerike Vannverk IKS_Hauglifjell/Rådata/Analysedata råvann 2006-2016.xlsx
@@ -2852,7 +2852,7 @@ CleanDataWaterworksInternal <- function(){
   #
   ########
 
-  d <- data.table(readxl::read_excel("data_raw/WP1_waterworks/Nedre Romerike Vannverk IKS_Hauglifjell/Rådata/Analysedata råvann 2006-2016.xlsx",
+  d <- data.table(readxl::read_excel(file.path(RPROJ$PROJRAW,"WP1_waterworks/Nedre Romerike Vannverk IKS_Hauglifjell/Rådata/Analysedata råvann 2006-2016.xlsx"),
         skip = 12,
         col_names = FALSE))
 
@@ -2900,7 +2900,7 @@ CleanDataWaterworksInternal <- function(){
   #
   ########
   
-  d <- data.table(readxl::read_excel("data_raw/WP1_waterworks/Oslo_Oset/Rådata/online.xlsx",
+  d <- data.table(readxl::read_excel(file.path(RPROJ$PROJRAW,"WP1_waterworks/Oslo_Oset/Rådata/online.xlsx"),
                                      sheet = 1,
                                      skip = 2,
                                      col_names = FALSE,
@@ -2926,7 +2926,7 @@ CleanDataWaterworksInternal <- function(){
   d[, waterType := "Raw"]
   d[, point:="?"]
   
-  saveRDS(d, "data_clean/WP1_waterworks/Oslo_Oset_online.RDS")
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/Oslo_Oset_online.RDS"))
 
   ########
   # data_raw/WP1_waterworks/Oslo_Oset/Rådata/Kjemi raavann.xlsx
@@ -2934,7 +2934,7 @@ CleanDataWaterworksInternal <- function(){
   #
   ########
 
-  d <- data.table(readxl::read_excel("data_raw/WP1_waterworks/Oslo_Oset/Rådata/Kjemi raavann.xlsx",
+  d <- data.table(readxl::read_excel(file.path(RPROJ$PROJRAW,"WP1_waterworks/Oslo_Oset/Rådata/Kjemi raavann.xlsx"),
           sheet = "samlet",
           skip = 3,
           col_names = FALSE,
@@ -2962,7 +2962,7 @@ CleanDataWaterworksInternal <- function(){
   d[, waterwork := "Oslo_Oset"]
   d[, waterType := "Raw"]
 
-  saveRDS(d, "data_clean/WP1_waterworks/Oslo_Oset_kjemi.RDS")
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/Oslo_Oset_kjemi.RDS"))
 
   ########
   # data_raw/WP1_waterworks/Oslo_Oset/Rådata/Kjemi raavann.xlsx
@@ -2970,7 +2970,7 @@ CleanDataWaterworksInternal <- function(){
   #
   ########
 
-  d <- data.table(readxl::read_excel("data_raw/WP1_waterworks/Oslo_Oset/Rådata/Bakterier raavann.xlsx",
+  d <- data.table(readxl::read_excel(file.path(RPROJ$PROJRAW,"WP1_waterworks/Oslo_Oset/Rådata/Bakterier raavann.xlsx"),
             sheet = "samlet_day",
             skip = 4,
             col_names = FALSE,
@@ -3003,7 +3003,7 @@ CleanDataWaterworksInternal <- function(){
   d[, waterwork := "Oslo_Oset"]
   d[, waterType := "Raw"]
 
-  saveRDS(d, "data_clean/WP1_waterworks/Oslo_Oset_bakterier_date.RDS")
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/Oslo_Oset_bakterier_date.RDS"))
 
   ########
   # data_raw/WP1_waterworks/Oslo_Oset/Rådata/Kjemi raavann.xlsx
@@ -3011,7 +3011,7 @@ CleanDataWaterworksInternal <- function(){
   #
   ########
 
-  d <- data.table(readxl::read_excel("data_raw/WP1_waterworks/Oslo_Oset/Rådata/Bakterier raavann.xlsx",
+  d <- data.table(readxl::read_excel(file.path(RPROJ$PROJRAW,"WP1_waterworks/Oslo_Oset/Rådata/Bakterier raavann.xlsx"),
               sheet = "samlet_week",
               skip = 2,
               col_names = FALSE,
@@ -3052,13 +3052,13 @@ CleanDataWaterworksInternal <- function(){
   d[, waterwork := "Oslo_Oset"]
   d[, waterType := "Raw"]
 
-  saveRDS(d, "data_clean/WP1_waterworks/Oslo_Oset_bakterier_week.RDS")
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/Oslo_Oset_bakterier_week.RDS"))
 
   
   ###
   ## PROSGRUND
   
-  CleanWP1SpecificWaterWork(fileIn="data_raw/WP1_waterworks/Porsgrunn_Valleråsen/Rådata/Akkrediterte data_2006-2016_LSS.xlsx",
+  CleanWP1SpecificWaterWork(fileIn=file.path(RPROJ$PROJRAW,"WP1_waterworks/Porsgrunn_Valleråsen/Rådata/Akkrediterte data_2006-2016_LSS.xlsx"),
                             fileOut="Porsgrunn_Valleråsen.RDS",
                             sheet=1,
                             skip=2,
@@ -3080,7 +3080,7 @@ CleanDataWaterworksInternal <- function(){
   ###################
   
   # sarpsborg
-  CleanWP1SpecificWaterWork(fileIn="data_raw/WP1_waterworks/Sarpsborg_Baterød/Rådata/Råvanns analyser Glomma.xlsx",
+  CleanWP1SpecificWaterWork(fileIn=file.path(RPROJ$PROJRAW,"WP1_waterworks/Sarpsborg_Baterød/Rådata/Råvanns analyser Glomma.xlsx"),
                             fileOut="sarpsborg.RDS",
                             sheet=1,
                             skip=1,
@@ -3115,7 +3115,7 @@ CleanDataWaterworksInternal <- function(){
   # 
   ########
   
-  d <- data.table(readxl::read_excel("data_raw/WP1_waterworks/Tromsø_Kvaløya/Rådata/Kopi av Byvannverk råvann analyseresultater 2006- (2).xlsx",
+  d <- data.table(readxl::read_excel(file.path(RPROJ$PROJRAW,"WP1_waterworks/Tromsø_Kvaløya/Rådata/Kopi av Byvannverk råvann analyseresultater 2006- (2).xlsx"),
                                      sheet = "Kvaløya vv",
                                      skip = 3,
                                      col_names = FALSE,
@@ -3148,7 +3148,7 @@ CleanDataWaterworksInternal <- function(){
   d[, waterwork := "Tromsø_Kvaløya"]
   d[, waterType := "Raw"]
   
-  saveRDS(d, "data_clean/WP1_waterworks/Tromsø_Kvaløya.RDS")
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/Tromsø_Kvaløya.RDS"))
   
   ########
   # data_raw/WP1_waterworks/Tromsø_Simavik/Rådata/Kopi av Byvannverk råvann analyseresultater 2006- (2)
@@ -3156,7 +3156,7 @@ CleanDataWaterworksInternal <- function(){
   # 
   ########
   
-  d <- data.table(readxl::read_excel("data_raw/WP1_waterworks/Tromsø_Simavik/Rådata/Kopi av Byvannverk råvann analyseresultater 2006- (2).xlsx",
+  d <- data.table(readxl::read_excel(file.path(RPROJ$PROJRAW,"WP1_waterworks/Tromsø_Simavik/Rådata/Kopi av Byvannverk råvann analyseresultater 2006- (2).xlsx"),
                                      sheet = "Simavik vv Øvre Langvann",
                                      skip = 3,
                                      col_names = FALSE,
@@ -3189,7 +3189,7 @@ CleanDataWaterworksInternal <- function(){
   d[, waterwork := "Tromsø_Simavik"]
   d[, waterType := "Raw"]
   
-  saveRDS(d, "data_clean/WP1_waterworks/Tromsø_Simavik.RDS")
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/Tromsø_Simavik.RDS"))
   
   ########
   # data_raw/WP1_waterworks/Trondheim_Vikelvdalen/Rådata/akkreditert bakterier 2006 råvann.xlsx
@@ -3197,7 +3197,7 @@ CleanDataWaterworksInternal <- function(){
   #
   ########
   
-  d <- data.table(readxl::read_excel("data_raw/WP1_waterworks/Trondheim_Vikelvdalen/Rådata/akkreditert bakterier 2006 råvann.xlsx",
+  d <- data.table(readxl::read_excel(file.path(RPROJ$PROJRAW,"WP1_waterworks/Trondheim_Vikelvdalen/Rådata/akkreditert bakterier 2006 råvann.xlsx"),
                                      sheet = "Råvann",
                                      skip = 2,
                                      col_names = FALSE,
@@ -3225,7 +3225,7 @@ CleanDataWaterworksInternal <- function(){
   d[, waterType := "Raw"]
   d[, point:="?"]
   
-  saveRDS(d, "data_clean/WP1_waterworks/Trondheim_Vikelvdalen_bakterier_2006.RDS")
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/Trondheim_Vikelvdalen_bakterier_2006.RDS"))
   
   ########
   # data_raw/WP1_waterworks/Trondheim_Vikelvdalen/Rådata/akkreditert bakterier 2007 råvann.xlsx
@@ -3233,7 +3233,7 @@ CleanDataWaterworksInternal <- function(){
   #
   ########
   
-  d <- data.table(readxl::read_excel("data_raw/WP1_waterworks/Trondheim_Vikelvdalen/Rådata/Kopi av Akkreditertbakterier 2007 råvann_edited.xlsx",
+  d <- data.table(readxl::read_excel(file.path(RPROJ$PROJRAW,"WP1_waterworks/Trondheim_Vikelvdalen/Rådata/Kopi av Akkreditertbakterier 2007 råvann_edited.xlsx"),
                                      sheet = "Råvann",
                                      skip = 2,
                                      col_names = FALSE,
@@ -3259,7 +3259,7 @@ CleanDataWaterworksInternal <- function(){
   d[, waterType := "Raw"]
   d[, point:="?"]
   
-  saveRDS(d, "data_clean/WP1_waterworks/Trondheim_Vikelvdalen_bakterier_2007.RDS")
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/Trondheim_Vikelvdalen_bakterier_2007.RDS"))
   
   ########
   # data_raw/WP1_waterworks/Trondheim_Vikelvdalen/Rådata/AKKREDITERTKJEMISK 2006 råvann.xlsx
@@ -3267,7 +3267,7 @@ CleanDataWaterworksInternal <- function(){
   #
   ########
   
-  d <- data.table(readxl::read_excel("data_raw/WP1_waterworks/Trondheim_Vikelvdalen/Rådata/AKKREDITERTKJEMISK 2006 råvann.xlsx",
+  d <- data.table(readxl::read_excel(file.path(RPROJ$PROJRAW,"WP1_waterworks/Trondheim_Vikelvdalen/Rådata/AKKREDITERTKJEMISK 2006 råvann.xlsx"),
                                      sheet = "Råvann",
                                      skip = 4,
                                      col_names = FALSE,
@@ -3298,7 +3298,7 @@ CleanDataWaterworksInternal <- function(){
   d[, waterType := "Raw"]
   d[, point:="?"]
   
-  saveRDS(d, "data_clean/WP1_waterworks/Trondheim_Vikelvdalen_chemical_2006.RDS")
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/Trondheim_Vikelvdalen_chemical_2006.RDS"))
   
   
   ########
@@ -3307,7 +3307,7 @@ CleanDataWaterworksInternal <- function(){
   #
   ########
   
-  d <- data.table(readxl::read_excel("data_raw/WP1_waterworks/Trondheim_Vikelvdalen/Rådata/AkkreditertKJEMISK 2007råvann.xlsx",
+  d <- data.table(readxl::read_excel(file.path(RPROJ$PROJRAW,"WP1_waterworks/Trondheim_Vikelvdalen/Rådata/AkkreditertKJEMISK 2007råvann.xlsx"),
                                      sheet = "Råvann",
                                      skip = 4,
                                      col_names = FALSE,
@@ -3338,7 +3338,7 @@ CleanDataWaterworksInternal <- function(){
   d[, waterType := "Raw"]
   d[, point:="?"]
   
-  saveRDS(d, "data_clean/WP1_waterworks/Trondheim_Vikelvdalen_chemical_2007.RDS")
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/Trondheim_Vikelvdalen_chemical_2007.RDS"))
   
   
   
@@ -3348,7 +3348,7 @@ CleanDataWaterworksInternal <- function(){
   #
   ########
   
-  d <- data.table(readxl::read_excel("data_raw/WP1_waterworks/Trondheim_Vikelvdalen/Rådata/akkreditert lab råvann2008-20215.xlsx",
+  d <- data.table(readxl::read_excel(file.path(RPROJ$PROJRAW,"WP1_waterworks/Trondheim_Vikelvdalen/Rådata/akkreditert lab råvann2008-20215.xlsx"),
                                      sheet = "Sheet0",
                                      skip = 3,
                                      col_names = FALSE,
@@ -3395,7 +3395,7 @@ CleanDataWaterworksInternal <- function(){
   d[, waterType := "Raw"]
   d[, point:="?"]
   
-  saveRDS(d, "data_clean/WP1_waterworks/Trondheim_Vikelvdalen_2008-2015.RDS")
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/Trondheim_Vikelvdalen_2008-2015.RDS"))
 
   ##########################################
   ##########################################
@@ -3407,7 +3407,7 @@ CleanDataWaterworksInternal <- function(){
   #
   ########
 
-  d <- data.table(readxl::read_excel("data_raw/WP1_waterworks/Univann_Sjunken/Rådata/Råvannsdata 2006 - 2016.xlsx",
+  d <- data.table(readxl::read_excel(file.path(RPROJ$PROJRAW,"WP1_waterworks/Univann_Sjunken/Rådata/Råvannsdata 2006 - 2016.xlsx"),
       sheet = 1,
       skip = 8,
       col_names = FALSE,
@@ -3444,10 +3444,10 @@ CleanDataWaterworksInternal <- function(){
   d[, waterType := "Raw"]
   d[, point := ""]
 
-  saveRDS(d, "data_clean/WP1_waterworks/Univann_Sjunken.RDS")
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/Univann_Sjunken.RDS"))
 
   for(i in 2006:2016){
-    CleanWP1SpecificWaterWork(fileIn=paste0("data_raw/WP1_waterworks/Univann_Sjunken/Rådata/Egenkontroll ",i,".xls"),
+    CleanWP1SpecificWaterWork(fileIn=file.path(RPROJ$PROJRAW,paste0("WP1_waterworks/Univann_Sjunken/Rådata/Egenkontroll ",i,".xls")),
                               fileOut=paste0("Univann_Sjunken_",i,".RDS"),
                               sheet=1,
                               skip=5,
@@ -3477,7 +3477,7 @@ CleanDataWaterworksInternal <- function(){
   #
   ########
   
-  d <- data.table(readxl::read_excel("data_raw/WP1_waterworks/Vestfold Vann IKS_Eidsfoss/Rådata/1-kr-Eidsfoss råvann - analyser fra hovedlab.xlsx",
+  d <- data.table(readxl::read_excel(file.path(RPROJ$PROJRAW,"WP1_waterworks/Vestfold Vann IKS_Eidsfoss/Rådata/1-kr-Eidsfoss råvann - analyser fra hovedlab.xlsx"),
                                      sheet = 1,
                                      skip = 5,
                                      col_names = FALSE,
@@ -3523,7 +3523,7 @@ CleanDataWaterworksInternal <- function(){
   d[, waterType := "Raw"]
   d[, point:="?"]
   
-  saveRDS(d, "data_clean/WP1_waterworks/Vestfold Vann IKS_Eidsfoss.RDS")
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/Vestfold Vann IKS_Eidsfoss.RDS"))
   
   
   ########
@@ -3532,7 +3532,7 @@ CleanDataWaterworksInternal <- function(){
   #
   ########
   
-  d <- data.table(readxl::read_excel("data_raw/WP1_waterworks/Vestfold Vann IKS_Seierstad/Rådata/1-kr-Seierstad råvann - analyser fra hovedlab.xlsx",
+  d <- data.table(readxl::read_excel(file.path(RPROJ$PROJRAW,"WP1_waterworks/Vestfold Vann IKS_Seierstad/Rådata/1-kr-Seierstad råvann - analyser fra hovedlab.xlsx"),
                                      sheet = 1,
                                      skip = 5,
                                      col_names = FALSE,
@@ -3578,10 +3578,10 @@ CleanDataWaterworksInternal <- function(){
   d[, waterType := "Raw"]
   d[, point:="?"]
   
-  saveRDS(d, "data_clean/WP1_waterworks/Vestfold Vann IKS_Seierstad.RDS")
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/Vestfold Vann IKS_Seierstad.RDS"))
   
   ## BODO
-  CleanWP1SpecificWaterWorkLong(fileIn="data_raw/WP1_waterworks/Bodø_Heggmoen/Rådata/heggmoenråvann.xlsx", 
+  CleanWP1SpecificWaterWorkLong(fileIn=file.path(RPROJ$PROJRAW,"WP1_waterworks/Bodø_Heggmoen/Rådata/heggmoenråvann.xlsx"), 
                                 fileOut="heggmoenravann.RDS",
                                 sheet=1,
                                 type="Accredited",
@@ -3594,7 +3594,7 @@ CleanDataWaterworksInternal <- function(){
   
   ## ALESUND
 
-  CleanWP1SpecificWaterWork(fileIn="data_raw/WP1_waterworks/Ålesund_Vasstrandlia/Rådata/Ålesund_råvann_akkreditert.xlsx",
+  CleanWP1SpecificWaterWork(fileIn=file.path(RPROJ$PROJRAW,"WP1_waterworks/Ålesund_Vasstrandlia/Rådata/Ålesund_råvann_akkreditert.xlsx"),
                             fileOut="alesund.RDS",
                             sheet=1,
                             skip=2,
@@ -3628,7 +3628,7 @@ CleanDataWaterworksInternal <- function(){
   )
   
   
-  CleanWP1SpecificWaterWork(fileIn="data_raw/WP1_waterworks/Ålesund_Vasstrandlia/Rådata/online.xlsx",
+  CleanWP1SpecificWaterWork(fileIn=file.path(RPROJ$PROJRAW,"WP1_waterworks/Ålesund_Vasstrandlia/Rådata/online.xlsx"),
                             fileOut="alesund_online.RDS",
                             sheet=1,
                             skip=2,
@@ -3649,10 +3649,10 @@ CleanDataWaterworksInternal <- function(){
 }
 
 CleanDataWP1NVE <- function(){
-  files <- list.files("data_raw/WP1_NVE/")
+  files <- list.files(file.path(RPROJ$PROJRAW,"WP1_NVE"))
   res <- vector("list",length=length(files))
   for(i in files){
-    d <- fread(paste0("data_raw/WP1_NVE/",i))
+    d <- fread(file.path(RPROJ$PROJRAW,"WP1_NVE",i))
     d[,waterwork:=gsub(".txt","",i)]
     res[[i]] <- d
   }
@@ -3695,17 +3695,18 @@ CleanDataWP1NVE <- function(){
   }
   
   
-  saveRDS(res, "data_clean/wp1_nve_discharge.RDS")
+  saveRDS(res, file.path(RPROJ$PROJCLEAN,"wp1_nve_discharge.RDS"))
 }
 
 CleanDataWP1MET <- function(){
-  data <- readxl::read_excel("data_raw/WP1_MET_intakepoints/WW_Precip_Rain.xlsx")
+  
+  data <- readxl::read_excel(file.path(RPROJ$PROJRAW,"WP1_MET_intakepoints/WW_Precip_Rain.xlsx"))
   data <- data.table(data)
   setnames(data,c("met","stationNum","date","precip","rain"))
   data[,rain:=as.numeric(rain)]
   data[,precip:=as.numeric(precip)]
   
-  stationNames <- readxl::read_excel("data_raw/names.xlsx") #WP1_MET_intakepoints/Kopi av Info_Vannverk.xlsx")
+  stationNames <- readxl::read_excel(file.path(RPROJ$PROJRAW,"names.xlsx")) 
   stationNames <- data.table(stationNames[,c("waterwork","met")])
   stationNames[,met:=as.numeric(met)]
   stationNames <- stationNames[!is.na(waterwork) & !is.na(met)]
@@ -3759,18 +3760,18 @@ CleanDataWP1MET <- function(){
     var <- paste0("wp990_precip",i,"_",i)
     res[,(var):=shift(wp990_precip0_0,i),by=.(waterwork)]
   }
-  saveRDS(res, "data_clean/wp1_met_rain.RDS")
+  saveRDS(res, file.path(RPROJ$PROJCLEAN,"wp1_met_rain.RDS"))
 }
 
 
 CleanDataWaterworks <- function() {
-  f <- list.files("data_clean/WP1_waterworks")
-  for(i in f) file.remove(file.path("data_clean","WP1_waterworks",i))
+  f <- list.files(file.path(RPROJ$PROJCLEAN,"WP1_waterworks"))
+  for(i in f) file.remove(file.path(RPROJ$PROJCLEAN,"WP1_waterworks",i))
   CleanDataWaterworksInternal()
-  f <- list.files("data_clean/WP1_waterworks")
+  f <- list.files(file.path(RPROJ$PROJCLEAN,"WP1_waterworks"))
   d <- vector("list", length(f))
   for (i in 1:length(d)) {
-    d[[i]] <- readRDS(file.path("data_clean", "WP1_waterworks", f[i]))
+    d[[i]] <- readRDS(file.path(RPROJ$PROJCLEAN, "WP1_waterworks", f[i]))
     d[[i]][, date := as.Date(date)]
     setcolorder(d[[i]],names(d[[1]]))
     }
@@ -3847,9 +3848,9 @@ CleanDataWaterworks <- function() {
   d[month %in% 6:8,season:=3]
   d[month %in% 9:11,season:=4]
   Encoding(d$waterwork) <- "UTF-8"
-  nve <- readRDS("data_clean/wp1_nve_discharge.RDS")
+  nve <- readRDS(file.path(RPROJ$PROJCLEAN,"wp1_nve_discharge.RDS"))
   setnames(nve,"waterwork","nve")
-  stationNames <- readxl::read_excel("data_raw/names.xlsx") #WP1_MET_intakepoints/Kopi av Info_Vannverk.xlsx")
+  stationNames <- readxl::read_excel(file.path(RPROJ$PROJRAW,"names.xlsx")) #WP1_MET_intakepoints/Kopi av Info_Vannverk.xlsx")
   stationNames <- unique(data.table(stationNames[,c("waterwork","nve")]))
   stationNames <- stationNames[!is.na(waterwork) & !is.na(nve)]
   Encoding(stationNames$waterwork) <- "UTF-8"
@@ -3863,7 +3864,7 @@ CleanDataWaterworks <- function() {
   length(unique(nve$waterwork))
   nrow(nve)
   
-  met <- readRDS("data_clean/wp1_met_rain.RDS")
+  met <- readRDS(file.path(RPROJ$PROJCLEAN,"wp1_met_rain.RDS"))
   length(unique(d$waterwork))
   d <- na.omit(d)
   d1 <- merge(d,nve,by=c("year","week","waterwork"),allow.cartesian = TRUE)
@@ -3879,7 +3880,7 @@ CleanDataWaterworks <- function() {
   unique(d$waterwork)[!unique(d$waterwork) %in% unique(d2$waterwork)]
   x <- unique(d[,c("waterwork"),with=F])
   x[,waterworkNum:=""]
-  if(!file.exists("data_raw/WP1_MET_intakepoints/codes.csv")) write.table(x,file="data_raw/WP1_MET_intakepoints/codes.csv",sep=";",row.names=F)
+  if(!file.exists(file.path(RPROJ$PROJRAW,"WP1_MET_intakepoints/codes.csv"))) write.table(x,file=file.path(RPROJ$PROJRAW,"WP1_MET_intakepoints/codes.csv"),sep=";",row.names=F)
   
   d2[type %in% c("Accredited","External"),type:="Accredited"]
   d2[,type:=factor(type,levels=c("Accredited","Internal","Online","?"))]
@@ -3934,13 +3935,13 @@ CleanDataWaterworks <- function() {
   )]
   dim(d2)
   d2[,id:=gsub("/","___",id)]
-  saveRDS(d2,"data_clean/WP1.RDS")
+  saveRDS(d2,file.path(RPROJ$PROJCLEAN,"WP1.RDS"))
   
   
   plotData <- d2[, .(meanValue = mean(value,na.rm=T),medianValue = median(value,na.rm=T), minValue = min(value,na.rm=T), maxValue = max(value,na.rm=T),
                     dmin = min(year), dmax = max(year)), by = .(variable, type, units, waterType, point, waterwork)]
 
-  pdf("results_final/WP1/WP1_waterworks.pdf")
+  pdf(file.path(RPROJ$PROJFINAL,"WP1/WP1_waterworks.pdf"))
   for (i in unique(plotData$variable)) {
     q <- ggplot(plotData[variable==i], aes(y = waterwork, x = meanValue, shape = units, colour=type))
     q <- q + geom_point(size=3)
@@ -3953,7 +3954,7 @@ CleanDataWaterworks <- function() {
   setcolorder(plotData,c("waterwork","point","type","waterType","variable", "units", "dmin", "dmax","meanValue","medianValue","minValue","maxValue"))
   setorder(plotData,waterwork, point, type, waterType, variable)
   
-  write.table(plotData,file=file.path("results_final","WP1_waterworks.csv"),sep=";",dec=",", row.names=FALSE)
+  write.table(plotData,file=file.path(RPROJ$PROJFINAL,"WP1_waterworks.csv"),sep=";",dec=",", row.names=FALSE)
 }
 
 

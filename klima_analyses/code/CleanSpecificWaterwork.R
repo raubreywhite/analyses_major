@@ -48,7 +48,7 @@ CleanWP1SpecificWaterWork <- function(fileIn, fileOut,
   d[, waterType := waterType]
   d[, point:=point]
   
-  saveRDS(d, paste0("data_clean/WP1_waterworks/",fileOut))
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks",fileOut))
   
   print(d[c(1,10)])
 }
@@ -108,7 +108,7 @@ d <- data.table(readxl::read_excel(fileIn,
   d[, waterwork := waterwork]
   d[, waterType := waterType]
   
-  saveRDS(d, paste0("data_clean/WP1_waterworks/",fileOut))
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks",fileOut))
   
   print(d[c(1,10)])
 }
@@ -153,12 +153,12 @@ d <- data.table(readxl::read_excel(fileIn,
   d[, waterType := waterType]
   d[,point := point]
   
-  saveRDS(d, paste0("data_clean/WP1_waterworks/",fileOut))
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks",fileOut))
   
   print(d[c(1,10)])
 }
 
-CleanWP1SpecificWaterWorkLongOppegard <- function(fileIn="data_raw/WP1_waterworks/Oppegård/Rådata/aggregated.xlsx",
+CleanWP1SpecificWaterWorkLongOppegard <- function(fileIn=file.path(RPROJ$PROJRAW,"WP1_waterworks/Oppegård/Rådata/aggregated.xlsx"),
                                                   fileOut="oppegard.RDS",
                                       sheet=1,
                                       type="Accredited",
@@ -213,7 +213,7 @@ d <- data.table(readxl::read_excel(fileIn,
   d[, waterType := waterType]
   d[, point:="?"]
   
-  saveRDS(d, paste0("data_clean/WP1_waterworks/",fileOut))
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks",fileOut))
   
   print(d[c(1,10)])
 }

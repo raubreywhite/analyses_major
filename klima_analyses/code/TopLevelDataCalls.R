@@ -1,16 +1,19 @@
 WP1Data <- function(){
-  if(RUN_ALL) unlink("data_clean/WP1.RDS")
-  bake("data_clean/WP1.RDS",{
+  if(RUN_ALL) unlink(file.path(RPROJ$PROJCLEAN,"WP1.RDS"))
+  bake(file.path(RPROJ$PROJCLEAN,"WP1.RDS"),{
+    dir.create(file.path(RPROJ$PROJCLEAN,"WP1_waterworks"))
+    dir.create(file.path(RPROJ$PROJFINAL,"WP1"))
+    
     CleanDataWP1NVE()
     CleanDataWP1MET()
     CleanDataWaterworks()
-    readRDS("data_clean/WP1.RDS")}) -> d
+    readRDS(file.path(RPROJ$PROJCLEAN,"WP1.RDS"))}) -> d
   return(d)
 }
 
 WP2Data <- function(initialDataCall=FALSE){
-  if(initialDataCall & RUN_ALL) system(paste0("rm -f ",file.path(getwd(),"data_clean/WP2.RDS")))
-  bake("data_clean/WP2.RDS",{
+  if(initialDataCall & RUN_ALL) system(paste0("rm -f ",file.path(RPROJ$PROJCLEAN,"WP2.RDS")))
+  bake(file.path(RPROJ$PROJCLEAN,"WP2.RDS"),{
     CleanData()
   }) -> d
   return(d)
