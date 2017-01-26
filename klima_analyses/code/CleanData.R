@@ -3525,6 +3525,52 @@ CleanDataWaterworksInternal <- function(){
   
   saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/Vestfold Vann IKS_Eidsfoss.RDS"))
   
+  ### INTERNAL ANALYSIS
+  
+  d <- data.table(readxl::read_excel(file.path(RPROJ$PROJRAW,"WP1_waterworks/Vestfold Vann IKS_Eidsfoss/Rådata/2-jm-Labjournal Eidsfoss egne prøver_2009-16_råvann.xlsx"),
+                                     sheet = 1,
+                                     skip = 6,
+                                     col_names = FALSE,
+                                     col_types = c("text", rep("text", 7))))
+  d[,X0:=as.Date(as.numeric(X0),origin="1899-12-30")]
+  
+  setnames(d, c("date",
+                "Coliform Bacteria",
+                "E. Coli",
+                "Colony count",
+                "pH",
+                "Colour",
+                "Turbidity",
+                "Conductivity"))
+  
+  d <- d[, which(names(d) != "X"), with = F]
+  
+  d <- melt.data.table(d, id = c("date"), variable.factor = FALSE)
+  d[, variable := gsub("[0-9]*$", "", variable)]
+  d[, type := "Internal"]
+  unique(d$variable)
+  
+  d[, units := ""]
+  
+  d[variable=="Colony count", units:="/mL"]
+  d[variable=="Coliform Bacteria", units:="/100mL"]
+  d[variable=="E. Coli", units:="/100mL"]
+  d[variable=="Intestinal Enterococci", units:="/100mL"]
+  d[variable=="pH", units:="pH"]
+  d[variable=="Turbidity", units:="NTU"]
+  d[variable=="Colour", units:="mg/l Pt"]
+  d[variable=="Clostridium Perfringens", units:="/100mL"]
+  d[variable=="Conductivity", units:="mS/m"]
+  
+  
+  d[, waterwork := "Vestfold Vann IKS_Eidsfoss"]
+  d[, waterType := "Raw"]
+  d[, point:="?"]
+  d <- na.omit(d)
+  
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/Vestfold Vann IKS_Eidsfoss_internal.RDS"))
+  
+  
   
   ########
   # data_raw/WP1_waterworks/Vestfold Vann IKS_Seierstad/Rådata/1-kr-Seierstad råvann - analyser fra hovedlab.xlsx",
@@ -3579,6 +3625,91 @@ CleanDataWaterworksInternal <- function(){
   d[, point:="?"]
   
   saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/Vestfold Vann IKS_Seierstad.RDS"))
+  
+  ### INTERNAL ANALYSIS1
+  
+  d <- data.table(readxl::read_excel(file.path(RPROJ$PROJRAW,"WP1_waterworks/Vestfold Vann IKS_Seierstad/Rådata/2-jm-lab.analyser Seierstad_egenanalyser 2006-16_råvann.xlsx"),
+                                     sheet = 1,
+                                     skip = 5,
+                                     col_names = FALSE,
+                                     col_types = c("text", rep("text", 4))))
+  d[,X0:=as.Date(as.numeric(X0),origin="1899-12-30")]
+  
+  setnames(d, c("date",
+                "pH",
+                "Colour",
+                "Turbidity",
+                "Conductivity"))
+  
+  d <- d[, which(names(d) != "X"), with = F]
+  
+  d <- melt.data.table(d, id = c("date"), variable.factor = FALSE)
+  d[, variable := gsub("[0-9]*$", "", variable)]
+  d[, type := "Internal"]
+  unique(d$variable)
+  
+  d[, units := ""]
+  
+  d[variable=="Colony count", units:="/mL"]
+  d[variable=="Coliform Bacteria", units:="/100mL"]
+  d[variable=="E. Coli", units:="/100mL"]
+  d[variable=="Intestinal Enterococci", units:="/100mL"]
+  d[variable=="pH", units:="pH"]
+  d[variable=="Turbidity", units:="NTU"]
+  d[variable=="Colour", units:="mg/l Pt"]
+  d[variable=="Clostridium Perfringens", units:="/100mL"]
+  d[variable=="Conductivity", units:="mS/m"]
+  
+  
+  d[, waterwork := "Vestfold Vann IKS_Seierstad"]
+  d[, waterType := "Raw"]
+  d[, point:="?"]
+  d <- na.omit(d)
+  
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/Vestfold Vann IKS_Seierstad_internal_1.RDS"))
+  
+  ### INTERNAL ANALYSIS2
+  
+  d <- data.table(readxl::read_excel(file.path(RPROJ$PROJRAW,"WP1_waterworks/Vestfold Vann IKS_Seierstad/Rådata/2-jm-lab.analyser Seierstad_egenanalyser 2006-16_råvann.xlsx"),
+                                     sheet = 1,
+                                     skip = 4,
+                                     col_names = FALSE,
+                                     col_types = c("text", rep("text", 4))))
+  d[,X0:=as.Date(as.numeric(X0),origin="1899-12-30")]
+  
+  setnames(d, c("date",
+                "Coliform Bacteria",
+                "E. Coli",
+                "Colony count",
+                "X"))
+  
+  d <- d[, which(names(d) != "X"), with = F]
+  
+  d <- melt.data.table(d, id = c("date"), variable.factor = FALSE)
+  d[, variable := gsub("[0-9]*$", "", variable)]
+  d[, type := "Internal"]
+  unique(d$variable)
+  
+  d[, units := ""]
+  
+  d[variable=="Colony count", units:="/mL"]
+  d[variable=="Coliform Bacteria", units:="/100mL"]
+  d[variable=="E. Coli", units:="/100mL"]
+  d[variable=="Intestinal Enterococci", units:="/100mL"]
+  d[variable=="pH", units:="pH"]
+  d[variable=="Turbidity", units:="NTU"]
+  d[variable=="Colour", units:="mg/l Pt"]
+  d[variable=="Clostridium Perfringens", units:="/100mL"]
+  d[variable=="Conductivity", units:="mS/m"]
+  
+  
+  d[, waterwork := "Vestfold Vann IKS_Seierstad"]
+  d[, waterType := "Raw"]
+  d[, point:="?"]
+  d <- na.omit(d)
+  
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks/Vestfold Vann IKS_Seierstad_internal_2.RDS"))
+  
   
   ## BODO
   CleanWP1SpecificWaterWorkLong(fileIn=file.path(RPROJ$PROJRAW,"WP1_waterworks/Bodø_Heggmoen/Rådata/heggmoenråvann.xlsx"), 
@@ -3706,10 +3837,10 @@ CleanDataWP1MET <- function(){
   data[,rain:=as.numeric(rain)]
   data[,precip:=as.numeric(precip)]
   
-  stationNames <- readxl::read_excel(file.path(RPROJ$PROJRAW,"names.xlsx")) 
-  stationNames <- data.table(stationNames[,c("waterwork","met")])
+  stationNames <- data.table(readxl::read_excel(file.path(RPROJ$PROJRAW,"names.xlsx"))) #WP1_MET_intakepoints/Kopi av Info_Vannverk.xlsx"))
+  stationNames <- stationNames[!is.na(waterwork) & !is.na(nve) & !is.na(met),]
+  stationNames <- data.table(stationNames[,c("waterwork","met"),with=F])
   stationNames[,met:=as.numeric(met)]
-  stationNames <- stationNames[!is.na(waterwork) & !is.na(met)]
   
   dim(data)
   x <- merge(data,stationNames,by=c("met"),all.y=TRUE,allow.cartesian = TRUE)
@@ -3801,6 +3932,9 @@ CleanDataWaterworks <- function() {
   d[units %in% c("/100ml", "ant/100ml", "CFU/100ml", "kde/100ml"), units := "/100mL"]
   d[units %in% c("/100 ml", "ant/100 ml"), units := "/100mL"]
   d[units %in% c("/ml", "ant/ml", "CFU/ml", "CFU/mL"), units := "/mL"]
+  
+  d[units=="myS/cm2 ", value:=value/10]
+  d[units=="myS/cm2 ", units:="mS/m"]
 
   d <- d[,.(value=mean(value,na.rm=T)),by=.(date,point,units,type,variable,waterwork,waterType)]
   d[,waterwork:=paste0(waterwork,"||",point)]
@@ -3850,8 +3984,9 @@ CleanDataWaterworks <- function() {
   Encoding(d$waterwork) <- "UTF-8"
   nve <- readRDS(file.path(RPROJ$PROJCLEAN,"wp1_nve_discharge.RDS"))
   setnames(nve,"waterwork","nve")
-  stationNames <- readxl::read_excel(file.path(RPROJ$PROJRAW,"names.xlsx")) #WP1_MET_intakepoints/Kopi av Info_Vannverk.xlsx")
-  stationNames <- unique(data.table(stationNames[,c("waterwork","nve")]))
+  stationNames <- data.table(readxl::read_excel(file.path(RPROJ$PROJRAW,"names.xlsx"))) #WP1_MET_intakepoints/Kopi av Info_Vannverk.xlsx"))
+  stationNames <- stationNames[!is.na(waterwork) & !is.na(nve) & !is.na(met),]
+  stationNames <- unique(data.table(stationNames[,c("waterwork","nve"),with=F]))
   stationNames <- stationNames[!is.na(waterwork) & !is.na(nve)]
   Encoding(stationNames$waterwork) <- "UTF-8"
   # these are new waterworks
@@ -3937,24 +4072,6 @@ CleanDataWaterworks <- function() {
   d2[,id:=gsub("/","___",id)]
   saveRDS(d2,file.path(RPROJ$PROJCLEAN,"WP1.RDS"))
   
-  
-  plotData <- d2[, .(meanValue = mean(value,na.rm=T),medianValue = median(value,na.rm=T), minValue = min(value,na.rm=T), maxValue = max(value,na.rm=T),
-                    dmin = min(year), dmax = max(year)), by = .(variable, type, units, waterType, point, waterwork)]
-
-  pdf(file.path(RPROJ$PROJFINAL,"WP1/WP1_waterworks.pdf"))
-  for (i in unique(plotData$variable)) {
-    q <- ggplot(plotData[variable==i], aes(y = waterwork, x = meanValue, shape = units, colour=type))
-    q <- q + geom_point(size=3)
-    q <- q + scale_color_brewer()
-    q <- q + labs(title=i)
-    print(q)
-    }
-  dev.off()
-  
-  setcolorder(plotData,c("waterwork","point","type","waterType","variable", "units", "dmin", "dmax","meanValue","medianValue","minValue","maxValue"))
-  setorder(plotData,waterwork, point, type, waterType, variable)
-  
-  write.table(plotData,file=file.path(RPROJ$PROJFINAL,"WP1_waterworks.csv"),sep=";",dec=",", row.names=FALSE)
 }
 
 

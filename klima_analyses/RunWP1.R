@@ -15,7 +15,31 @@ suppressMessages(library(doParallel))
 registerDoParallel()
 assign("RUN_ALL", TRUE, envir=globalenv())
 
+importantDirs <- c(
+  file.path(RPROJ$PROJCLEAN,"WP1_waterworks"),
+  file.path(RPROJ$PROJSHARED,lubridate::today(),"WP1")
+)
+for(i in importantDirs) if(!dir.exists(i)) dir.create(i,recursive=TRUE)
+
 d <- WP1Data()
+
+plotData <- d[, .(meanValue = mean(value,na.rm=T),medianValue = median(value,na.rm=T), minValue = min(value,na.rm=T), maxValue = max(value,na.rm=T),
+                   dmin = min(year), dmax = max(year)), by = .(variable, type, units, waterType, point, waterwork)]
+
+pdf(file.path(RPROJ$PROJSHARED,lubridate::today(),"WP1","WP1_waterworks.pdf"))
+for (i in unique(plotData$variable)) {
+  q <- ggplot(plotData[variable==i], aes(y = waterwork, x = meanValue, shape = units, colour=type))
+  q <- q + geom_point(size=3)
+  q <- q + scale_color_brewer(palette="Set2")
+  q <- q + labs(title=i)
+  print(q)
+}
+dev.off()
+
+setcolorder(plotData,c("waterwork","point","type","waterType","variable", "units", "dmin", "dmax","meanValue","medianValue","minValue","maxValue"))
+setorder(plotData,waterwork, point, type, waterType, variable)
+
+openxlsx::write.xlsx(plotData,file=file.path(RPROJ$PROJSHARED,lubridate::today(),"WP1","WP1_waterworks.xlsx"))
 
 
 descript <- d[,.(
