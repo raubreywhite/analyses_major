@@ -7,7 +7,9 @@ WP1Data <- function(){
     CleanDataWP1NVE()
     CleanDataWP1MET()
     CleanDataWaterworks()
-    readRDS(file.path(RPROJ$PROJCLEAN,"WP1.RDS"))}) -> d
+    d <- readRDS(file.path(RPROJ$PROJCLEAN,"WP1.RDS"))
+    d <- d[value>=0]
+    }) -> d
   return(d)
 }
 

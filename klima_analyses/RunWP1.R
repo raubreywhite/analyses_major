@@ -15,88 +15,125 @@ suppressMessages(library(doParallel))
 registerDoParallel()
 assign("RUN_ALL", TRUE, envir=globalenv())
 
+outputDirs <- c(
+  file.path(RPROJ$PROJFINAL,lubridate::today(),"WP1"),
+  file.path(RPROJ$PROJSHARED,lubridate::today(),"WP1")
+)
 importantDirs <- c(
   file.path(RPROJ$PROJCLEAN,"WP1_waterworks"),
-  file.path(RPROJ$PROJSHARED,lubridate::today(),"WP1")
+  outputDirs
 )
 for(i in importantDirs) if(!dir.exists(i)) dir.create(i,recursive=TRUE)
 
 d <- WP1Data()
 
+
+for(od in outputDirs){
+  pdf(file.path(od,"WP1_waterworks_variables.pdf"))
+  q <- ggplot(d, aes(x = value))
+  q <- q + geom_histogram(size=3)
+  q <- q + facet_wrap(~variable,scales="free")
+  print(q)
+  
+  q <- ggplot(d, aes(x = variable, y=value))
+  q <- q + geom_boxplot()
+  q <- q + facet_wrap(~variable,scales="free")
+  print(q)
+  dev.off()
+}
+
+plotData <- d[, .(meanValue = mean(value,na.rm=T),medianValue = median(value,na.rm=T), minValue = min(value,na.rm=T), maxValue = max(value,na.rm=T),
+                  dmin = min(year), dmax = max(year)), by = .(variable, type, units, waterType, point, waterwork)]
+
+
 plotData <- d[, .(meanValue = mean(value,na.rm=T),medianValue = median(value,na.rm=T), minValue = min(value,na.rm=T), maxValue = max(value,na.rm=T),
                    dmin = min(year), dmax = max(year)), by = .(variable, type, units, waterType, point, waterwork)]
 
-pdf(file.path(RPROJ$PROJSHARED,lubridate::today(),"WP1","WP1_waterworks.pdf"))
-for (i in unique(plotData$variable)) {
-  q <- ggplot(plotData[variable==i], aes(y = waterwork, x = meanValue, shape = units, colour=type))
-  q <- q + geom_point(size=3)
-  q <- q + scale_color_brewer(palette="Set2")
-  q <- q + labs(title=i)
-  print(q)
+for(od in outputDirs){
+  pdf(file.path(od,"WP1_waterworks.pdf"))
+  for (i in unique(plotData$variable)) {
+    q <- ggplot(plotData[variable==i], aes(y = waterwork, x = meanValue, shape = units, colour=type))
+    q <- q + geom_point(size=3)
+    q <- q + scale_color_brewer(palette="Set2")
+    q <- q + labs(title=i)
+    print(q)
+  }
+  dev.off()
 }
-dev.off()
 
 setcolorder(plotData,c("waterwork","point","type","waterType","variable", "units", "dmin", "dmax","meanValue","medianValue","minValue","maxValue"))
 setorder(plotData,waterwork, point, type, waterType, variable)
-
 openxlsx::write.xlsx(plotData,file=file.path(RPROJ$PROJSHARED,lubridate::today(),"WP1","WP1_waterworks.xlsx"))
-
 
 descript <- d[,.(
   valueMean=mean(value)
 ),by=.(variable,units,waterwork)]
 setorder(descript,variable,units,waterwork)
-openxlsx::write.xlsx(descript, file = "results_final/WP1/units.xlsx")
+openxlsx::write.xlsx(descript, file = file.path(RPROJ$PROJSHARED,lubridate::today(),"WP1","units.xlsx"))
 
-if(RUN_ALL) unlink("results_final/WP1/WP1_descriptives.pdf")
-pdf(file.path("results_final","WP1","WP1_descriptives.pdf"),width=12,height=8)
-print(WP1GraphExtremeBySeason(d))
-print(WP1GraphExtremeByYear(d))
-dev.off()
+for(od in outputDirs){
+  pdf(file.path(od,"WP1_descriptives.pdf"),width=12,height=8)
+  print(WP1GraphExtremeBySeason(d))
+  print(WP1GraphExtremeByYear(d))
+  dev.off()
+}
+## ALL
+fitData <- d[variable=="Colour"]
+fit <- lm(value~c_discharge0_0,data=fitData)
+summary(fit)
+fit <- lm(value~factor(waterwork),data=fitData)
+summary(fit)
+fit <- lm(value~c_discharge0_0 + factor(waterwork),data=fitData)
+summary(fit)
+fit <- lm(value~c_discharge1_1 + factor(waterwork) + factor(month) + as.numeric(year),data=fitData)
+summary(fit)
 
 ## ALL
-if(RUN_ALL) unlink("results_baked/WP1_res_all.RDS")
-bake("results_baked/WP1_res_all.RDS",{
+if(RUN_ALL) unlink(file.path(RPROJ$PROJBAKED,"WP1_res_all.RDS"))
+bake(file.path(RPROJ$PROJBAKED,"WP1_res_all.RDS"),{
+  readRDS(file.path(RPROJ$PROJCLEAN,"WP1.RDS")) -> d
   WP1Analyses(d)
 }) -> res
 
-pdf(file.path("results_final","WP1",paste0("WP1_continuous_all.pdf")),width=12,height=12)
-print(PlotDetailedGridWP1(p=res[var=="Cont" & id=="All"]))
-print(PlotCoefficientsWP1(p=res[var=="Cont" & id=="All"],standardized=FALSE))
-print(PlotCoefficientsWP1(p=res[var=="Cont" & id=="All"],standardized=TRUE))
-print(PlotR2IncreaseWP1(p=res[var=="Cont" & id=="All"]))
-dev.off()
+for(od in outputDirs){
+  pdf(file.path(od,"WP1_continuous_all.pdf"),width=12,height=12)
+  print(PlotDetailedGridWP1(p=res[var=="Cont" & id=="All"],r2=TRUE))
+  print(PlotDetailedGridWP1(p=res[var=="Cont" & id=="All"],days=TRUE))
+  print(PlotDetailedGridWP1(p=res[var=="Cont" & id=="All"],days=FALSE))
+  dev.off()
+}
 
 ## ACCREDITED INTERNAL
-if(RUN_ALL) unlink("results_baked/WP1_res_accreditedinternal.RDS")
-bake("results_baked/WP1_res_accreditedinternal.RDS",{
-  readRDS("data_clean/WP1.RDS") -> d
+if(RUN_ALL) unlink(file.path(RPROJ$PROJBAKED,"WP1_res_accreditedinternal.RDS"))
+bake(file.path(RPROJ$PROJBAKED,"WP1_res_accreditedinternal.RDS"),{
+  readRDS(file.path(RPROJ$PROJCLEAN,"WP1.RDS")) -> d
   d <- d[type %in% c("Accredited","Internal")]
   WP1Analyses(d)
 }) -> res
 
-pdf(file.path("results_final","WP1",paste0("WP1_continuous_accreditedinternal.pdf")),width=12,height=12)
-print(PlotDetailedGridWP1(p=res[var=="Cont" & id=="All"]))
-print(PlotCoefficientsWP1(p=res[var=="Cont" & id=="All"],standardized=FALSE))
-print(PlotCoefficientsWP1(p=res[var=="Cont" & id=="All"],standardized=TRUE))
-print(PlotR2IncreaseWP1(p=res[var=="Cont" & id=="All"]))
-dev.off()
+for(od in outputDirs){
+  pdf(file.path(od,"WP1_continuous_accreditedinternal.pdf"),width=12,height=12)
+  print(PlotDetailedGridWP1(p=res[var=="Cont" & id=="All"],r2=TRUE))
+  print(PlotDetailedGridWP1(p=res[var=="Cont" & id=="All"],days=TRUE))
+  print(PlotDetailedGridWP1(p=res[var=="Cont" & id=="All"],days=FALSE))
+  dev.off()
+}
 
 ## ONLINE
-if(RUN_ALL) unlink("results_baked/WP1_res_online.RDS")
-bake("results_baked/WP1_res_online.RDS",{
-  readRDS("data_clean/WP1.RDS") -> d
+if(RUN_ALL) unlink(file.path(RPROJ$PROJBAKED,"WP1_res_online.RDS"))
+bake(file.path(RPROJ$PROJBAKED,"WP1_res_online.RDS"),{
+  readRDS(file.path(RPROJ$PROJCLEAN,"WP1.RDS")) -> d
   d <- d[type %in% c("Online")]
   WP1Analyses(d)
 }) -> res
 
-pdf(file.path("results_final","WP1",paste0("WP1_continuous_online.pdf")),width=12,height=12)
-print(PlotDetailedGridWP1(p=res[var=="Cont" & id=="All"]))
-print(PlotCoefficientsWP1(p=res[var=="Cont" & id=="All"],standardized=FALSE))
-print(PlotCoefficientsWP1(p=res[var=="Cont" & id=="All"],standardized=TRUE))
-print(PlotR2IncreaseWP1(p=res[var=="Cont" & id=="All"]))
-dev.off()
-
+for(od in outputDirs){
+  pdf(file.path(od,"WP1_continuous_online.pdf"),width=12,height=12)
+  print(PlotDetailedGridWP1(p=res[var=="Cont" & id=="All"],r2=TRUE))
+  print(PlotDetailedGridWP1(p=res[var=="Cont" & id=="All"],days=TRUE))
+  print(PlotDetailedGridWP1(p=res[var=="Cont" & id=="All"],days=FALSE))
+  dev.off()
+}
 
 
 

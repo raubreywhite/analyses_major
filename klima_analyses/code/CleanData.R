@@ -3802,7 +3802,8 @@ CleanDataWP1NVE <- function(){
   
   res <- res[week %in% c(1:52) & year <=2014,
                    .(wp990_discharge0_0 = sum(wp990_discharge0_0),
-                     wp950_discharge0_0 = sum(wp950_discharge0_0)
+                     wp950_discharge0_0 = sum(wp950_discharge0_0),
+                     c_discharge0_0 = mean(discharge,na.rm=T)
                    ),
                    by=.(
                      waterwork,year,week
@@ -3823,6 +3824,9 @@ CleanDataWP1NVE <- function(){
     
     var <- paste0("wp990_discharge",i,"_",i)
     res[,(var):=shift(wp990_discharge0_0,i),by=waterwork]
+    
+    var <- paste0("c_discharge",i,"_",i)
+    res[,(var):=shift(c_discharge0_0,i),by=waterwork]
   }
   
   
@@ -3867,7 +3871,9 @@ CleanDataWP1MET <- function(){
              .(wp990_rain0_0 = sum(wp990_rain0_0,na.rm=T),
                wp950_rain0_0 = sum(wp950_rain0_0,na.rm=T),
                wp990_precip0_0 = sum(wp990_precip0_0,na.rm=T),
-               wp950_precip0_0 = sum(wp950_precip0_0,na.rm=T)
+               wp950_precip0_0 = sum(wp950_precip0_0,na.rm=T),
+               c_rain0_0 = mean(rain,na.rm=T),
+               c_precip0_0 = mean(precip,na.rm=T)
              ),
              by=.(
                waterwork,year,week
@@ -3881,6 +3887,9 @@ CleanDataWP1MET <- function(){
     
     var <- paste0("wp990_rain",i,"_",i)
     res[,(var):=shift(wp990_rain0_0,i),by=.(waterwork)]
+    
+    var <- paste0("c_rain",i,"_",i)
+    res[,(var):=shift(c_rain0_0,i),by=.(waterwork)]
   }
   
 
@@ -3890,6 +3899,9 @@ CleanDataWP1MET <- function(){
     
     var <- paste0("wp990_precip",i,"_",i)
     res[,(var):=shift(wp990_precip0_0,i),by=.(waterwork)]
+    
+    var <- paste0("c_precip",i,"_",i)
+    res[,(var):=shift(c_precip0_0,i),by=.(waterwork)]
   }
   saveRDS(res, file.path(RPROJ$PROJCLEAN,"wp1_met_rain.RDS"))
 }
@@ -4053,7 +4065,22 @@ CleanDataWaterworks <- function() {
     wp950_precip1_1=mean(wp950_precip1_1,na.rm=T),
     wp950_precip2_2=mean(wp950_precip2_2,na.rm=T),
     wp950_precip3_3=mean(wp950_precip3_3,na.rm=T),
-    wp950_precip4_4=mean(wp950_precip4_4,na.rm=T)
+    wp950_precip4_4=mean(wp950_precip4_4,na.rm=T),
+    c_discharge0_0=mean(c_discharge0_0,na.rm=T),
+    c_discharge1_1=mean(c_discharge1_1,na.rm=T),
+    c_discharge2_2=mean(c_discharge2_2,na.rm=T),
+    c_discharge3_3=mean(c_discharge3_3,na.rm=T),
+    c_discharge4_4=mean(c_discharge4_4,na.rm=T),
+    c_rain0_0=mean(c_rain0_0,na.rm=T),
+    c_rain1_1=mean(c_rain1_1,na.rm=T),
+    c_rain2_2=mean(c_rain2_2,na.rm=T),
+    c_rain3_3=mean(c_rain3_3,na.rm=T),
+    c_rain4_4=mean(c_rain4_4,na.rm=T),
+    c_precip0_0=mean(c_precip0_0,na.rm=T),
+    c_precip1_1=mean(c_precip1_1,na.rm=T),
+    c_precip2_2=mean(c_precip2_2,na.rm=T),
+    c_precip3_3=mean(c_precip3_3,na.rm=T),
+    c_precip4_4=mean(c_precip4_4,na.rm=T)
   ), by=.(
     year,
     week,
@@ -4070,6 +4097,9 @@ CleanDataWaterworks <- function() {
   )]
   dim(d2)
   d2[,id:=gsub("/","___",id)]
+  d2 <- d2[!(year==2002 & week==7 & waterwork=="Nedre Romerike Vannverk IKS_Hauglifjell||?")]
+  d2 <- d2[!(year==2003 & week==4 & waterwork=="Nedre Romerike Vannverk IKS_Hauglifjell||?")]
+  d2 <- d2[!(year==2006 & week==16 & waterwork=="Nedre Romerike Vannverk IKS_Hauglifjell||?")]
   saveRDS(d2,file.path(RPROJ$PROJCLEAN,"WP1.RDS"))
   
 }

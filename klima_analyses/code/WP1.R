@@ -4,7 +4,7 @@ R2LMER <- function(fit){
 }
 
 WP1Analyses <- function(d){
-  stack <- data.table(expand.grid(c(0:4),c("discharge","rain","precip"),c("wp950"),unique(d$variable),c("All",unique(d$id)),c(0:4),stringsAsFactors = FALSE))
+  stack <- data.table(expand.grid(c(0:4),c("discharge","rain","precip"),c("wp950","c"),unique(d$variable),c("All",unique(d$id)),c(0:4),stringsAsFactors = FALSE))
   stack[,exposure:=paste0(Var3,"_",Var2,Var1,"_",Var1)]
   stack[,Var1:=NULL]
   stack[,Var2:=NULL]
@@ -17,7 +17,7 @@ WP1Analyses <- function(d){
   # Your code starts here
   res <- foreach(stackIter=iter(stack, by='row')) %dopar% {
     tryCatch({
-      formulaBase <- paste0("value ~ sin(2*pi*(week-1)/52) + cos(2*pi*(week-1)/52)")
+      formulaBase <- paste0("value ~ factor(month)")
       if(stackIter$id=="All"){
         fitData <- d[variable==stackIter$outcome]
       } else {
@@ -26,6 +26,7 @@ WP1Analyses <- function(d){
       if(stackIter$season!=0){
         fitData <- fitData[season==stackIter$season]
       }
+      if(stackIter$outcome!="pH") fitData[,value:=log(1+value)]
       
       if(length(unique(fitData$type[!is.na(fitData[,stackIter$exposure,with=F])]))!=1) formula <- paste0(formulaBase,"+type")
       if(length(unique(fitData$watersource[!is.na(fitData[,stackIter$exposure,with=F])]))!=1) formulaBase <- paste0(formulaBase,"+watersource")
@@ -37,19 +38,23 @@ WP1Analyses <- function(d){
         fit <- lme4::lmer(as.formula(paste0(formula,"+(1|id)")), data=fitData) 
         x <- ExtractValues(fit,stackIter$exposure,removeLead=T,format=F)
         x$r2increase <- R2LMER(fit)-R2LMER(fitBase)
+        x$r2 <- R2LMER(fit)
       } else {
         fitBase <- lm(as.formula(formula), data=fitData)
         fit <- lm(as.formula(formulaBase), data=fitData)
         x <- ExtractValuesLM(fit,stackIter$exposure,removeLead=T,format=F)
         x$r2increase <- summary(fit)$r.squared-summary(fitBase)$r.squared
+        x$r2 <- summary(fit)$r.squared
       }
       
       x$stub <- stackIter$exposure
       x$outcome <- stackIter$outcome
+      if(x$outcome!="pH") x$outcome <- sprintf("log(1+%s)",x$outcome)
       x$id <- stackIter$id
       x$season <- stackIter$season
       x$n <- nrow(fitData)
       x$outcomeSD <- sd(fitData$value,na.rm=T)
+      x$exposureSD <- sd(fitData[[stackIter$exposure]],na.rm=T)
       
       x
     },error=function(err) {
@@ -90,23 +95,70 @@ WP1Analyses <- function(d){
   return(res)
 }
 
-PlotDetailedGridWP1 <- function(p){
-  displayLevels <- c(
-    "Increases 0.10+ SD/day",
-    "Increases 0.05-0.09 SD/day",
-    "Increases 0.00-0.04 SD/day",
-    "None",
-    "Decreases 0.00-0.04 SD/day",
-    "Decreases 0.05-0.09 SD/day",
-    "Decreases 0.10+ SD/day")
-  
-  p[,dirDetail:="None"]
-  p[sig==1 & est/outcomeSD>0,dirDetail:=displayLevels[1]]
-  p[sig==1 & est/outcomeSD>=0.05,dirDetail:=displayLevels[2]]
-  p[sig==1 & est/outcomeSD>=0.10,dirDetail:=displayLevels[3]]
-  p[sig==1 & est/outcomeSD<0,dirDetail:=displayLevels[5]]
-  p[sig==1 & est/outcomeSD<= -0.05,dirDetail:=displayLevels[6]]
-  p[sig==1 & est/outcomeSD<= -0.10,dirDetail:=displayLevels[7]]
+PlotDetailedGridWP1 <- function(p,days=TRUE,r2=FALSE){
+  if(r2){
+    top <- max(p[sig==1 & est>0]$r2increase)*100
+    bottom <- max(p[sig==1 & est<0]$r2increase)*100
+    if(top<1.01) top <- 2.00
+    if(bottom<1.01) bottom <- 2.00
+    
+    top <- formatC(top,digits=2,format="f")
+    bottom <- formatC(bottom,digits=2,format="f")
+    
+    displayLevels <- c(
+      sprintf("Harmful & R2 Increase 1.01-%s%%",top),
+      "Harmful & R2 Increase 0.51-1.00%",
+      "Harmful & R2 Increase <=0.50%",
+      "None",
+      "Protective & R2 Increase <=0.50%",
+      "Protective & R2 Increase 0.51-1.00%",
+      sprintf("Protective & R2 Increase 1.01-%s%%",bottom)
+      )
+    
+    p[,dirDetail:="None"]
+    p[sig==1 & est>0,dirDetail:=displayLevels[3]]
+    p[sig==1 & est>0 & r2increase>0.005,dirDetail:=displayLevels[2]]
+    p[sig==1 & est>0 & r2increase>0.01,dirDetail:=displayLevels[1]]
+    p[sig==1 & est<0,dirDetail:=displayLevels[5]]
+    p[sig==1 & est<0 & r2increase>=0.005,dirDetail:=displayLevels[6]]
+    p[sig==1 & est<0 & r2increase>=0.01,dirDetail:=displayLevels[7]]
+  } else if(days){
+    p <- p[stringr::str_detect(stub,"^wp950")]
+    displayLevels <- c(
+      "Increases 0.15+ SD/1 extreme day",
+      "Increases 0.05-0.14 SD/1 extreme day",
+      "Increases 0.00-0.04 SD/1 extreme day",
+      "None",
+      "Decreases 0.00-0.04 SD/1 extreme day",
+      "Decreases 0.05-0.14 SD/1 extreme day",
+      "Decreases 0.15+ SD/1 extreme day")
+    
+    p[,dirDetail:="None"]
+    p[sig==1 & (est/outcomeSD)>=0,dirDetail:=displayLevels[3]]
+    p[sig==1 & (est/outcomeSD)>=0.05,dirDetail:=displayLevels[2]]
+    p[sig==1 & (est/outcomeSD)>=0.15,dirDetail:=displayLevels[1]]
+    p[sig==1 & (est/outcomeSD)<0,dirDetail:=displayLevels[5]]
+    p[sig==1 & (est/outcomeSD)<= -0.05,dirDetail:=displayLevels[6]]
+    p[sig==1 & (est/outcomeSD)<= -0.15,dirDetail:=displayLevels[7]]
+  } else {
+    p <- p[stringr::str_detect(stub,"^c")]
+    displayLevels <- c(
+      "Increases 0.15+ SD/1 SD exposure",
+      "Increases 0.05-0.14 SD/1 SD exposure",
+      "Increases 0.00-0.04 SD/1 SD exposure",
+      "None",
+      "Decreases 0.00-0.04 SD/1 SD exposure",
+      "Decreases 0.05-0.14 SD/1 SD exposure",
+      "Decreases 0.15+ SD/1 SD exposure")
+    
+    p[,dirDetail:="None"]
+    p[sig==1 & (est/outcomeSD*exposureSD)>0,dirDetail:=displayLevels[3]]
+    p[sig==1 & (est/outcomeSD*exposureSD)>=0.05,dirDetail:=displayLevels[2]]
+    p[sig==1 & (est/outcomeSD*exposureSD)>=0.15,dirDetail:=displayLevels[1]]
+    p[sig==1 & (est/outcomeSD*exposureSD)<0,dirDetail:=displayLevels[5]]
+    p[sig==1 & (est/outcomeSD*exposureSD)<= -0.05,dirDetail:=displayLevels[6]]
+    p[sig==1 & (est/outcomeSD*exposureSD)<= -0.15,dirDetail:=displayLevels[7]]
+  }
   p[,dirDetail:=factor(dirDetail,levels=displayLevels)]
   
   setorder(p,season)
@@ -123,17 +175,12 @@ PlotDetailedGridWP1 <- function(p){
   levels(p$season) <- l$season
   
   x <- copy(p)
-  x[1,dirDetail:=displayLevels[1]]
-  x[2,dirDetail:=displayLevels[2]]
-  x[3,dirDetail:=displayLevels[3]]
-  x[4,dirDetail:=displayLevels[4]]
-  x[5,dirDetail:=displayLevels[5]]
-  x[6,dirDetail:=displayLevels[6]]
-  x[7,dirDetail:=displayLevels[7]]
+  for(i in 1:length(displayLevels)) x[i,dirDetail:=displayLevels[i]]
   
   q <- ggplot(p,aes(x=lag,y=stub,fill=dirDetail))
   q <- q + geom_tile(data=x,alpha=0)
   q <- q + geom_tile(alpha=0.6,colour="white",lwd=0.2)
+  q <- q + geom_text(data=p[pval < 0.05/nrow(p)],label="X")
   q <- q + facet_grid(outcome~season)
   q <- q + scale_x_discrete("\nWeeks lag",drop=F)
   q <- q + scale_y_discrete("",drop=F)
@@ -145,9 +192,15 @@ PlotDetailedGridWP1 <- function(p){
   q <- q + theme(axis.text.x = element_text(vjust=0.5))
   q <- q + theme(axis.text.y = element_text(hjust=1))
   q <- q + theme(axis.text = element_text(margin = rep(unit(1,"lines"),4)))
+  if(r2){
+    q <- q + labs(title="R2 increase for each significant variable\n")
+  }else if(days){
+    q <- q + labs(title="Coefficients are per 1 extreme day\n")
+  } else {
+    q <- q + labs(title="Coefficients are per 1 std dev of continuous exposure\n")
+  }
   return(q)
 }
-
 
 PlotCoefficientsWP1 <- function(p,standardized=FALSE){
   
