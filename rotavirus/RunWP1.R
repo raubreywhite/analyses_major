@@ -7,12 +7,11 @@ RAWmisc::InitialiseProject(
   PROJSHARED = "/dropbox/results_shared/rotavirus/")
 
 suppressWarnings(suppressMessages(library(data.table)))
-suppressWarnings(suppressMessages(library(ggplot2)))
-suppressWarnings(suppressMessages(library(foreach)))
-suppressWarnings(suppressMessages(library(pomp)))
-suppressMessages(library(doParallel))
-registerDoParallel()
+
 assign("RUN_ALL", TRUE, envir=globalenv())
+
+unlink(file.path(RPROJ$PROJSHARED,lubridate::today()), recursive=TRUE, force=TRUE)
+dir.create(file.path(RPROJ$PROJSHARED,lubridate::today()))
 
 RR1_3wk <- 2.35
 RR2_3wk <- 1.77
@@ -64,10 +63,15 @@ data[,ISvaccine2_2:=vaccinated2_2*(incidenceAll/100000)*(RR2_3wk-1)]
 
 data[week %in% 6:18]
 
-data[year>=2015,.(
+openxlsx::write.xlsx(data,file=file.path(RPROJ$PROJSHARED,lubridate::today(),"estimates.xlsx"))
+
+estimates <- data[year>=2015,.(
   ISbaseline=sum(ISbaseline),
   ISvaccine1=sum(ISvaccine1_0+ISvaccine1_1+ISvaccine1_2),
   ISvaccine2=sum(ISvaccine2_0+ISvaccine2_1+ISvaccine2_2)
 ),by=year]
 
+saveRDS(estimates,file=file.path(RPROJ$PROJBAKED,"estimates.RDS"))
+
+rmarkdown::render("Notes.Rmd", output_dir = file.path(RPROJ$PROJSHARED,lubridate::today()))
 
