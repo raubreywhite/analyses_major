@@ -21,12 +21,15 @@ outputDirs <- c(
 )
 importantDirs <- c(
   file.path(RPROJ$PROJCLEAN,"WP1_waterworks"),
+  file.path(RPROJ$PROJCLEAN,"WP1_waterworks_clean_water"),
   outputDirs
 )
 for(i in importantDirs) if(!dir.exists(i)) dir.create(i,recursive=TRUE)
 
 d <- WP1Data()
-
+dlog <- copy(d)
+dlog[,valuelog:=value]
+dlog[variable!="pH",valuelog:=log(1+valuelog)]
 
 for(od in outputDirs){
   pdf(file.path(od,"WP1_waterworks_variables.pdf"))
@@ -40,6 +43,28 @@ for(od in outputDirs){
   q <- q + facet_wrap(~variable,scales="free")
   print(q)
   dev.off()
+  
+  for(j in c("c_discharge0_0","c_rain0_0","c_precip0_0","c_gridRain0_0","c_gridPrecip0_0","c_gridRunoffStandardised0_0")){
+    pdf(file.path(od,sprintf("WP1_waterworks_scatterplot_%s.pdf",j)))
+      for(i in unique(dlog$waterwork)){  
+        try({
+        q <- ggplot(dlog[waterwork==i], aes_string(x = j, y="value"))
+        q <- q + geom_point(size=1)
+        q <- q + stat_smooth(method="lm",se=FALSE,lwd=2,colour="red")
+        q <- q + facet_wrap(~variable,scales="free")
+        q <- q + labs(title=sprintf("Normal scale: %s",i))
+        print(q)
+        
+        q <- ggplot(dlog[waterwork==i], aes_string(x = j, y="valuelog"))
+        q <- q + geom_point(size=1)
+        q <- q + stat_smooth(method="lm",se=FALSE,lwd=2,colour="red")
+        q <- q + facet_wrap(~variable,scales="free")
+        q <- q + labs(title=sprintf("Log scale: %s",i))
+        print(q)
+        },TRUE)
+      }
+    dev.off()
+  }
 }
 
 plotData <- d[, .(meanValue = mean(value,na.rm=T),medianValue = median(value,na.rm=T), minValue = min(value,na.rm=T), maxValue = max(value,na.rm=T),
@@ -96,10 +121,10 @@ bake(file.path(RPROJ$PROJBAKED,"WP1_res_all.RDS"),{
 }) -> res
 
 for(od in outputDirs){
-  pdf(file.path(od,"WP1_continuous_all.pdf"),width=12,height=12)
+  pdf(file.path(od,"WP1_continuous_all.pdf"),width=12,height=16)
   print(PlotDetailedGridWP1(p=res[var=="Cont" & id=="All"],r2=TRUE))
-  print(PlotDetailedGridWP1(p=res[var=="Cont" & id=="All"],days=TRUE))
-  print(PlotDetailedGridWP1(p=res[var=="Cont" & id=="All"],days=FALSE))
+  #print(PlotDetailedGridWP1(p=res[var=="Cont" & id=="All"],days=TRUE))
+  #print(PlotDetailedGridWP1(p=res[var=="Cont" & id=="All"],days=FALSE))
   dev.off()
 }
 
@@ -112,10 +137,10 @@ bake(file.path(RPROJ$PROJBAKED,"WP1_res_accreditedinternal.RDS"),{
 }) -> res
 
 for(od in outputDirs){
-  pdf(file.path(od,"WP1_continuous_accreditedinternal.pdf"),width=12,height=12)
+  pdf(file.path(od,"WP1_continuous_accreditedinternal.pdf"),width=12,height=16)
   print(PlotDetailedGridWP1(p=res[var=="Cont" & id=="All"],r2=TRUE))
-  print(PlotDetailedGridWP1(p=res[var=="Cont" & id=="All"],days=TRUE))
-  print(PlotDetailedGridWP1(p=res[var=="Cont" & id=="All"],days=FALSE))
+  #print(PlotDetailedGridWP1(p=res[var=="Cont" & id=="All"],days=TRUE))
+  #print(PlotDetailedGridWP1(p=res[var=="Cont" & id=="All"],days=FALSE))
   dev.off()
 }
 
@@ -128,10 +153,10 @@ bake(file.path(RPROJ$PROJBAKED,"WP1_res_online.RDS"),{
 }) -> res
 
 for(od in outputDirs){
-  pdf(file.path(od,"WP1_continuous_online.pdf"),width=12,height=12)
+  pdf(file.path(od,"WP1_continuous_online.pdf"),width=12,height=16)
   print(PlotDetailedGridWP1(p=res[var=="Cont" & id=="All"],r2=TRUE))
-  print(PlotDetailedGridWP1(p=res[var=="Cont" & id=="All"],days=TRUE))
-  print(PlotDetailedGridWP1(p=res[var=="Cont" & id=="All"],days=FALSE))
+  #print(PlotDetailedGridWP1(p=res[var=="Cont" & id=="All"],days=TRUE))
+  #print(PlotDetailedGridWP1(p=res[var=="Cont" & id=="All"],days=FALSE))
   dev.off()
 }
 

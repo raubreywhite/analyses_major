@@ -4,7 +4,7 @@ R2LMER <- function(fit){
 }
 
 WP1Analyses <- function(d){
-  stack <- data.table(expand.grid(c(0:4),c("discharge","rain","precip"),c("wp950","c"),unique(d$variable),c("All",unique(d$id)),c(0:4),stringsAsFactors = FALSE))
+  stack <- data.table(expand.grid(c(0:4),c("discharge","rain","precip","gridRain","gridPrecip","gridRunoffStandardised"),c("wp950","c"),unique(d$variable),c("All",unique(d$id)),c(0:4),stringsAsFactors = FALSE))
   stack[,exposure:=paste0(Var3,"_",Var2,Var1,"_",Var1)]
   stack[,Var1:=NULL]
   stack[,Var2:=NULL]
@@ -180,12 +180,12 @@ PlotDetailedGridWP1 <- function(p,days=TRUE,r2=FALSE){
   q <- ggplot(p,aes(x=lag,y=stub,fill=dirDetail))
   q <- q + geom_tile(data=x,alpha=0)
   q <- q + geom_tile(alpha=0.6,colour="white",lwd=0.2)
-  q <- q + geom_text(data=p[pval < 0.05/nrow(p)],label="X")
+  q <- q + geom_text(data=p[pval < 0.05/nrow(p)],label="x")
   q <- q + facet_grid(outcome~season)
   q <- q + scale_x_discrete("\nWeeks lag",drop=F)
   q <- q + scale_y_discrete("",drop=F)
   q <- q + scale_fill_manual(values=c("#d73027","#fc8d59","#fee08b","Black","#d9ef8b","#91cf60","#1a9850"),drop=F)
-  q <- q + RAWmisc::theme_SMAO(10)
+  q <- q + RAWmisc::theme_SMAO(8)
   q <- q + theme(axis.line.y = NULL)
   q <- q + theme(axis.line.x = NULL)
   q <- q + theme(axis.ticks.length = unit(0,"lines"))
