@@ -233,8 +233,9 @@ CleanDataWaterworks <- function() {
   }
   
   d <- rbindlist(d)
+  d[, value := gsub(" ", "", value)]
   d[, value := gsub(">", "", value)]
-  d[, value := gsub(">", "", value)]
+  d[, value := gsub("<", "", value)]
   d[, value := as.numeric(value)]
   d <- d[!is.na(value)]
   unique(d[type=="Online"]$variable)
