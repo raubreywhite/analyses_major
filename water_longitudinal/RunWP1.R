@@ -1,10 +1,10 @@
 RAWmisc::InitialiseProject(
-  PROJHOME = "/analyses/code_major/brita_ifny/",
-  PROJRAW = "/analyses/data_raw/brita_ifny/",
-  PROJCLEAN = "/analyses/data_clean/brita_ifny",
-  PROJBAKED = "/analyses/results_baked/brita_ifny/",
-  PROJFINAL = "/analyses/results_final/brita_ifny/",
-  PROJSHARED = "/dropbox/results_shared/brita_ifny/")
+  PROJHOME = "/analyses/code_major/water_longitudinal/",
+  PROJRAW = "/dropbox/data_raw/water_longitudinal/",
+  PROJCLEAN = "/analyses/data_clean/water_longitudinal",
+  PROJBAKED = "/analyses/results_baked/water_longitudinal/",
+  PROJFINAL = "/analyses/results_final/water_longitudinal/",
+  PROJSHARED = "/dropbox/results_shared/water_longitudinal/")
 
 suppressWarnings(suppressMessages(library(data.table)))
 suppressWarnings(suppressMessages(library(ggplot2)))
@@ -14,52 +14,80 @@ assign("RUN_ALL", TRUE, envir=globalenv())
 unlink(file.path(RPROJ$PROJSHARED,lubridate::today()), recursive=TRUE, force=TRUE)
 dir.create(file.path(RPROJ$PROJSHARED,lubridate::today()))
 
-d <- readxl::read_excel(file.path(RPROJ$PROJRAW,"Kopi av RW_Spline_numbers_for_Richard_19_Jan_2017.xlsx"),sheet=2)
-names(d) <- c("type","x","y","ymin","ymax","x1","x2","x3","x4")
-d$y <- exp(d$y)
-d$ymin <- exp(d$ymin)
-d$ymin[d$type=="b" & d$x>0 & d$x<1] <- log(d$ymin[d$type=="b" & d$x>0 & d$x<1])
-d$ymax <- exp(d$ymax)
+d <- data.table(readxl::read_excel(file.path(RPROJ$PROJRAW,"20173241235363412472457FOBbolAldBAarByg.xlsx"),skip=3))
+setnames(d,c("k","enebolig","tomannsbolig","rekkehus","boligblokk","bofellesskap","annen","uoppgitt"))
+d[,total:=enebolig+tomannsbolig+rekkehus+boligblokk+bofellesskap+annen+uoppgitt]
+d[441:nrow(d),]$k
+d[,kommune:=stringr::str_extract(k,"^[0-9][0-9][0-9][0-9]")]
+d <- d[kommune!="2111"]
 
-q <- ggplot(d[d$type=="a",],aes(x=x,y=log2(y),ymin=log2(ymin),ymax=log2(ymax)))
-q <- q + geom_rect(xmin=-Inf,xmax=0.35,ymin=-Inf,ymax=Inf,fill="#99d594",alpha=0.05)
-q <- q + geom_rect(xmin=0.35,xmax=0.7,ymin=-Inf,ymax=Inf,fill="gray",alpha=0.04)
-q <- q + geom_rect(xmin=0.7,xmax=1,ymin=-Inf,ymax=Inf,fill="#ffffbf",alpha=0.05)
-#q <- q + geom_rect(xmin=1,xmax=Inf,ymin=-Inf,ymax=Inf,fill="#fc8d59",alpha=0.05)
-q <- q + geom_line(lwd=2)
-q <- q + geom_pointrange(lwd=3)
-q <- q + geom_hline(yintercept=0,col="red")
-q <- q + geom_label(data=d[d$type=="a" & d$y!=1,],mapping=aes(y=log2(ymax)+0.2,label=formatC(y,digits=1,format="f")),size=10)
-q <- q + scale_y_continuous("Hazard ratio",breaks=log2(c(0.5,1,2,4,8,16)),labels=c("1/2","1","2","4","8","16"))
-q <- q + scale_x_continuous("IFN-y value",
-                            breaks=c(0,0.35,0.7,1,2,3,4,5,6,7,8,9,10),
-                            labels=c("0","0.35","0.7","1","2","3","4","5","6","7","8","9","10"))
-q <- q + RAWmisc::theme_SMAO(28)
-q <- q + theme(panel.grid.minor=element_blank())
-q <- q + theme(panel.grid.major = element_line(colour = "black", 
-                                               size = 1, linetype = 3))
-RAWmisc::SMAOpng(file.path(RPROJ$PROJSHARED,lubridate::today(),"Figure1_a.png"),h=0.9)
-print(q)
-dev.off()
+dx <- d[kommune=="0720"]
+dx[,kommune:="0704"]
 
-q <- ggplot(d[d$type=="b",],aes(x=x,y=log2(y),ymin=log2(ymin),ymax=log2(ymax)))
-q <- q + geom_rect(xmin=-Inf,xmax=0.35,ymin=-Inf,ymax=Inf,fill="#99d594",alpha=0.05)
-q <- q + geom_rect(xmin=0.35,xmax=0.7,ymin=-Inf,ymax=Inf,fill="gray",alpha=0.04)
-q <- q + geom_rect(xmin=0.7,xmax=1,ymin=-Inf,ymax=Inf,fill="#ffffbf",alpha=0.05)
-#q <- q + geom_rect(xmin=1,xmax=Inf,ymin=-Inf,ymax=Inf,fill="#fc8d59",alpha=0.05)
-q <- q + geom_line(lwd=2)
-q <- q + geom_pointrange(lwd=3)
-q <- q + geom_hline(yintercept=0,col="red")
-q <- q + geom_label(data=d[d$type=="b" & d$y!=1,],mapping=aes(y=log2(ymax)+0.2,label=formatC(y,digits=1,format="f")),size=10)
-q <- q + scale_y_continuous("Hazard ratio",breaks=log2(c(0.5,1,2,4,8,16)),labels=c("1/2","1","2","4","8","16"))
-q <- q + scale_x_continuous("IFN-y value",
-                            breaks=c(0,0.35,0.7,1,2,3,4,5,6,7,8,9,10),
-                            labels=c("0","0.35","0.7","1","2","3","4","5","6","7","8","9","10"))
-q <- q + RAWmisc::theme_SMAO(28)
-q <- q + theme(panel.grid.minor=element_blank())
-q <- q + theme(panel.grid.major = element_line(colour = "black", 
-                                               size = 1, linetype = 3))
-RAWmisc::SMAOpng(file.path(RPROJ$PROJSHARED,lubridate::today(),"Figure1_b.png"),h=0.9)
-print(q)
-dev.off()
+propTransferred <- 2200/dx$total
+for(i in 2:9){
+  dx[,(i):=dx[[i]]*propTransferred]
+  d[kommune=="0720",(i):=dx[[i]]*(1-propTransferred)]
+}
+
+d[kommune %in% c("0706","0719","0720"),kommune:="0710"]
+d[kommune %in% c("1901","1915"),kommune:="1903"]
+
+d <- rbind(dx,d)
+d <- d[!is.na(total)]
+d <- d[total>0,.(
+  enebolig=sum(enebolig),
+  tomannsbolig=sum(tomannsbolig),
+  rekkehus=sum(rekkehus),
+  boligblokk=sum(boligblokk),
+  bofellesskap=sum(bofellesskap),
+  annen=sum(annen),
+  uoppgitt=sum(uoppgitt),
+  total=sum(total)
+), by=kommune]
+sum(d$total)
+
+#
+# Folke- og boligtellingen, boliger, 19. november 2011
+# https://www.ssb.no/fobbolig
+# Tabell: 09810: Personer i privathusholdninger, etter alder, boligens byggeår og bygningstype (K) (B)
+# https://www.ssb.no/statistikkbanken/SelectVarVal/Define.asp?subjectcode=al&ProductId=al&MainTable=FOBbolAldBAarByg&SubTable=Kommun1&PLanguage=0&nvl=True&Qid=0&gruppe1=Hele&gruppe2=Hele&gruppe3=Hele&gruppe4=Hele&gruppe5=Hele&VS1=KommunFoB&VS2=AlleAldre06ac&VS3=ByggeAarFOB02&VS4=BygnTypeFOB01&VS5=&mt=0&KortNavnWeb=fobbolig&CMSSubjectArea=befolkning&StatVariant=&checked=true
+#
+d <- data.table(readxl::read_excel(file.path(RPROJ$PROJRAW,"2017324133134512472457FOBbolAldBAarByg.xlsx"),skip=0))
+d[, kommune:= zoo::na.locf(kommune)]
+d[, age:= zoo::na.locf(age)]
+d[, type:= zoo::na.locf(type)]
+d <- d[!is.na(people)]
+d <- dcast.data.table(d,kommune+age~type,value.var="people")
+setnames(d,c("k","age","enebolig","tomannsbolig","rekkehus","boligblokk","bofellesskap","annen","uoppgitt"))
+
+d[,total:=enebolig+tomannsbolig+rekkehus+boligblokk+bofellesskap+annen+uoppgitt]
+d[,kommune:=stringr::str_extract(k,"^[0-9][0-9][0-9][0-9]")]
+d <- d[kommune!="2111"]
+
+dx <- d[kommune=="0720"]
+dx[,kommune:="0704"]
+
+propTransferred <- 2200/dx$total
+for(i in 3:10){
+  dx[,(i):=dx[[i]]*propTransferred]
+  d[kommune=="0720",(i):=dx[[i]]*(1-propTransferred)]
+}
+
+d[kommune %in% c("0706","0719","0720"),kommune:="0710"]
+d[kommune %in% c("1901","1915"),kommune:="1903"]
+
+d <- rbind(dx,d)
+d <- d[!is.na(total)]
+d <- d[total>0,.(
+  enebolig=sum(enebolig),
+  tomannsbolig=sum(tomannsbolig),
+  rekkehus=sum(rekkehus),
+  boligblokk=sum(boligblokk),
+  bofellesskap=sum(bofellesskap),
+  annen=sum(annen),
+  uoppgitt=sum(uoppgitt),
+  total=sum(total)
+), by=.(kommune,age)]
+
 
