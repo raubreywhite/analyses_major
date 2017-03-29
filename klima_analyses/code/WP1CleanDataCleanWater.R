@@ -1,3 +1,66 @@
+
+CleanWP1SpecificWaterWorkLong_Custom <- function(fileIn, 
+                                                   sheet=1,
+                                                 variables,
+                                                 units=c("Conductivity"="mS/m",
+                                                         "Turbidity"="FTU",
+                                                         "Coliform bacteria"="/100ml",
+                                                         "E. Coli"="/100ml",
+                                                         "Colony count"="/ml",
+                                                         "Intestinal Enterococci"="/100ml"),
+                                                   type,
+                                                   waterwork,
+                                                   waterType,
+                                                   point="?"
+){
+  
+  
+  d <- data.table(readxl::read_excel(fileIn,
+                                     sheet = sheet,
+                                     
+                                     skip = 1,
+                                     col_names = FALSE,
+                                     col_types = rep("text", 4)))
+  
+  setnames(d, c("date", "X", "var2", "value"))
+  print(unique(d$var2))
+  d <- d[, which(names(d) != "X"), with = F]
+  d[,date:=as.Date(as.numeric(date),origin = "1899-12-30")]
+  #d[, date := as.Date(date, format = "%d.%m.%Y")]
+  
+  d[, variable := ""]
+  unique(d$var2)
+ 
+  d[, variable := ""]
+  if(!is.null(variables)) for(i in 1:length(variables)){
+    v = names(variables)[i]
+    u = variables[i]
+    d[var2==v, variable:=u]
+  }
+  
+  d[, units := ""]
+  if(!is.null(units)) for(i in 1:length(units)){
+    v = names(units)[i]
+    u = units[i]
+    d[variable==v, units:=u]
+  }
+  
+  d <- d[variable!=""]
+  d <- d[!is.na(value)]
+  
+  d[, type := type]
+  
+  d[, waterwork := waterwork]
+  d[, waterType := waterType]
+  d[, point:=point]
+  
+  return(d)
+  
+  
+  print(d[c(1,5,10,11,15)])
+}
+
+
 CleanWP1SpecificWaterWorkLong_MapGraph_Internal <- function(d){
   d[, variable := ""]
   unique(d$var2)
@@ -58,6 +121,40 @@ CleanWP1SpecificWaterWorkLong_MapGraph <- function(fileIn,
   setnames(d, c("valid","X","date", "point", "var2", "value", "units","X"))
   d <- d[valid=="Godkjent"]
   d[,valid:=NULL]
+  d <- d[, which(names(d) != "X"), with = F]
+  d[,date:=as.Date(as.numeric(date),origin = "1899-12-30")]
+  #d[, date := as.Date(date, format = "%d.%m.%Y")]
+  
+  d <- CleanWP1SpecificWaterWorkLong_MapGraph_Internal(d)
+  
+  d[, type := type]
+  
+  d[, waterwork := waterwork]
+  d[, waterType := waterType]
+  
+  return(d)
+  
+  
+  print(d[c(1,5,10,11,15)])
+}
+
+CleanWP1SpecificWaterWorkLong_MapGraphMini <- function(fileIn, 
+                                                   sheet=1,
+                                                   type,
+                                                   waterwork,
+                                                   waterType,
+                                                   remove=NULL
+){
+  
+  
+  d <- data.table(readxl::read_excel(fileIn,
+                                     sheet = sheet,
+                                     skip = 1,
+                                     col_names = FALSE,
+                                     col_types = rep("text", 6)))
+  
+  setnames(d, c("date", "point", "var2", "value", "units","X"))
+  
   d <- d[, which(names(d) != "X"), with = F]
   d[,date:=as.Date(as.numeric(date),origin = "1899-12-30")]
   #d[, date := as.Date(date, format = "%d.%m.%Y")]
@@ -1056,8 +1153,452 @@ CleanDataWaterworksCleanWaterInternal <- function(){
   print(d)
   saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks_clean_water","Bergen_Jordalsvatnet_Jordalsvatnet_3.RDS"))
   
+  ##
+  ## FREVAR_Høyfjell
+  ## Accredited
+  
+  d <- CleanWP1SpecificWaterWorkWide(
+    fileIn=file.path(
+      RPROJ$PROJRAW,
+      "WP1_clean_water",
+      "FREVAR_Høyfjell",
+      "Rådata",
+      "Renvann",
+      "Akkreditert",
+      "combined.xlsx"), 
+    sheet=1,
+    skip=3,
+    col_types=rep("text", 10),
+    col_names=c(
+      "date",
+      "Coliform bacteria",
+      "E. Coli",
+      "Clostridium perfringens",
+      "Intestinal Enterococci",
+      "Colony count",
+      "pH",
+      "Conductivity",
+      "Turbidity",
+      "Colour"
+    ),
+    type="Accredited",
+    units=c("Conductivity"="mS/m",
+            "Turbidity"="FTU",
+            "Coliform bacteria"="/100ml",
+            "E. Coli"="/100ml",
+            "Colony count"="/ml",
+            "Intestinal Enterococci"="/100ml"),
+    waterwork="FREVAR_Høyfjell",
+    waterType="Clean",
+    point="?",
+    dateAsNumber=TRUE
+  )
+  print(d)
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks_clean_water","FREVAR_Høyfjell_1.RDS"))
+  
+  ##
+  ## FREVAR_Høyfjell
+  ## online
+  
+  d <- CleanWP1SpecificWaterWorkWide(
+    fileIn=file.path(
+      RPROJ$PROJRAW,
+      "WP1_clean_water",
+      "FREVAR_Høyfjell",
+      "Rådata",
+      "Renvann",
+      "Online_egenanalyser",
+      "combined.xlsx"), 
+    sheet=1,
+    skip=3,
+    col_types=rep("text", 16),
+    col_names=c(
+      "date",
+      "X",
+      "Turbidity",
+      "X",
+      "X",
+      "X",
+      "X",
+      "X",
+      "pH",
+      "X",
+      "X",
+      "X",
+      "X",
+      "X",
+      "Conductivity",
+      "X"
+    ),
+    type="Online",
+    units=c("Conductivity"="mS/m",
+            "Turbidity"="FTU",
+            "Coliform bacteria"="/100ml",
+            "E. Coli"="/100ml",
+            "Colony count"="/ml",
+            "Intestinal Enterococci"="/100ml"),
+    waterwork="FREVAR_Høyfjell",
+    waterType="Clean",
+    point="?",
+    dateAsNumber=TRUE
+  )
+  print(d)
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks_clean_water","FREVAR_Høyfjell_2.RDS"))
+  
+  ##
+  ## Glitrevannverket IKS_Kleivdammen
+  ## Accredited
+  
+  d <- CleanWP1SpecificWaterWorkWide(
+    fileIn=file.path(
+      RPROJ$PROJRAW,
+      "WP1_clean_water",
+      "Glitrevannverket IKS_Kleivdammen",
+      "Rådata",
+      "Renvann",
+      "Glitre rå- og rentvann 2000-16.xlsx"), 
+    sheet="Kleivdammen-Beh. vann",
+    skip=1,
+    col_types=rep("text", 36),
+    col_names=c(
+      "date",
+      "Colour",
+      "X",
+      "X",
+      "Turbidity",
+      "X",
+      "Conductivity",
+      "pH",
+      "X",
+      "X",
+      "X",
+      "X",
+      "X",
+      "X",
+      "X",
+      "E. Coli",
+      "Colony count",
+      "Coliform bacteria",
+      "Intestinal Enterococci",
+      "X",
+      "Clostridium perfringens",
+      "X",
+      "X",
+      "X",
+      "X",
+      "X",
+      "X",
+      "X",
+      "X",
+      "X",
+      "X",
+      "X",
+      "X",
+      "X",
+      "X",
+      "X"
+    ),
+    type="Accredited",
+    units=c("Conductivity"="mS/m",
+            "Turbidity"="FTU",
+            "Coliform bacteria"="/100ml",
+            "E. Coli"="/100ml",
+            "Colony count"="/ml",
+            "Intestinal Enterococci"="/100ml"),
+    waterwork="Glitrevannverket",
+    waterType="Clean",
+    point="Kleivdammen",
+    dateAsNumber=TRUE
+  )
+  print(d)
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks_clean_water","Glitrevannverket_IKS_Kleivdammen.RDS"))
+  
+  ##
+  ## Glitrevannverket IKS_Landfall
+  ## Accredited
+  
+  d <- CleanWP1SpecificWaterWorkWide(
+    fileIn=file.path(
+      RPROJ$PROJRAW,
+      "WP1_clean_water",
+      "Glitrevannverket IKS_Landfall",
+      "Rådata",
+      "Renvann",
+      "Glitre rå- og rentvann 2000-16.xlsx"), 
+    sheet=1,
+    skip=1,
+    col_types=rep("text", 10),
+    col_names=c(
+      "date",
+      "Colony count",
+      "Turbidity",
+      "Colour",
+      "pH",
+      "E. Coli",
+      "Coliform bacteria",
+      "Intestinal Enterococci",
+      "Conductivity",
+      "Clostridium perfringens"
+    ),
+    type="Accredited",
+    units=c("Conductivity"="mS/m",
+            "Turbidity"="FTU",
+            "Coliform bacteria"="/100ml",
+            "E. Coli"="/100ml",
+            "Colony count"="/ml",
+            "Intestinal Enterococci"="/100ml"),
+    waterwork="Glitrevannverket",
+    waterType="Clean",
+    point="Landfall",
+    dateAsNumber=TRUE
+  )
+  print(d)
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks_clean_water","Glitrevannverket_IKS_Landfall.RDS"))
+  
+  
+  ##
+  ## Halden_Lille Erte
+  ## Internal
+  
+  d <- CleanWP1SpecificWaterWorkWide(
+    fileIn=file.path(
+      RPROJ$PROJRAW,
+      "WP1_clean_water",
+      "Halden_Lille Erte",
+      "Rådata",
+      "Renvann",
+      "combined.xlsx"), 
+    sheet=1,
+    skip=3,
+    col_types=rep("text", 15),
+    col_names=c(
+      "date",
+      "X",
+      "X",
+      "X",
+      "X",
+      "Colour",
+      "X",
+      "Turbidity",
+      "X",
+      "X",
+      "pH",
+      "X",
+      "Colony count",
+      "Coliform bacteria",
+      "X"
+    ),
+    type="Internal",
+    units=c("Conductivity"="mS/m",
+            "Turbidity"="FTU",
+            "Coliform bacteria"="/100ml",
+            "E. Coli"="/100ml",
+            "Colony count"="/ml",
+            "Intestinal Enterococci"="/100ml"),
+    waterwork="Halden",
+    waterType="Clean",
+    point="Lille_Erte",
+    dateAsNumber=TRUE
+  )
+  print(d)
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks_clean_water","Halden_Lille Erte.RDS"))
+  
+  ##
+  ## HIAS_Hamar
+  ## Internal
+  
+  d <- CleanWP1SpecificWaterWorkLong_MapGraphMini(
+    fileIn=file.path(
+      RPROJ$PROJRAW,
+      "WP1_clean_water",
+      "HIAS_Hamar",
+      "Rådata",
+      "Renvann",
+      "FHI 2016.xls.xlsx"), 
+    sheet=1,
+    type="Accredited",
+    waterwork="HIAS_Hamar",
+    waterType="Clean"
+  )
+  print(d)
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks_clean_water","HIAS_Hamar_1.RDS"))
+  
+  d <- CleanWP1SpecificWaterWorkWide(
+    fileIn=file.path(
+      RPROJ$PROJRAW,
+      "WP1_clean_water",
+      "HIAS_Hamar",
+      "Rådata",
+      "Renvann",
+      "FHI 141116.xls (2).xlsx"), 
+    sheet=1,
+    skip=1,
+    col_types=rep("text", 4),
+    col_names=c(
+      "date",
+      "X",
+      "X",
+      "Turbidity"
+    ),
+    type="Online",
+    units=c("Conductivity"="mS/m",
+            "Turbidity"="FTU",
+            "Coliform bacteria"="/100ml",
+            "E. Coli"="/100ml",
+            "Colony count"="/ml",
+            "Intestinal Enterococci"="/100ml"),
+    waterwork="HIAS_Hamar",
+    waterType="Clean",
+    point="HVBA Rentvann",
+    dateAsNumber=TRUE
+  )
+  print(d)
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks_clean_water","HIAS_Hamar_2.RDS"))
+  
+  ##
+  ## HIAS_Stange
+  ## Internal
+  
+  d <- CleanWP1SpecificWaterWorkLong_MapGraphMini(
+    fileIn=file.path(
+      RPROJ$PROJRAW,
+      "WP1_clean_water",
+      "HIAS_Hamar",
+      "Rådata",
+      "Renvann",
+      "FHI 2016.xls.xlsx"), 
+    sheet=3,
+    type="Accredited",
+    waterwork="HIAS_Stange",
+    waterType="Clean"
+  )
+  print(d)
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks_clean_water","HIAS_Stange_1.RDS"))
+  
+  d <- CleanWP1SpecificWaterWorkWide(
+    fileIn=file.path(
+      RPROJ$PROJRAW,
+      "WP1_clean_water",
+      "HIAS_Hamar",
+      "Rådata",
+      "Renvann",
+      "FHI 141116.xls (2).xlsx"), 
+    sheet=2,
+    skip=1,
+    col_types=rep("text", 4),
+    col_names=c(
+      "date",
+      "X",
+      "X",
+      "Turbidity"
+    ),
+    type="Online",
+    units=c("Conductivity"="mS/m",
+            "Turbidity"="FTU",
+            "Coliform bacteria"="/100ml",
+            "E. Coli"="/100ml",
+            "Colony count"="/ml",
+            "Intestinal Enterococci"="/100ml"),
+    waterwork="HIAS_Stange",
+    waterType="Clean",
+    point="Hemstad Rentvann",
+    dateAsNumber=TRUE
+  )
+  print(d)
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks_clean_water","HIAS_Stange_2.RDS"))
+  
+  ##
+  ## IVAR IKS_Langevatn
+  ##
+  
+  d <- CleanWP1SpecificWaterWorkWide(
+    fileIn=file.path(
+      RPROJ$PROJRAW,
+      "WP1_clean_water",
+      "IVAR IKS_Langevatn",
+      "Rådata",
+      "Renvann",
+      "Kopi av Langevatn renvann 2010-okt2016.xlsx"), 
+    sheet=1,
+    skip=8,
+    col_types=rep("text", 22),
+    col_names=c(
+      "date",
+      "Colony count",
+      "Coliform bacteria",
+      "E. Coli",
+      "Clostridium perfringens",
+      "Instestinal Enterococci",
+      "X",
+      "X",
+      "Turbidity",
+      "Colour",
+      "pH",
+      "X",
+      "X",
+      "X",
+      "X",
+      "X",
+      "X",
+      "X",
+      "Conductivity",
+      "X",
+      "X",
+      "X"
+    ),
+    type="Accredited",
+    units=c("Conductivity"="mS/m",
+            "Turbidity"="FTU",
+            "Coliform bacteria"="/100ml",
+            "E. Coli"="/100ml",
+            "Colony count"="/ml",
+            "Intestinal Enterococci"="/100ml"),
+    waterwork="IVAR IKS",
+    waterType="Clean",
+    point="Langevatn",
+    dateAsNumber=TRUE
+  )
+  print(d)
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks_clean_water","IVAR IKS_Langevatn.RDS"))
+  
+  ##
+  ## Karmøy_Brekke
+  ##
+  
+  d <- CleanWP1SpecificWaterWorkLong_Custom(
+    fileIn=file.path(
+      RPROJ$PROJRAW,
+      "WP1_clean_water",
+      "Karmøy_Brekke",
+      "Rådata",
+      "Renvann",
+      "Renvannsdata 2006.xlsx"), 
+    sheet=1,
+    variables=c(
+      "Kimtall 22grC, 3 døgn"="Colony count",
+      "Koliforme bakterier"="Coliform bacteria",
+      "E. coli"="E. Coli",
+      "Intestinale enterokokker"="Intestinal Enterococci",
+      "pH (Surhetsgrad)"="pH",
+      "Konduktivitet"="Conductivity",
+      "Turbiditet"="Turbidity",
+      "Farge"="Colour"
+      ),
+    type="Accredited",
+    units=c("Conductivity"="mS/m",
+            "Turbidity"="FTU",
+            "Coliform bacteria"="/100ml",
+            "E. Coli"="/100ml",
+            "Colony count"="/ml",
+            "Intestinal Enterococci"="/100ml"),
+    waterwork="Karmøy",
+    waterType="Clean",
+    point="Brekke"
+  )
+  print(d)
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks_clean_water","Karmøy_Brekke.RDS"))
+  
+  
   
 }
 
-
-  
