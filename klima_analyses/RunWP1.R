@@ -113,21 +113,6 @@ summary(fit)
 fit <- lm(value~c_discharge1_1 + factor(waterwork) + factor(month) + as.numeric(year),data=fitData)
 summary(fit)
 
-## ALL
-if(RUN_ALL) unlink(file.path(RPROJ$PROJBAKED,"WP1_res_all.RDS"))
-bake(file.path(RPROJ$PROJBAKED,"WP1_res_all.RDS"),{
-  readRDS(file.path(RPROJ$PROJCLEAN,"WP1.RDS")) -> d
-  WP1Analyses(d)
-}) -> res
-
-for(od in outputDirs){
-  pdf(file.path(od,"WP1_continuous_all.pdf"),width=12,height=16)
-  print(PlotDetailedGridWP1(p=res[var=="Cont" & id=="All"],r2=TRUE))
-  #print(PlotDetailedGridWP1(p=res[var=="Cont" & id=="All"],days=TRUE))
-  #print(PlotDetailedGridWP1(p=res[var=="Cont" & id=="All"],days=FALSE))
-  dev.off()
-}
-
 ## ACCREDITED INTERNAL
 if(RUN_ALL) unlink(file.path(RPROJ$PROJBAKED,"WP1_res_accreditedinternal.RDS"))
 bake(file.path(RPROJ$PROJBAKED,"WP1_res_accreditedinternal.RDS"),{
@@ -137,12 +122,33 @@ bake(file.path(RPROJ$PROJBAKED,"WP1_res_accreditedinternal.RDS"),{
 }) -> res
 
 for(od in outputDirs){
+  openxlsx::write.xlsx(MakeTableWP1(res),file.path(od,"WP1_continuous_accreditedinternal.xlsx"))
   pdf(file.path(od,"WP1_continuous_accreditedinternal.pdf"),width=12,height=16)
   print(PlotDetailedGridWP1(p=res[var=="Cont" & id=="All"],r2=TRUE))
   #print(PlotDetailedGridWP1(p=res[var=="Cont" & id=="All"],days=TRUE))
   #print(PlotDetailedGridWP1(p=res[var=="Cont" & id=="All"],days=FALSE))
   dev.off()
 }
+
+## ALL
+if(RUN_ALL) unlink(file.path(RPROJ$PROJBAKED,"WP1_res_all.RDS"))
+bake(file.path(RPROJ$PROJBAKED,"WP1_res_all.RDS"),{
+  readRDS(file.path(RPROJ$PROJCLEAN,"WP1.RDS")) -> d
+  WP1Analyses(d)
+}) -> res
+
+
+
+for(od in outputDirs){
+  openxlsx::write.xlsx(MakeTableWP1(res),file.path(od,"WP1_continuous_all.xlsx"))
+  pdf(file.path(od,"WP1_continuous_all.pdf"),width=12,height=16)
+  print(PlotDetailedGridWP1(p=res[var=="Cont" & id=="All"],r2=TRUE))
+  #print(PlotDetailedGridWP1(p=res[var=="Cont" & id=="All"],days=TRUE))
+  #print(PlotDetailedGridWP1(p=res[var=="Cont" & id=="All"],days=FALSE))
+  dev.off()
+}
+
+
 
 ## ONLINE
 if(RUN_ALL) unlink(file.path(RPROJ$PROJBAKED,"WP1_res_online.RDS"))

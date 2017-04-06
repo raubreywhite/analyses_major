@@ -46,9 +46,9 @@ xtabs(~kommuner$waterworkCategory)
 
 kommuner[,waterworkNumerator:=0]
 kommuner[waterworkCategory==1,waterworkNumerator:=100]
-kommuner[waterworkCategory==2,waterworkNumerator:=30]
-kommuner[waterworkCategory==3,waterworkNumerator:=20]
-kommuner[waterworkCategory==4,waterworkNumerator:=10]
+kommuner[waterworkCategory==2,waterworkNumerator:=25]
+kommuner[waterworkCategory==3,waterworkNumerator:=10]
+kommuner[waterworkCategory==4,waterworkNumerator:=5]
 kommuner[waterworkCategory==5,waterworkNumerator:=5]
 kommuner[,waterworkSamplingProb:=waterworkNumerator/denomWW]
 kommuner[,denomWW:=NULL]
@@ -92,7 +92,7 @@ d[housing=="bofellesskap", housingEffect:=1]
 d[housing=="annen", housingEffect:=1.25]
 d
 
-CreateOutcome <- function(dx, oddsRatio=c(1.0, 1.01, 1.02, 1.03, 1.04), longitudinal=T){
+CreateOutcome <- function(dx, oddsRatio=c(1.05, 1.04, 1.03, 1.02, 1.00), longitudinal=T){
   data <- copy(dx)
   data[,beta:=0]
   for(i in 1:length(oddsRatio)) data[waterworkCategory==i, beta:=log(oddsRatio[i])]
@@ -107,7 +107,7 @@ CreateOutcome <- function(dx, oddsRatio=c(1.0, 1.01, 1.02, 1.03, 1.04), longitud
   return(data)
 }
 
-CreateSample <- function(n=c(200,500,1000,2500,5000), oddsRatio=c(1.0, 1.01, 1.02, 1.03, 1.04), d,w){
+CreateSample <- function(n=c(4000,1000,1000,1000,1000), oddsRatio=c(1.05, 1.04, 1.03, 1.02, 1.00), d,w){
   data <- vector("list",length=length(n))
   for(i in 1:length(data)){
     sData <- w[waterworkCategory==i]
@@ -118,7 +118,7 @@ CreateSample <- function(n=c(200,500,1000,2500,5000), oddsRatio=c(1.0, 1.01, 1.0
     peopleData <- vector("list",length(ww))
     for(j in 1:length(peopleData)){
       sData <- d[waterworkID==ww[j]]
-      pid <- sample(sData$personID,n[i],prob=sData$personSamplingProb)
+      pid <- sample(sData$personID,round(n[i]/numerator),prob=sData$personSamplingProb)
       peopleData[[j]] <- sData[personID %in% pid]
     }
     data[[i]] <- rbindlist(peopleData)
@@ -127,8 +127,104 @@ CreateSample <- function(n=c(200,500,1000,2500,5000), oddsRatio=c(1.0, 1.01, 1.0
   return(CreateOutcome(data, oddsRatio=oddsRatio))
 }
 
-dataFull <- CreateOutcome(d,longitudinal=F)
+res <- vector("list",500)
+pb <- txtProgressBar(min=0,max=length(pval),style=3)
+for(i in 1:length(res)){
+  data <- CreateSample(n=c(4000,1000,1000,1000,1000),d=d,w=w)
+  
+  a <- lme4::lmer(y~waterExposure*factor(waterworkCategory)+(1|waterworkID)+(1|personID),data=data)
+  baselineRisk <- coef(summary(a))[1,1]
+  L <- rbind(
+    cbind(0,1,0,0,0,0,0,0,0,0),
+    cbind(0,1,0,0,0,0,1,0,0,0),
+    cbind(0,1,0,0,0,0,0,1,0,0),
+    cbind(0,1,0,0,0,0,0,0,1,0),
+    cbind(0,1,0,0,0,0,0,0,0,1)
+  )
+  test <- summary(multcomp::glht(a,L),test=multcomp::adjusted("none"))$test
+  coefficients <- test$coefficients
+  pvalues <- test$pvalues
+  riskRatios <- (baselineRisk+coefficients)/baselineRisk
+  res[[i]] <- data.frame(riskRatios,coefficients,pvalues,category=1:5,id=i)
+  
+  setTxtProgressBar(pb,i)
+}
+close(pb)
+
+res <- rbindlist(res)
+xGood <- res[,.(
+  power=mean(pvalues<0.05),
+  est=mean(coefficients),
+  rr=mean(riskRatios)
+),by=.(category)]
+xGood
+
+res <- vector("list",500)
+pb <- txtProgressBar(min=0,max=length(pval),style=3)
+for(i in 1:length(res)){
+  data <- CreateSample(n=c(3200,1350,1350,1350,1350),d=d,w=w)
+  
+  a <- lme4::lmer(y~waterExposure*factor(waterworkCategory)+(1|waterworkID)+(1|personID),data=data)
+  baselineRisk <- coef(summary(a))[1,1]
+  L <- rbind(
+    cbind(0,1,0,0,0,0,0,0,0,0),
+    cbind(0,1,0,0,0,0,1,0,0,0),
+    cbind(0,1,0,0,0,0,0,1,0,0),
+    cbind(0,1,0,0,0,0,0,0,1,0),
+    cbind(0,1,0,0,0,0,0,0,0,1)
+  )
+  test <- summary(multcomp::glht(a,L),test=multcomp::adjusted("none"))$test
+  coefficients <- test$coefficients
+  pvalues <- test$pvalues
+  riskRatios <- (baselineRisk+coefficients)/baselineRisk
+  res[[i]] <- data.frame(riskRatios,coefficients,pvalues,category=1:5,id=i)
+  
+  setTxtProgressBar(pb,i)
+}
+close(pb)
+
+res <- rbindlist(res)
+xBad <- res[,.(
+  power=mean(pvalues<0.05),
+  est=mean(coefficients),
+  rr=mean(riskRatios)
+),by=.(category)]
+xBad
+
+xGood
+xBad
+
+xGood$power[1]-xBad$power[1]
+
+x$est[1]/x$est[2]
+x$est[1]/x$est[3]
+x$est[1]/x$est[4]
+
+p0 <- x$est[1]/(1-x$est[1])
+p1 <- x$est[2]/(1-x$est[2])
+1.05/1.04
+
+mean(pval<0.05)
+
+pvalCombined <- coef(summary(fit1))[2,4]
+logORCombined <- coef(summary(fit1))[2,1]
+
 data <- CreateSample(d=d,w=w)
+dataFull <- CreateOutcome(d,longitudinal=F)
+f <- lme4::lmer(y~waterExposure*factor(waterworkCategory)+factor(housing)+(1|waterworkID),data=dataFull)
+L <- rbind(
+  cbind(0,1,0,0,0,0,0,0,0,0),
+  cbind(0,1,0,0,0,0,1,0,0,0),
+  cbind(0,1,0,0,0,0,0,1,0,0),
+  cbind(0,1,0,0,0,0,0,0,1,0),
+  cbind(0,1,0,0,0,0,0,0,0,1)
+)
+test <- summary(multcomp::glht(f,L),test=multcomp::adjusted("none"))$test
+coefficients <- test$coefficients
+pvalues <- test$pvalues
+coefficients[1]/coefficients[2]
+coefficients[1]/coefficients[3]
+
 #fit1 <- lme4::glmer(y~waterExposure+(1|personSpecificIntercept),family=binomial,data=data, verbose=1)
 fit0_a <- lme4::lmer(y~waterExposure+(1|waterworkID),data=dataFull, verbose=2)
 fit0_b <- lme4::lmer(y~waterExposure+factor(housing)+(1|waterworkID),data=dataFull, verbose=2)
@@ -149,16 +245,23 @@ coef(fit1_c)[[1]][1,]
 coef(fit1_d)[[1]][1,]
 coef(fit1_e)[[1]][1,]
 
-fitb0_a <- lme4::glmer(y~waterExposure+(1|waterworkID),family=binomial,data=dataFull, verbose=2)
+fitb0_a <- lme4::glmer(y~waterExposure+(1|waterworkID),family=binomial,data=dataFull, verbose=2, nAGQ=0)
 fitb0_b <- lme4::glmer(y~waterExposure+factor(housing)+(1|waterworkID),family=binomial,data=dataFull, verbose=2)
 fitb0_c <- lme4::glmer(y~waterExposure*factor(waterworkCategory)+factor(housing)+(1|waterworkID),family=binomial,data=dataFull, verbose=2)
 fitb1_a <- lme4::glmer(y~waterExposure+(1|personID),family=binomial,data=data, verbose=2)
 fitb1_b <- lme4::glmer(y~waterExposure+factor(housing)+(1|personID),family=binomial,data=data, verbose=2)
 fitb1_c <- lme4::glmer(y~waterExposure+factor(housing)+(1|personID)+(1|waterworkID),family=binomial,data=data, verbose=2)
-fitb1_d <- lme4::glmer(y~waterExposure*factor(waterworkCategory)+factor(housing)+(1|personID)+(1|waterworkID),family=binomial,data=data, verbose=2)
-fitb1_e <- lme4::glmer(y~waterExposure*factor(waterworkCategory)+(1|personID)+(1|waterworkID),family=binomial,data=data, verbose=2)
+fitb1_d <- lme4::glmer(y~waterExposure*factor(waterworkCategory)+factor(housing)+(1|personID)+(1|waterworkID),family=binomial,data=data, verbose=2, nAGQ=0)
+fitb1_e <- lme4::glmer(y~waterExposure*factor(waterworkCategory)+(1|personID)+(1|waterworkID),family=binomial,data=data, verbose=2, nAGQ=0)
 
 exp(coef(fitb0_a)[[1]][1,])
+exp(coef(fitb0_b)[[1]][1,])
+exp(coef(fitb1_a)[[1]][1,])
+exp(coef(fitb1_b)[[1]][1,])
+exp(coef(fitb1_c)[[1]][1,])
+
+exp(coef(fitb0_a)[[1]][1,])
+
 exp(coef(fitb0_c)[[1]][1,])
 
 exp(coef(fitb1_d)[[1]][1,])

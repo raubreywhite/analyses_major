@@ -95,6 +95,30 @@ WP1Analyses <- function(d){
   return(res)
 }
 
+MakeTableWP1 <- function(res){
+  tableRes <- res[pval < 0.05/.N]
+  tableRes[,stringLag := sprintf("%s-%s",min(lag),max(lag)),by=.(stub, outcome, season)]
+  tableRes <- tableRes[,.(
+    est=mean(est),
+    r2=mean(r2)
+  ),by=.(
+    stub,outcome,season,stringLag
+  )]
+  tableRes[,stringEst:=paste0(formatC(100*est,digits=1,format="f"),"%")]
+  tableRes[outcome=="\npH\n",stringEst:=formatC(est,digits=2,format="f")]
+  tableRes[,stringEst:=paste0(stringEst," (",stringLag,"w)")]
+  tableRes <- dcast.data.table(tableRes,outcome+stub~season,value.var=c("stringEst"))
+  tableRes[,stub:=factor(stub,levels=c(
+    "c_gridPrecip", "c_gridRain", "c_gridRunoffStandardised",
+    "wp950_gridPrecip","wp950_gridRain", "wp950_gridRunoffStandardised",
+    "c_precip", "c_rain", "c_discharge", 
+    "wp950_precip", "wp950_rain", "wp950_discharge"
+  ))]
+  setorder(tableRes, outcome, stub)
+  tableRes[,outcome:=gsub("\\n","",outcome)]
+  return(tableRes)
+}
+
 PlotDetailedGridWP1 <- function(p,days=TRUE,r2=FALSE){
   if(r2){
     top <- max(p[sig==1 & est>0]$r2increase)*100
