@@ -1,0 +1,406 @@
+---
+title: "Område 2 - statistikkurs tilbud 1"
+output:
+  pdf_document: default
+date: "`r format(Sys.time(), '%d.%m.%Y')`"
+author: "Richard White, avdeling for infeksjonsepidemiologi og modellering "
+---
+
+```{r setup, include=FALSE}
+RAWmisc::InitialiseProject(
+  HOME = "/analyses/code_major/stats_course_1/",
+  RAW = "/analyses/data_raw/stats_course_1/",
+  CLEAN = "/analyses/data_clean/stats_course_1",
+  BAKED = "/analyses/results_baked/stats_course_1/",
+  FINAL = "/analyses/results_final/stats_course_1/",
+  SHARED = "/dropbox/results_shared/stats_course_1/")
+
+library(data.table)
+library(ggplot2)
+library(pomp)
+
+GetAllResponses <- function(){
+  lastVal <- list.files(RAWmisc::PROJ$RAW)
+  if(length(lastVal)==0){
+    return(NULL)
+  } else {
+    retval <- vector("list",length(lastVal))
+    for(i in 1:length(retval)){
+      retval[[i]] <- readRDS(file.path(RAWmisc::PROJ$RAW,lastVal[i]))
+      x <- list()
+      m <- 1
+      for(j in 1:length(retval[[i]])){
+        if(names(retval[[i]])[j]=="id") next
+        for(l in 1:length(retval[[i]][[j]])){
+          x[[m]] <- data.frame(var=names(retval[[i]])[j],val=retval[[i]][[j]][l],id=retval[[i]]$id,stringsAsFactors = F)
+          m <- m + 1
+        }
+      }
+      retval[[i]] <- rbindlist(x)
+    }
+    retval <- rbindlist(retval)
+    return(retval)
+  }
+}
+
+masterData <<- GetAllResponses()
+masterDates <<- masterData[var=="daySubmitted",.(N=.N),by=.(val)]
+masterDates[,date:=as.Date(val)]
+masterDates[,val:=NULL]
+
+```
+
+## Respons
+
+Spørreskjema ble utlagt på torsdag 30.03.2017. To eposter ble utsendt til område 2 på torsdag 30.03.2017 og fredag 07.04.2017 og ble besvart av `r length(unique(masterData$id))` respondenter over `r difftime(max(masterDates$date),min(masterDates$date),units="days")` dager.
+
+```{r, echo=FALSE}
+pd <- masterData[var=="daySubmitted",.(N=.N),by=.(val)]
+pd[,date:=as.Date(val)]
+pd[,val:=NULL]
+
+skeleton <- data.table(date=seq(min(pd$date),max(pd$date),1))
+pd <- merge(skeleton,pd,all.x=T)
+pd[is.na(N),N:=0]
+
+pd[,text:=""]
+pd[date=="2017-03-30",text:="Epost 1"]
+pd[date=="2017-04-07",text:="Epost 2"]
+
+q <- ggplot(pd,aes(x=date,y=N))
+q <- q + geom_bar(stat="identity",alpha=0.75,colour="black",width=0.75)
+q <- q + geom_label(data=pd[text!=""],mapping=aes(label=text,y=10),alpha=0.75)
+q <- q + scale_x_date("Dato")
+q <- q + scale_y_continuous("N",breaks=scales::pretty_breaks())
+q <- q + expand_limits(y=0)
+q <- q + labs(title=sprintf("Antall spørreskjema mottatt innen %s",format(max(pd$date), '%d.%m.%Y')))
+q
+```
+
+## Resultatene
+
+```{r, echo=FALSE, fig.height=7}
+pd <- masterData[var %in% c("wantsCoursesMain","levelStatistics") & val!=""]
+pd[,levelStatistics:=""]
+pd[var=="levelStatistics",levelStatistics:=val]
+setorder(pd,id,-levelStatistics)
+pd[levelStatistics=="",levelStatistics:=NA]
+pd[,levelStatistics:=zoo::na.locf(levelStatistics),by=id]
+
+pd1 <- pd[var %in% c("wantsCoursesMain"),
+        .(N=.N),by=.(val, levelStatistics)]
+pd2 <- pd[var %in% c("wantsCoursesMain"),
+        .(N=.N),by=.(val)]
+pd2[,levelStatistics:="Everyone"]
+
+pd <- pd1
+pd[,levelStatistics:=factor(levelStatistics,levels=rev(c("None","Beginner","Competent","Advanced")))]
+setorder(pd,-levelStatistics)
+
+setorder(pd2,N)
+pd[,val:=factor(val,levels=pd2$val)]
+
+q <- ggplot(pd,aes(x=val,y=N))
+#q <- q + geom_hline(yintercept=0)
+q <- q + geom_bar(stat="identity",alpha=0.75,colour="black",width=0.75)
+q <- q + scale_x_discrete("")
+q <- q + scale_y_continuous("N",breaks=scales::pretty_breaks())
+q <- q + facet_wrap(~levelStatistics,ncol=2)
+q <- q + expand_limits(y=0)
+q <- q + labs(title="Ønskede kurs etter statistikknivå, sortert etter total popularitet")
+q <- q + theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust=0.5))
+q
+```
+
+Samlet ble de fire mest populære kursene:
+
+- Which stats method
+- Linear regression
+- Logistic regression
+- Sample size
+
+Innen de fleste statistikknivåene (kompetent, nybegynner, og ingeng) ble disse fire kursene blant de mest populære valgt. Bare en respondent vuderte seg selv som avansert.
+
+```{r, echo=FALSE, fig.height=7}
+pd <- copy(masterData)
+
+pd[,course1:=0]
+pd[var=="wantsCoursesMain" & val=="Which stats methods",course1:=1]
+pd[,course2:=0]
+pd[var=="wantsCoursesMain" & val=="Linear regression",course2:=1]
+pd[,course3:=0]
+pd[var=="wantsCoursesMain" & val=="Logistic regression",course3:=1]
+pd[,course4:=0]
+pd[var=="wantsCoursesMain" & val=="Sample size",course4:=1]
+
+pd[,course1:=max(course1),by=id]
+pd[,course2:=max(course2),by=id]
+pd[,course3:=max(course3),by=id]
+pd[,course4:=max(course4),by=id]
+
+pd <- pd[var %in% c("levelR","levelSTATA","levelSPSS") & val!=""]
+
+pd1 <- pd[course1==1,.(N=.N),by=.(var,val)]
+pd2 <- pd[course2==1,.(N=.N),by=.(var,val)]
+pd3 <- pd[course3==1,.(N=.N),by=.(var,val)]
+pd4 <- pd[course4==1,.(N=.N),by=.(var,val)]
+
+pd1[,course:="Which stats methods"]
+pd2[,course:="Linear regression"]
+pd3[,course:="Logistic regression"]
+pd4[,course:="Sample size"]
+
+pd <- rbind(pd1,pd2,pd3,pd4)
+pd[,denom:=sum(N),by=.(var,course)]
+pd[,perc:=N/denom*100]
+
+pd[,course:=factor(course,levels=c(
+  "Which stats methods",
+  "Linear regression",
+  "Logistic regression",
+  "Sample size"
+))]
+
+switch <- c(
+  "Advanced"="Avansert",
+  "Competent"="Kompetent",
+  "Beginner"="Nybegynner",
+  "None"="Ingen"
+)
+RAWmisc::RecodeDT(pd,switch, "val")
+pd[,val:=factor(val,levels=switch)]
+
+switch <- c(
+  "levelR"="R nivå",
+  "levelSTATA"="STATA nivå",
+  "levelSPSS"="SPSS nivå"
+)
+RAWmisc::RecodeDT(pd,switch, "var")
+pd[,var:=factor(var,levels=switch)]
+
+
+assign("pd", pd, envir=globalenv())
+
+q <- ggplot(pd, aes(x=course,y=perc,fill=val))
+q <- q + geom_bar(stat="identity",alpha=0.75,colour="black",width=0.75)
+q <- q + facet_wrap(~var)
+q <- q + scale_fill_brewer("Programmeringsnivå",palette="Accent",guide=guide_legend(byrow=T))
+q <- q + scale_x_discrete("")
+q <- q + scale_y_continuous("Prosent",lim=c(0,100))
+q <- q + labs(title="Programmeringsnivå etter ønsket kurs")
+q <- q + theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust=0.5))
+q <- q + theme(legend.position="bottom")
+q
+```
+
+De fleste har lite kompetanse med R eller STATA. Mulige deltakere til "which stats methods" har den minste programmeringskompetansen, mens "sample size" har den høyeste (innen SPSS).
+
+
+```{r, echo=FALSE, fig.height=7}
+pd <- copy(masterData)
+
+pd[,course1:=0]
+pd[var=="wantsCoursesMain" & val=="Which stats methods",course1:=1]
+pd[,course2:=0]
+pd[var=="wantsCoursesMain" & val=="Linear regression",course2:=1]
+pd[,course3:=0]
+pd[var=="wantsCoursesMain" & val=="Logistic regression",course3:=1]
+pd[,course4:=0]
+pd[var=="wantsCoursesMain" & val=="Sample size",course4:=1]
+
+pd[,course1:=max(course1),by=id]
+pd[,course2:=max(course2),by=id]
+pd[,course3:=max(course3),by=id]
+pd[,course4:=max(course4),by=id]
+
+denom1 <- length(unique(pd[course1==1]$id))
+denom2 <- length(unique(pd[course2==1]$id))
+denom3 <- length(unique(pd[course3==1]$id))
+denom4 <- length(unique(pd[course4==1]$id))
+
+pd <- pd[var %in% c("dataSource") & val!=""]
+
+pd1 <- pd[course1==1,.(N=.N),by=.(var,val)]
+pd2 <- pd[course2==1,.(N=.N),by=.(var,val)]
+pd3 <- pd[course3==1,.(N=.N),by=.(var,val)]
+pd4 <- pd[course4==1,.(N=.N),by=.(var,val)]
+
+pd1[,course:="Which stats methods"]
+pd2[,course:="Linear regression"]
+pd3[,course:="Logistic regression"]
+pd4[,course:="Sample size"]
+
+pd1[,denom:=denom1]
+pd2[,denom:=denom2]
+pd3[,denom:=denom3]
+pd4[,denom:=denom4]
+
+pd <- rbind(pd1,pd2,pd3,pd4)
+
+pd[,course:=factor(course,levels=c(
+  "Which stats methods",
+  "Linear regression",
+  "Logistic regression",
+  "Sample size"
+))]
+
+setorder(pd1,N)
+pd[,val:=factor(val,levels=pd1$val)]
+
+q <- ggplot(pd, aes(x=val,y=N/denom*100,fill=course))
+q <- q + geom_bar(stat="identity",pos="dodge",alpha=0.75,colour="black",width=0.75)
+q <- q + scale_fill_brewer("Ønsket kurs",palette="Accent",guide=guide_legend(byrow=T))
+q <- q + scale_x_discrete("")
+q <- q + scale_y_continuous("Prosent",lim=c(0,100))
+q <- q + labs(title="Data kilde etter ønsket kurs")
+q <- q + theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust=0.5))
+q <- q + theme(legend.position="bottom")
+q
+```
+
+De fleste jobber med data fra:
+
+- Lab data
+- Person-level data from surveys and registers
+- Experiments
+
+```{r, echo=FALSE, fig.height=7}
+pd <- copy(masterData)
+
+pd[,course1:=0]
+pd[var=="wantsCoursesMain" & val=="Which stats methods",course1:=1]
+pd[,course2:=0]
+pd[var=="wantsCoursesMain" & val=="Linear regression",course2:=1]
+pd[,course3:=0]
+pd[var=="wantsCoursesMain" & val=="Logistic regression",course3:=1]
+pd[,course4:=0]
+pd[var=="wantsCoursesMain" & val=="Sample size",course4:=1]
+
+pd[,course1:=max(course1),by=id]
+pd[,course2:=max(course2),by=id]
+pd[,course3:=max(course3),by=id]
+pd[,course4:=max(course4),by=id]
+
+denom1 <- length(unique(pd[course1==1]$id))
+denom2 <- length(unique(pd[course2==1]$id))
+denom3 <- length(unique(pd[course3==1]$id))
+denom4 <- length(unique(pd[course4==1]$id))
+
+pd <- pd[var %in% c("dataType") & val!=""]
+
+pd1 <- pd[course1==1,.(N=.N),by=.(var,val)]
+pd2 <- pd[course2==1,.(N=.N),by=.(var,val)]
+pd3 <- pd[course3==1,.(N=.N),by=.(var,val)]
+pd4 <- pd[course4==1,.(N=.N),by=.(var,val)]
+
+pd1[,course:="Which stats methods"]
+pd2[,course:="Linear regression"]
+pd3[,course:="Logistic regression"]
+pd4[,course:="Sample size"]
+
+pd1[,denom:=denom1]
+pd2[,denom:=denom2]
+pd3[,denom:=denom3]
+pd4[,denom:=denom4]
+
+pd <- rbind(pd1,pd2,pd3,pd4)
+
+pd[,course:=factor(course,levels=c(
+  "Which stats methods",
+  "Linear regression",
+  "Logistic regression",
+  "Sample size"
+))]
+
+setorder(pd1,N)
+pd[,val:=factor(val,levels=pd1$val)]
+
+q <- ggplot(pd, aes(x=val,y=N/denom*100,fill=course))
+q <- q + geom_bar(stat="identity",pos="dodge",alpha=0.75,colour="black",width=0.75)
+q <- q + scale_fill_brewer("Ønsket kurs",palette="Accent",guide=guide_legend(byrow=T))
+q <- q + scale_x_discrete("")
+q <- q + scale_y_continuous("Prosent",lim=c(0,100))
+q <- q + labs(title="Data type etter ønsket kurs")
+q <- q + theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust=0.5))
+q <- q + theme(legend.position="bottom")
+q
+```
+
+En stor andel deltakere bruker lab data. Derfor må vi ta hensyn til labmetoder, som for eksempel:
+
+- Skjevhet utfall og eksponerings variabeler
+- Imputering av data under deteksjonsgrensen
+
+```{r, echo=FALSE, fig.height=7}
+pd <- copy(masterData)
+
+pd[,course1:=0]
+pd[var=="wantsCoursesMain" & val=="Which stats methods",course1:=1]
+pd[,course2:=0]
+pd[var=="wantsCoursesMain" & val=="Linear regression",course2:=1]
+pd[,course3:=0]
+pd[var=="wantsCoursesMain" & val=="Logistic regression",course3:=1]
+pd[,course4:=0]
+pd[var=="wantsCoursesMain" & val=="Sample size",course4:=1]
+
+pd[,course1:=max(course1),by=id]
+pd[,course2:=max(course2),by=id]
+pd[,course3:=max(course3),by=id]
+pd[,course4:=max(course4),by=id]
+
+denom1 <- length(unique(pd[course1==1]$id))
+denom2 <- length(unique(pd[course2==1]$id))
+denom3 <- length(unique(pd[course3==1]$id))
+denom4 <- length(unique(pd[course4==1]$id))
+
+pd <- pd[var %in% c("dataSize") & val!=""]
+
+pd1 <- pd[course1==1,.(N=.N),by=.(var,val)]
+pd2 <- pd[course2==1,.(N=.N),by=.(var,val)]
+pd3 <- pd[course3==1,.(N=.N),by=.(var,val)]
+pd4 <- pd[course4==1,.(N=.N),by=.(var,val)]
+
+pd1[,course:="Which stats methods"]
+pd2[,course:="Linear regression"]
+pd3[,course:="Logistic regression"]
+pd4[,course:="Sample size"]
+
+pd1[,denom:=denom1]
+pd2[,denom:=denom2]
+pd3[,denom:=denom3]
+pd4[,denom:=denom4]
+
+pd <- rbind(pd1,pd2,pd3,pd4)
+
+pd[,course:=factor(course,levels=c(
+  "Which stats methods",
+  "Linear regression",
+  "Logistic regression",
+  "Sample size"
+))]
+
+setorder(pd1,N)
+pd[,val:=factor(val,levels=pd1$val)]
+
+q <- ggplot(pd, aes(x=val,y=N/denom*100,fill=course))
+q <- q + geom_bar(stat="identity",pos="dodge",alpha=0.75,colour="black",width=0.75)
+q <- q + scale_fill_brewer("Ønsket kurs",palette="Accent",guide=guide_legend(byrow=T))
+q <- q + scale_x_discrete("")
+q <- q + scale_y_continuous("Prosent",lim=c(0,100))
+q <- q + labs(title="Data størrelse etter ønsket kurs")
+q <- q + theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust=0.5))
+q <- q + theme(legend.position="bottom")
+q
+```
+
+De fleste viser *ikke* at de jobber med data som trenger spesielle metoder, f.eks:
+
+- Over 50 variabeler
+- Over 100.000 observasjoner
+
+
+
+
+
+
+

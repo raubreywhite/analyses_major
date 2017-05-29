@@ -25,7 +25,10 @@ CleanWP1SpecificWaterWorkLong_Custom <- function(fileIn,
   setnames(d, c("date", "X", "var2", "value"))
   print(unique(d$var2))
   d <- d[, which(names(d) != "X"), with = F]
+  d[, datex := as.Date(date, format = "%d.%m.%Y")]
   d[,date:=as.Date(as.numeric(date),origin = "1899-12-30")]
+  d[is.na(date),date:=datex]
+  d[,datex:=NULL]
   #d[, date := as.Date(date, format = "%d.%m.%Y")]
   
   d[, variable := ""]
@@ -47,6 +50,7 @@ CleanWP1SpecificWaterWorkLong_Custom <- function(fileIn,
   
   d <- d[variable!=""]
   d <- d[!is.na(value)]
+  d[,var2:=NULL]
   
   d[, type := type]
   
@@ -68,33 +72,59 @@ CleanWP1SpecificWaterWorkLong_MapGraph_Internal <- function(d){
   d[var2 == "01-Farge (mg/l Pt)" & units=="", units := "mg/l Pt"]
   d[var2 == "01-Farge (mg/l Pt)", variable := "Colour"]
   
+  d[var2 == "01-Farge" & units=="", units := "mg/l Pt"]
+  d[var2 == "01-Farge", variable := "Colour"]
+  
   d[var2 == "04-Turbiditet (FNU)" & units=="", units := "FNU"]
   d[var2 == "04-Turbiditet (FNU)", variable := "Turbidity"]
+  
+  d[var2 == "04-Turbiditet" & units=="", units := "FNU"]
+  d[var2 == "04-Turbiditet", variable := "Turbidity"]
   
   d[var2 == "05-Clostridium perfringens (/100ml)" & units=="", units := "/100ml"]
   d[var2 == "05-Clostridium perfringens (/100ml)", variable := "Clostridium Perfringens"]
   
+  d[var2 == "05-Clostridium perfringens" & units=="", units := "/100ml"]
+  d[var2 == "05-Clostridium perfringens", variable := "Clostridium Perfringens"]
+  
   d[var2 == "06-E.coli (/100 ml)" & units=="", units:="/100ml"]
   d[var2 == "06-E.coli (/100 ml)", variable := "E. Coli"]
+  
+  d[var2 == "06-E.coli" & units=="", units:="/100ml"]
+  d[var2 == "06-E.coli", variable := "E. Coli"]
   
   d[var2 == "07-Intestinale enterokokker (/100 ml)" & units=="", units := "/100ml"]
   d[var2 == "07-Intestinale enterokokker (/100 ml)", variable := "Intestinal Enterococci"]
   
+  d[var2 == "07-Intestinale enterokokker" & units=="", units := "/100ml"]
+  d[var2 == "07-Intestinale enterokokker", variable := "Intestinal Enterococci"]
+  
   d[var2 == "08-Kimtall 22°C (/ml)" & units=="", units := "/ml"]
   d[var2 == "08-Kimtall 22°C (/ml)", variable := "Colony count at 22 degrees"]
+  
+  d[var2 == "08-Kimtall 22°C" & units=="", units := "/ml"]
+  d[var2 == "08-Kimtall 22°C", variable := "Colony count at 22 degrees"]
   
   d[var2 == "09-Koliforme bakterier 37°C (/100 ml)" & units=="", units := "/100ml"]
   d[var2 == "09-Koliforme bakterier 37°C (/100 ml)", variable := "Coliform bacteria"]
   
+  d[var2 == "09-Koliforme bakterier 37°C" & units=="", units := "/100ml"]
+  d[var2 == "09-Koliforme bakterier 37°C", variable := "Coliform bacteria"]
+  
   d[var2 == "35-Konduktivitet (mS/m)" & units=="", units := "mS/m"]
   d[var2 == "35-Konduktivitet (mS/m)", variable := "Conductivity"]
+  
+  d[var2 == "35-Konduktivitet" & units=="", units := "mS/m"]
+  d[var2 == "35-Konduktivitet", variable := "Conductivity"]
   
   d[var2 == "44-pH, surhetsgrad ( )" & units=="", units := "pH"]
   d[var2 == "44-pH, surhetsgrad ( )", variable := "pH"]
   
+  d[var2 == "44-pH, surhetsgrad" & units=="", units := "pH"]
+  d[var2 == "44-pH, surhetsgrad", variable := "pH"]
+  
   d[var2 == "53-Totalt organisk karbon (TOC) (mg/l C)" & units=="", units := "mg/l C"]
   d[var2 == "53-Totalt organisk karbon (TOC) (mg/l C)", variable := "TOC"]
-  
   
   d <- d[variable!=""]
   d <- d[!is.na(value)]
@@ -105,6 +135,7 @@ CleanWP1SpecificWaterWorkLong_MapGraph_Internal <- function(d){
 
 CleanWP1SpecificWaterWorkLong_MapGraph <- function(fileIn, 
                                                    sheet=1,
+                                                   skip=1,
                                                    type,
                                                    waterwork,
                                                    waterType,
@@ -114,7 +145,7 @@ CleanWP1SpecificWaterWorkLong_MapGraph <- function(fileIn,
   
   d <- data.table(readxl::read_excel(fileIn,
                                      sheet = sheet,
-                                     skip = 1,
+                                     skip = skip,
                                      col_names = FALSE,
                                      col_types = c("text","text","text",rep("text", 5))))
   
@@ -198,8 +229,13 @@ CleanWP1SpecificWaterWorkWide_MapGraph <- function(fileIn,
   
   d <- d[, which(names(d) != "X"), with = F]
   
+  try(d[,xdate:=as.Date(date)],TRUE)
   d[,date:=as.Date(as.numeric(date),origin = "1899-12-30")]
-  
+  try({
+    d[is.na(date),date:=xdate]
+    d[,xdate:=NULL]
+  },TRUE)
+  if(sum(names(d)=="point")==0) d[,point:="?"]
   d <- melt.data.table(d, id = c("point","date"), variable.factor = FALSE)
   d[, variable := gsub("[0-9]*$", "", variable)]
   d[,units:=""]
@@ -249,7 +285,11 @@ CleanWP1SpecificWaterWorkWide <- function(fileIn,
   }
   d[,date:=as.Date(date)]
   
-  d <- melt.data.table(d, id = c("date"), variable.factor = FALSE)
+  if(sum(names(d)=="point")==0){
+    d <- melt.data.table(d, id = c("date"), variable.factor = FALSE)
+  } else {
+    d <- melt.data.table(d, id = c("date","point"), variable.factor = FALSE)
+  }
   d[, variable := gsub("[0-9]*$", "", variable)]
   d[, type := type]
   unique(d$variable)
@@ -263,7 +303,9 @@ CleanWP1SpecificWaterWorkWide <- function(fileIn,
   
   d[, waterwork := waterwork]
   d[, waterType := waterType]
-  d[, point:=point]
+  if(sum(names(d)=="point")==0){
+    d[, point:=point]
+  }
   
   d <- d[!is.na(date) & !is.na(value)]
   
@@ -1598,7 +1640,680 @@ CleanDataWaterworksCleanWaterInternal <- function(){
   print(d)
   saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks_clean_water","Karmøy_Brekke.RDS"))
   
+  ##
+  ## Kongsvinger_Granli_GIVAS
+  ##
+  
+  d <- CleanWP1SpecificWaterWorkWide_MapGraph(
+    fileIn=file.path(
+      RPROJ$PROJRAW,
+      "WP1_clean_water",
+      "Kongsvinger_Granli_GIVAS",
+      "Rådata",
+      "Renvann",
+      "MapGraphReport2573335470019199181.xlsx"), 
+    sheet=1,
+    skip=1,
+    col_types=rep("text",10),
+    col_names=c(
+      "date",
+      "08-Kimtall 22°C",
+      "09-Koliforme bakterier 37°C",
+      "04-Turbiditet",
+      "01-Farge",
+      "07-Intestinale enterokokker",
+      "05-Clostridium perfringens",
+      "44-pH, surhetsgrad",
+      "35-Konduktivitet",
+      "06-E.coli"
+    ),
+    type="Accredited",
+    units=NULL,
+    waterwork="Kongsvinger",
+    waterType="Clean"
+  )
+  d[,point:="Granli"]
+
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks_clean_water","Kongsvinger_Granli_GIVAS.RDS"))
+  
+  ##
+  ## Kristiansand - Rossevann
+  ##
+  
+  d <- CleanWP1SpecificWaterWorkLong_MapGraph(
+    fileIn=file.path(RPROJ$PROJRAW,"WP1_clean_water/Kristiansand_Rossevann/Rådata/Renvann/Rossevann + Tronstadvann - Rentvann 2006 - 2016.xlsx"), 
+    sheet=1,
+    skip=8,
+    type="Accredited",
+    waterwork="Kristiansand",
+    waterType="Clean"
+  )
+  d[,point:="Rossevann"]
+  d <- d[date>=as.Date("2010-01-01")]
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks_clean_water","Kristiansand_Rossevann.RDS"))
+  
+  ##
+  ## Kristiansand - Tronstadvann
+  ##
+  
+  d <- CleanWP1SpecificWaterWorkLong_MapGraph(
+    fileIn=file.path(RPROJ$PROJRAW,"WP1_clean_water/Kristiansand_Rossevann/Rådata/Renvann/Rossevann + Tronstadvann - Rentvann 2006 - 2016.xlsx"), 
+    sheet=2,
+    skip=8,
+    type="Accredited",
+    waterwork="Kristiansand",
+    waterType="Clean"
+  )
+  d[,point:="Tronstadvann"]
+  
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks_clean_water","Kristiansand_Tronstadvann.RDS"))
+
+  ## Lillehammer
+  
+  d <- CleanWP1SpecificWaterWorkWide(
+    fileIn=file.path(
+      RPROJ$PROJRAW,
+      "WP1_clean_water",
+      "Lillehammer",
+      "Rådata",
+      "Renvann",
+      "Renvann_all.xlsx"), 
+    sheet=1,
+    skip=3,
+    col_types=rep("text",9),
+    col_names=c(
+      "X",
+      "date",
+      "X",
+      "point",
+      "E. Coli",
+      "Intestinal Enterococci",
+      "Colony count",
+      "Coliform bacteria",
+      "Turbidity"
+    ),
+    type="Accredited",
+    waterwork="Lillehammer",
+    waterType="Clean",
+    dateAsNumber=TRUE
+  )
+  d <- d[point=="LILLEHAMMER-KORGEN-RENVANN"]
+  d[,point:="Lillehammer"]
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks_clean_water","Lillehammer_1.RDS"))
+  
+  ## Lillehammer_2
+  
+  d <- CleanWP1SpecificWaterWorkLong_Custom(
+    fileIn=file.path(
+      RPROJ$PROJRAW,
+      "WP1_clean_water",
+      "Lillehammer",
+      "Rådata",
+      "Renvann",
+      "Kopi av Rentvann Korgen 2006 - 2010.xlsx"), 
+    sheet=1,
+    variables=c(
+      "E. Coli - Colilert"="E. Coli",
+      "Totalant.bakterier 22°C"="Colony count",
+      "Koliforme bakterier - Colilert"="Coliform bacteria",
+      "Intestinale enterokokker"="Intestinal Enterococci",
+      "Surhetsgrad (pH)"="pH",
+      "Konduktivitet  25°C"="Conductivity",
+      "Turbiditet"="Turbidity"
+    ),
+    type="Accredited",
+    units=c("Conductivity"="mS/m",
+            "Turbidity"="FTU",
+            "Coliform bacteria"="/100ml",
+            "E. Coli"="/100ml",
+            "Colony count"="/ml",
+            "Intestinal Enterococci"="/100ml"),
+    waterwork="Lillehammer",
+    waterType="Clean",
+    point="Lillehammer"
+  )
+  print(d)
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks_clean_water","Lillehammer_2.RDS"))
+
+  ## movar vansjø
+  
+  d <- CleanWP1SpecificWaterWorkWide(
+    fileIn=file.path(
+      RPROJ$PROJRAW,
+      "WP1_clean_water",
+      "MOVAR_Vansjø",
+      "Rådata",
+      "Renvann",
+      "combined.xlsx"), 
+    sheet=1,
+    skip=1,
+    col_types=rep("text",9),
+    col_names=c(
+      "date",
+      "Turbidity",
+      "pH",
+      "Conductivity",
+      "Colour",
+      "X",
+      "X",
+      "X",
+      "X"
+    ),
+    type="Internal",
+    waterwork="Movar",
+    waterType="Clean",
+    dateAsNumber=TRUE,
+    point="Vansjø"
+  )
+  
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks_clean_water","movar_vansjø.RDS"))
+  
+  ## oppegård
+  
+  d <- CleanWP1SpecificWaterWorkLong_Custom(
+    fileIn=file.path(
+      RPROJ$PROJRAW,
+      "WP1_clean_water",
+      "Oppegård",
+      "Rådata",
+      "Renvann",
+      "Oppegård kommune- rentvannsdata- fhi.xlsx"), 
+    sheet=1,
+    variables=c(
+      "Turbiditet"="Turbidity",
+      "Fargetall"="Colour",
+      "Kimtall 22°C "="Colony count",
+      "Koliforme"="Coliform bacteria",
+      "Clostridium perfringens"="Clostridium perfringens",
+      "Koliforme - E. coli  "="E. Coli",
+      "Konduktivitet/ledningsevne"="Conductivity",
+      "Intestinale enterokokker"="Intestinal Enterococci",
+      "pH"="pH"
+    ),
+    type="Accredited",
+    units=c("Conductivity"="mS/m",
+            "Turbidity"="FTU",
+            "Coliform bacteria"="/100ml",
+            "E. Coli"="/100ml",
+            "Colony count"="/ml",
+            "Intestinal Enterococci"="/100ml"),
+    waterwork="Oppegård",
+    waterType="Clean"
+  )
+  print(d)
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks_clean_water","Oppegård.RDS"))
+  
+  ## Oslo_Oset 1
+  
+  d <- CleanWP1SpecificWaterWorkWide(
+    fileIn=file.path(
+      RPROJ$PROJRAW,
+      "WP1_clean_water",
+      "Oslo_Oset",
+      "Rådata",
+      "Renvann",
+      "bacteria.xlsx"), 
+    sheet=1,
+    skip=2,
+    col_types=rep("text",7),
+    col_names=c(
+      "date",
+      "X",
+      "Colony count",
+      "Coliform bacteria",
+      "E. Coli",
+      "Intestinal Enterococci",
+      "Clostridium perfringens"
+    ),
+    type="External",
+    waterwork="Oslo",
+    waterType="Clean",
+    dateAsNumber=TRUE,
+    point="Oset"
+  )
+  print(d)
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks_clean_water","Oslo_Oset_1.RDS"))
+  
+  ## Oslo_Oset 2
+  
+  d <- CleanWP1SpecificWaterWorkWide(
+    fileIn=file.path(
+      RPROJ$PROJRAW,
+      "WP1_clean_water",
+      "Oslo_Oset",
+      "Rådata",
+      "Renvann",
+      "bacteria.xlsx"), 
+    sheet=2,
+    skip=2,
+    col_types=rep("text",5),
+    col_names=c(
+      "date",
+      "pH",
+      "Conductivity",
+      "Colour",
+      "Turbidity"
+    ),
+    type="External",
+    waterwork="Oslo",
+    waterType="Clean",
+    dateAsNumber=TRUE,
+    point="Oset"
+  )
+  print(d)
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks_clean_water","Oslo_Oset_2.RDS"))
+  
+  ## Oslo_Skullerud 1
+  
+  d <- CleanWP1SpecificWaterWorkWide(
+    fileIn=file.path(
+      RPROJ$PROJRAW,
+      "WP1_clean_water",
+      "Oslo_Skullerud",
+      "Rådata",
+      "Renvann",
+      "compiled.xlsx"), 
+    sheet=1,
+    skip=2,
+    col_types=rep("text",6),
+    col_names=c(
+      "date",
+      "Colony count",
+      "Coliform bacteria",
+      "E. Coli",
+      "Intestinal Enterococci",
+      "Clostridium perfringens"
+    ),
+    type="External",
+    waterwork="Oslo",
+    waterType="Clean",
+    dateAsNumber=TRUE,
+    point="Skullerud"
+  )
+  print(d)
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks_clean_water","Oslo_Skullerud_1.RDS"))
+  
+  ## Oslo_Oset 2
+  
+  d <- CleanWP1SpecificWaterWorkWide(
+    fileIn=file.path(
+      RPROJ$PROJRAW,
+      "WP1_clean_water",
+      "Oslo_Skullerud",
+      "Rådata",
+      "Renvann",
+      "compiled.xlsx"), 
+    sheet=2,
+    skip=2,
+    col_types=rep("text",5),
+    col_names=c(
+      "date",
+      "pH",
+      "Conductivity",
+      "Colour",
+      "Turbidity"
+    ),
+    type="External",
+    waterwork="Oslo",
+    waterType="Clean",
+    dateAsNumber=TRUE,
+    point="Skullerud"
+  )
+  print(d)
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks_clean_water","Oslo_Skullerud_2.RDS"))
+  
+  ## Sarpsborg_Baterød
+  
+  d <- CleanWP1SpecificWaterWorkLong_Custom(
+    fileIn=file.path(
+      RPROJ$PROJRAW,
+      "WP1_clean_water",
+      "Sarpsborg_Baterød",
+      "Rådata",
+      "Renvann",
+      "reformat.xlsx"), 
+    sheet=1,
+    variables=c(
+      "Clostridium perfringens,  MF"="Clostridium perfringens",
+      "Intestinale enterok. 37°,2d MF"="Intestinal Enterococci",
+      "E.coli, Colilert 18"="E. Coli",
+      "Kimtall,22°C,  3d"="Colony count",
+      "Koliforme bakt.   Colilert 18"="Coliform bacteria",
+      "Konduktivitet"="Conductivity",
+      "pH i vann"="pH",
+      "Turbiditet"="Turbidity",
+      "Fargetall"="Colour"
+    ),
+    type="Accredited",
+    units=c("Conductivity"="mS/m",
+            "Turbidity"="FTU",
+            "Coliform bacteria"="/100ml",
+            "E. Coli"="/100ml",
+            "Colony count"="/ml",
+            "Intestinal Enterococci"="/100ml"),
+    waterwork="Sarpsborg_Baterød",
+    waterType="Clean"
+  )
+  print(d)
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks_clean_water","Sarpsborg_Baterød.RDS"))
+  
+  ## Tromsø_Kvaløya
+  
+  d <- CleanWP1SpecificWaterWorkLong_MapGraphMini(
+    fileIn=file.path(
+      RPROJ$PROJRAW,
+      "WP1_clean_water",
+      "Tromsø_Kvaløya",
+      "Rådata",
+      "Renvann",
+      "Simavik vv og Kvaløya vv rentvann analyseresultater (2006 - 2016).xlsx"), 
+    sheet=1,
+    type="Accredited",
+    waterwork="Tromsø_Kvaløya",
+    waterType="Clean"
+  )
+  print(d)
+  d <- d[point=="0103 Simavik Rentvann"]
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks_clean_water","Tromsø_Kvaløya.RDS"))
+  
+  ## Tromsø_Kvaløya
+  
+  d <- CleanWP1SpecificWaterWorkLong_MapGraphMini(
+    fileIn=file.path(
+      RPROJ$PROJRAW,
+      "WP1_clean_water",
+      "Tromsø_Simavik",
+      "Rådata",
+      "Renvann",
+      "Simavik vv og Kvaløya vv rentvann analyseresultater (2006 - 2016).xlsx"), 
+    sheet=1,
+    type="Accredited",
+    waterwork="Tromsø_Kvaløya",
+    waterType="Clean"
+  )
+  print(d)
+  d <- d[point=="0202 Kvaløya Rentvann"]
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks_clean_water","Tromsø_Simavik.RDS"))
+  
+  ## Trondheim_Vikelvdalen
+  
+  d <- CleanWP1SpecificWaterWorkWide(
+    fileIn=file.path(
+      RPROJ$PROJRAW,
+      "WP1_clean_water",
+      "Trondheim_Vikelvdalen",
+      "Rådata",
+      "Renvann",
+      "Viva behandlet vann.xlsx"), 
+    sheet=1,
+    skip=2,
+    col_types=rep("text", 10),
+    col_names=c(
+      "date",
+      "Clostridium perfringens",
+      "E. Coli",
+      "Colour",
+      "Intestinal Enterococci",
+      "Coliform bacteria",
+      "Conductivity",
+      "Colony count",
+      "pH",
+      "Turbidity"
+    ),
+    type="Accredited",
+    units=c("Conductivity"="mS/m",
+            "Turbidity"="FTU",
+            "Coliform bacteria"="/100ml",
+            "E. Coli"="/100ml",
+            "Colony count"="/ml",
+            "Intestinal Enterococci"="/100ml"),
+    waterwork="Trondheim",
+    waterType="Clean",
+    point="Vikelvdalen",
+    dateAsNumber=TRUE
+  )
+  print(d)
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks_clean_water","Trondheim_Vikelvdalen.RDS"))
+  
+  ## Univann_Sjunken
+  d <- CleanWP1SpecificWaterWorkLong_MapGraph(
+    fileIn=file.path(
+      RPROJ$PROJRAW,
+      "WP1_clean_water",
+      "Univann_Sjunken",
+      "Rådata",
+      "Renvann",
+      "Analyseprøver Ullensaker vannverk og Univann behandlingsanlegg 2006 - 2016.xlsx"), 
+    sheet=4,
+    type="Accredited",
+    waterwork="Univann_Sjunken",
+    waterType="Clean"
+  )
+  print(d)
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks_clean_water","Univann_Sjunken.RDS"))
+  
+  ## Vestfold Vann IKS_Eidsfoss 1
+  
+  d <- CleanWP1SpecificWaterWorkWide(
+    fileIn=file.path(
+      RPROJ$PROJRAW,
+      "WP1_clean_water",
+      "Vestfold Vann IKS_Eidsfoss",
+      "Rådata",
+      "Renvann",
+      "Eidsfoss rentvann - analyser fra hovedlab.xlsx"), 
+    sheet=1,
+    skip=5,
+    col_types=rep("text",10),
+    col_names=c(
+      "date",
+      "Colony count",
+      "Coliform bacteria",
+      "E. Coli",
+      "Instestinal Enterococci",
+      "pH",
+      "Turbidity",
+      "Colour",
+      "Clostridium perfringens",
+      "Conductivity"
+    ),
+    type="External",
+    waterwork="Vestfold",
+    waterType="Clean",
+    dateAsNumber=TRUE,
+    point="Eidsfoss"
+  )
+  print(d)
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks_clean_water","Vestfold Vann IKS_Eidsfoss_1.RDS"))
+  
+  
+  ## Vestfold Vann IKS_Eidsfoss 2
+  
+  d <- CleanWP1SpecificWaterWorkWide(
+    fileIn=file.path(
+      RPROJ$PROJRAW,
+      "WP1_clean_water",
+      "Vestfold Vann IKS_Eidsfoss",
+      "Rådata",
+      "Renvann",
+      "2-jm-Labjournal Eidsfoss egne prøver_2009_renvann.xlsx"), 
+    sheet=1,
+    skip=6,
+    col_types=rep("text",8),
+    col_names=c(
+      "date",
+      "Coliform bacteria",
+      "E. Coli",
+      "Colony count",
+      "pH",
+      "Colour",
+      "Turbidity",
+      "Conductivity"
+    ),
+    type="Internal",
+    waterwork="Vestfold",
+    waterType="Clean",
+    dateAsNumber=TRUE,
+    point="Eidsfoss"
+  )
+  print(d)
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks_clean_water","Vestfold Vann IKS_Eidsfoss_2.RDS"))
+  
+  
+  ## Vestfold Vann IKS_Seierstad 1
+  
+  d <- CleanWP1SpecificWaterWorkWide(
+    fileIn=file.path(
+      RPROJ$PROJRAW,
+      "WP1_clean_water",
+      "Vestfold Vann IKS_Seierstad",
+      "Rådata",
+      "Renvann",
+      "Seierstad rentvann - analyser fra hovedlab.xlsx"), 
+    sheet=1,
+    skip=5,
+    col_types=rep("text",10),
+    col_names=c(
+      "date",
+      "Colony count",
+      "Coliform bacteria",
+      "E. Coli",
+      "Instestinal Enterococci",
+      "pH",
+      "Turbidity",
+      "Colour",
+      "Clostridium perfringens",
+      "Conductivity"
+    ),
+    type="External",
+    waterwork="Vestfold",
+    waterType="Clean",
+    dateAsNumber=TRUE,
+    point="Seierstad"
+  )
+  print(d)
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks_clean_water","Vestfold Vann IKS_Seierstad_1.RDS"))
+  
+  
+  ## Vestfold Vann IKS_Eidsfoss 2
+  
+  d <- CleanWP1SpecificWaterWorkWide(
+    fileIn=file.path(
+      RPROJ$PROJRAW,
+      "WP1_clean_water",
+      "Vestfold Vann IKS_Seierstad",
+      "Rådata",
+      "Renvann",
+      "compiled.xlsx"), 
+    sheet=1,
+    skip=5,
+    col_types=rep("text",5),
+    col_names=c(
+      "date",
+      "pH",
+      "Colour",
+      "Turbidity",
+      "Conductivity"
+    ),
+    type="Internal",
+    waterwork="Vestfold",
+    waterType="Clean",
+    dateAsNumber=TRUE,
+    point="Seierstad"
+  )
+  print(d)
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks_clean_water","Vestfold Vann IKS_Seierstad_2.RDS"))
+  
+  ## Vestfold Vann IKS_Eidsfoss 3
+  
+  d <- CleanWP1SpecificWaterWorkWide(
+    fileIn=file.path(
+      RPROJ$PROJRAW,
+      "WP1_clean_water",
+      "Vestfold Vann IKS_Seierstad",
+      "Rådata",
+      "Renvann",
+      "compiled.xlsx"), 
+    sheet=2,
+    skip=4,
+    col_types=rep("text",4),
+    col_names=c(
+      "date",
+      "Coliform bacteria",
+      "E. Coli",
+      "Colony count"
+    ),
+    type="Internal",
+    waterwork="Vestfold",
+    waterType="Clean",
+    dateAsNumber=TRUE,
+    point="Seierstad"
+  )
+  print(d)
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks_clean_water","Vestfold Vann IKS_Seierstad_3.RDS"))
+  
+  ## Ålesund_Vasstrandlia
+  
+  d <- CleanWP1SpecificWaterWorkWide(
+    fileIn=file.path(
+      RPROJ$PROJRAW,
+      "WP1_clean_water",
+      "Ålesund_Vasstrandlia",
+      "Rådata",
+      "Renvann",
+      "test.xlsx"), 
+    sheet=1,
+    skip=2,
+    col_types=rep("text",10),
+    col_names=c(
+      "date",
+      "Coliform bacteria",
+      "Colony count",
+      "E. Coli",
+      "Colour",
+      "Turbidity",
+      "pH",
+      "Conductivity",
+      "Intestinal Enterococci",
+      "Clostridium perfringens"
+    ),
+    type="Internal",
+    waterwork="Ålesund",
+    waterType="Clean",
+    dateAsNumber=TRUE,
+    point="Vasstrandlia"
+  )
+  print(d)
+  saveRDS(d, file.path(RPROJ$PROJCLEAN,"WP1_waterworks_clean_water","Ålesund_Vasstrandlia.RDS"))
   
   
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

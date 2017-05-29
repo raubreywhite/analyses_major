@@ -17,11 +17,8 @@ dir.create(file.path(RPROJ$PROJSHARED,lubridate::today()))
 
 d <- GetNorwegianHousing()[total>0,.(
   enebolig=sum(enebolig),
-  tomannsbolig=sum(tomannsbolig),
-  rekkehus=sum(rekkehus),
   boligblokk=sum(boligblokk),
-  bofellesskap=sum(bofellesskap),
-  annen=sum(annen)+sum(uoppgitt)
+  annen=sum(annen)+sum(uoppgitt)+sum(tomannsbolig)+sum(rekkehus)+sum(bofellesskap)
 ), by=.(kommune)]
 
 d <- melt.data.table(d,id="kommune",variable.factor = F)
@@ -33,7 +30,7 @@ d[,waterExposure := SampleWaterExposure(n=.N)]
 setorder(d,kommune)
 d[, personID := 1:.N]
 d[,globalIntercept := -3.15]
-d[,personSpecificIntercept := rnorm(.N, sd=1.15)]
+d[,personSpecificIntercept := rnorm(.N, sd=0.25)]
 
 kommuner <- unique(d[,c("kommune","waterworkSize"),with=F])
 kommuner[,waterworkID := 1:.N]
@@ -63,11 +60,8 @@ w[, waterworkSpecificIntercept:=NULL]
 
 h <- GetNorwegianHousingNumHouses()[,.(
   enebolig=sum(enebolig),
-  tomannsbolig=sum(tomannsbolig),
-  rekkehus=sum(rekkehus),
   boligblokk=sum(boligblokk),
-  bofellesskap=sum(bofellesskap),
-  annen=sum(annen)+sum(uoppgitt)
+  annen=sum(annen)+sum(uoppgitt)+sum(tomannsbolig)+sum(rekkehus)+sum(bofellesskap)
 ), by=.(kommune)]
 h <- melt.data.table(h,id="kommune",variable.factor = F)
 setnames(h,"variable","housing")
@@ -80,7 +74,8 @@ kommunerHousing <- merge(kommunerHousing,h,by=c("kommune","housing"),all.x=T)
 nrow(kommunerHousing)
 kommunerHousing[,numberHousesTotal := sum(numberHouses),by=kommune]
 kommunerHousing[,personSamplingProb := (1/N)*(numberHouses/numberHousesTotal)]
-kommunerHousing <- kommunerHousing[,c("kommune","housing","personSamplingProb"),with=F]
+kommunerHousing <- kommunerHousing[,c("kommune","housing","personSamplingProb","numberHouses","numberHousesTotal","N","Total"),with=F]
+setnames(kommunerHousing,c("N","Total"),c("numberPeopleInHouseWaterwork","numberPeopleInWaterwork"))
 
 d <- merge(d,kommuner,by="kommune")
 d <- merge(d,kommunerHousing,by=c("kommune","housing"))
@@ -96,13 +91,17 @@ CreateOutcome <- function(dx, oddsRatio=c(1.05, 1.04, 1.03, 1.02, 1.00), longitu
   data <- copy(dx)
   data[,beta:=0]
   for(i in 1:length(oddsRatio)) data[waterworkCategory==i, beta:=log(oddsRatio[i])]
-  data[,ylatent := globalIntercept + personSpecificIntercept + waterworkSpecificIntercept + housingEffect + beta*waterExposure] # + data$value
+  #data[,ylatent := globalIntercept + personSpecificIntercept + waterworkSpecificIntercept + housingEffect + beta*waterExposure] # + data$value
+  #data[,ylatent := globalIntercept + personSpecificIntercept + waterworkSpecificIntercept + housingEffect + beta*waterExposure] 
+  data[,ylatent := globalIntercept + personSpecificIntercept + waterworkSpecificIntercept + housingEffect+beta*waterExposure] # + data$value
+  data[,ylatent := globalIntercept + personSpecificIntercept + waterworkSpecificIntercept + housingEffect+beta*waterExposure] # + data$value
   data[,prob := exp(ylatent)/(1 + exp(ylatent))]
   
   if(longitudinal) data <- reshape::untable(df=data, num=12)
   
   data[,runis := runif(.N,0,1)]
   data[,y := ifelse(runis < prob,1,0)]
+  data[,timeID:=1:.N,by=personID]
   
   return(data)
 }
@@ -127,12 +126,192 @@ CreateSample <- function(n=c(4000,1000,1000,1000,1000), oddsRatio=c(1.05, 1.04, 
   return(CreateOutcome(data, oddsRatio=oddsRatio))
 }
 
-res <- vector("list",500)
-pb <- txtProgressBar(min=0,max=length(pval),style=3)
+
+RunSurveyAnalysis <- function(data,d){
+  #data <- CreateSample(n=c(5000,5000,5000,5000,10000),d=d,w=w, oddsRatio=rep(2.71,5))
+  truthWW <- d[,.(N=.N),by=.(
+    waterworkCategory,
+    waterworkID
+  )]
+  truthWW <- truthWW[,.(N=.N),by=waterworkCategory]
+  
+  sampleWW <- data[timeID==1,.(N=.N),by=.(
+    waterworkCategory,
+    waterworkID
+  )]
+  sampleWW <- sampleWW[,.(n=.N),by=waterworkCategory]
+  
+  weightsWW <- merge(truthWW, sampleWW, by="waterworkCategory")
+  weightsWW[,weights1 := N/n]
+  
+  truthPeople <- d[,.(N=.N),by=.(
+    waterworkCategory,
+    waterworkID,
+    housing
+  )]
+  
+  samplePeople <- data[timeID==1,.(n=.N),by=.(
+    waterworkCategory,
+    waterworkID,
+    housing
+  )]
+  
+  weightsPeople <- merge(truthPeople, samplePeople, by=c("waterworkCategory","waterworkID","housing"))
+  weightsPeople[,weights2 := N/n]
+  
+  weights <- merge(weightsWW, weightsPeople, by=c("waterworkCategory"))
+  weights <- weights[,c("waterworkCategory","waterworkID","housing","weights1","weights2"),with=F]
+  
+  data <- merge(data,weights,by=c("waterworkCategory","waterworkID","housing"))
+  data[,bigWW := 1]
+  data[waterworkCategory==1, bigWW := 0]
+  x <- data[timeID==1]
+  
+  design <- survey::svydesign(id = ~waterworkID+personID,
+                              strata=~waterworkCategory,
+                              weights = ~weights1+weights2,
+                              data = data)
+  
+  weights <- (1/design$prob)/mean(1/design$prob)
+  
+  fit <- lme4::glmer(y~waterExposure*bigWW+factor(housing)+(1|waterworkID)+(1|personID),data=data,family=binomial)#,weights=weights)
+  L <- rbind(
+    cbind(0,1,0,0,0,0),
+    cbind(0,1,0,0,0,1)
+  )
+  test <- summary(multcomp::glht(fit,L),test=multcomp::adjusted("none"))$test
+  coefficients <- test$coefficients
+  pvalues <- test$pvalues
+  
+  unweighted <- data.frame(coefficients,pvalues,bigWW=1:2,id=i,weighted=FALSE)
+  
+  
+  
+  fit <- lme4::glmer(y~waterExposure*bigWW+factor(housing)+(1|waterworkID)+(1|personID),data=data,family=binomial,weights=weights)
+  L <- rbind(
+    cbind(0,1,0,0,0,0),
+    cbind(0,1,0,0,0,1)
+  )
+  test <- summary(multcomp::glht(fit,L),test=multcomp::adjusted("none"))$test
+  coefficients <- test$coefficients
+  pvalues <- test$pvalues
+  
+  weighted <- data.frame(coefficients,pvalues,bigWW=1:2,id=i,weighted=TRUE)
+  
+  return(rbind(unweighted,weighted))
+}
+
+
+res <- vector("list",40)
+pb <- txtProgressBar(min=0,max=length(res),style=3)
+for(i in 1:length(res)){
+  data <- CreateSample(n=c(4000,1000,1000,1000,1000),d=d,w=w, oddsRatio=c(1.05,1,1,1,1))
+  try(res[[i]] <- RunSurveyAnalysis(data,d),TRUE)
+  
+  setTxtProgressBar(pb,i)
+}
+close(pb)
+
+res <- rbindlist(res)
+
+xGood <- res[,.(
+  power=mean(pvalues<0.05),
+  est=mean(coefficients),
+  rr=exp(mean(coefficients))
+),by=.(bigWW,weighted)]
+xGood
+
+
+
+
+
+
+res <- vector("list",100)
+pb <- txtProgressBar(min=0,max=length(res),style=3)
+for(i in 1:length(res)){
+  data <- CreateSample(n=c(3200,1350,1350,1350,1350),d=d,w=w)
+  
+  a <- RunSurveyAnalysis(data,d)
+  #a <- lme4::lmer(y~waterExposure*factor(waterworkCategory)+(1|waterworkID)+(1|personID),data=data)
+  baselineRisk <- coef(summary(a))[1,1]
+
+  L <- rbind(
+    cbind(0,1,0,0,0,0,0,0,0,0,0,0),
+    cbind(0,1,0,0,0,0,0,0,1,0,0,0),
+    cbind(0,1,0,0,0,0,0,0,0,1,0,0),
+    cbind(0,1,0,0,0,0,0,0,0,0,1,0),
+    cbind(0,1,0,0,0,0,0,0,0,0,0,1)
+  )
+  test <- summary(multcomp::glht(a,L),test=multcomp::adjusted("none"))$test
+  coefficients <- test$coefficients
+  pvalues <- test$pvalues
+  riskRatios <- (baselineRisk+coefficients)/baselineRisk
+  res[[i]] <- data.frame(riskRatios,coefficients,pvalues,category=1:5,id=i)
+  
+  setTxtProgressBar(pb,i)
+}
+close(pb)
+
+res <- rbindlist(res)
+xBad <- res[,.(
+  power=mean(pvalues<0.05),
+  est=mean(coefficients),
+  rr=mean(riskRatios)
+),by=.(category)]
+xBad
+
+xGood
+xBad
+
+xGood$power[1]-xBad$power[1]
+
+x$est[1]/x$est[2]
+x$est[1]/x$est[3]
+x$est[1]/x$est[4]
+
+p0 <- x$est[1]/(1-x$est[1])
+p1 <- x$est[2]/(1-x$est[2])
+1.05/1.04
+
+########
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+res <- vector("list",200)
+pb <- txtProgressBar(min=0,max=length(res),style=3)
 for(i in 1:length(res)){
   data <- CreateSample(n=c(4000,1000,1000,1000,1000),d=d,w=w)
   
-  a <- lme4::lmer(y~waterExposure*factor(waterworkCategory)+(1|waterworkID)+(1|personID),data=data)
+  a <- RunSurveyAnalysis(data,d)
+  #a <- lme4::lmer(y~waterExposure*factor(waterworkCategory)+(1|waterworkID)+(1|personID),data=data)
   baselineRisk <- coef(summary(a))[1,1]
   L <- rbind(
     cbind(0,1,0,0,0,0,0,0,0,0),
@@ -159,12 +338,13 @@ xGood <- res[,.(
 ),by=.(category)]
 xGood
 
-res <- vector("list",500)
-pb <- txtProgressBar(min=0,max=length(pval),style=3)
+res <- vector("list",200)
+pb <- txtProgressBar(min=0,max=length(res),style=3)
 for(i in 1:length(res)){
   data <- CreateSample(n=c(3200,1350,1350,1350,1350),d=d,w=w)
   
-  a <- lme4::lmer(y~waterExposure*factor(waterworkCategory)+(1|waterworkID)+(1|personID),data=data)
+  a <- RunSurveyAnalysis(data,d)
+  #a <- lme4::lmer(y~waterExposure*factor(waterworkCategory)+(1|waterworkID)+(1|personID),data=data)
   baselineRisk <- coef(summary(a))[1,1]
   L <- rbind(
     cbind(0,1,0,0,0,0,0,0,0,0),

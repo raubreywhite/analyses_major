@@ -201,10 +201,12 @@ PlotDetailedGridWP1 <- function(p,days=TRUE,r2=FALSE){
   x <- copy(p)
   for(i in 1:length(displayLevels)) x[i,dirDetail:=displayLevels[i]]
   
+  p[pval > 0.05/nrow(p),dirDetail:="None"]
+  
   q <- ggplot(p,aes(x=lag,y=stub,fill=dirDetail))
   q <- q + geom_tile(data=x,alpha=0)
   q <- q + geom_tile(alpha=0.6,colour="white",lwd=0.2)
-  q <- q + geom_text(data=p[pval < 0.05/nrow(p)],label="x")
+  #q <- q + geom_text(data=p[pval < 0.05/nrow(p)],label="x")
   q <- q + facet_grid(outcome~season)
   q <- q + scale_x_discrete("\nWeeks lag",drop=F)
   q <- q + scale_y_discrete("",drop=F)

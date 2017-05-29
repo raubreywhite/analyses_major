@@ -1,17 +1,32 @@
 
 
-WP1Data <- function(){
-  if(RUN_ALL) unlink(file.path(RPROJ$PROJCLEAN,"WP1.RDS"))
-  bake(file.path(RPROJ$PROJCLEAN,"WP1.RDS"),{
+WP1DataRaw <- function(){
+  if(RUN_ALL) unlink(file.path(RPROJ$PROJCLEAN,"WP1_raw.RDS"))
+  bake(file.path(RPROJ$PROJCLEAN,"WP1_raw.RDS"),{
     dir.create(file.path(RPROJ$PROJCLEAN,"WP1_waterworks"))
     dir.create(file.path(RPROJ$PROJFINAL,"WP1"))
     
     CleanDataWP1NVE()
     CleanDataWP1MET()
-    CleanDataWaterworks()
-    d <- readRDS(file.path(RPROJ$PROJCLEAN,"WP1.RDS"))
+    CleanDataWaterworksRawWater()
+    d <- readRDS(file.path(RPROJ$PROJCLEAN,"WP1_raw.RDS"))
     d <- d[value>=0]
     }) -> d
+  return(d)
+}
+
+WP1DataClean <- function(){
+  if(RUN_ALL) unlink(file.path(RPROJ$PROJCLEAN,"WP1_clean.RDS"))
+  bake(file.path(RPROJ$PROJCLEAN,"WP1_clean.RDS"),{
+    dir.create(file.path(RPROJ$PROJCLEAN,"WP1_waterworks_clean_water"))
+    dir.create(file.path(RPROJ$PROJFINAL,"WP1"))
+    
+    CleanDataWP1NVE()
+    CleanDataWP1MET()
+    CleanDataWaterworksCleanWater()
+    d <- readRDS(file.path(RPROJ$PROJCLEAN,"WP1_clean.RDS"))
+    d <- d[value>=0]
+  }) -> d
   return(d)
 }
 
