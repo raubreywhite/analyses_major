@@ -1,8 +1,8 @@
 WP2WaterworkRawData <- function(){
-  d1 <- readRDS("data_clean/WP1.RDS")
-  d2 <- readRDS("data_clean/WP2.RDS")$data
+  d1 <- readRDS(file.path(RAWmisc::PROJ$CLEAN,"WP1.RDS"))
+  d2 <- readRDS(file.path(RAWmisc::PROJ$CLEAN,"WP2.RDS"))$data
   
-  keys <- readxl::read_excel("data_raw/waterworks_to_kommune.xlsx",skip=2,sheet=2)
+  keys <- readxl::read_excel(file.path(RAWmisc::PROJ$RAW,"waterworks_to_kommune.xlsx"),skip=2,sheet=2)
   keys <- keys[,c("waterworkRaw","Mottatt - K nr","Forsynings-grad 2014")]
   keys <- data.table(keys)
   keys <- keys[!is.na(waterworkRaw)]

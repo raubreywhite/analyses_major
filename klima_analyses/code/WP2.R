@@ -1,3 +1,4 @@
+
 WP2Analyses <- function(d,ExtractValues,useWeights=F){
   #UploadWP2DataToRedis(d)
   

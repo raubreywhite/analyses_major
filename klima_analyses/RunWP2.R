@@ -1,57 +1,17 @@
+suppressMessages(library(ggplot2))
+RAWmisc::InitialiseProject(
+  HOME = "/analyses/code_major/klima_analyses/",
+  RAW = "/dropbox/data_raw/klima_analyses/",
+  CLEAN = "/analyses/data_clean/klima_analyses",
+  BAKED = "/analyses/results_baked/klima_analyses/",
+  FINAL = "/analyses/results_final/klima_analyses/",
+  SHARED = "/dropbox/results_shared/klima_analyses/")
 
-RAWmisc::RmdToDOCX(
-  inFile = "RunWP2.Rmd",outFile = paste0("reports_formatted/WP2_",gsub("-","_",lubridate::today()),".docx"))
-
-
-
-RmdToDOCX <- function (inFile = "", outFile = "", tocDepth = 2, copyFrom = NULL) 
-{
-  if (!is.null(copyFrom)) {
-    if (!stringr::str_detect(inFile, paste0("^", copyFrom, 
-                                            "/"))) {
-      stop(paste0("inFile does not start with ", copyFrom, 
-                  "/ and you are using copyFrom=", copyFrom))
-    }
-    file.copy(inFile, gsub(paste0("^", copyFrom, "/"), "", 
-                           inFile), overwrite = TRUE)
-    inFile <- gsub(paste0("^", copyFrom, "/"), "", inFile)
-  }
-  try({
-    outDir <- tempdir()
-    originalOutFile <- outFile
-    
-    outFile <- unlist(stringr::str_split(outFile, "/"))
-    if (length(outFile) == 1) {
-      #outDir <- getwd()
-    }
-    else {
-      #outDir <- file.path(getwd(), outFile[-length(outFile)])
-      outFile <- outFile[length(outFile)]
-    }
-    
-    rmarkdown::render(input = inFile, output_file = outFile, 
-                      output_dir = outDir, output_format = rmarkdown::word_document(toc = TRUE, 
-                                                                                    toc_depth = tocDepth))
-  
-    cmd <- paste0("rm -f ",file.path(getwd(),originalOutFile))
-    system(cmd)
-    print(cmd)
-    cmd <- paste0("cp -f ",file.path(outDir,outFile)," ",file.path(getwd(),originalOutFile))
-    system(cmd)
-    print(cmd)
-  }, TRUE)
-  if (!is.null(copyFrom)) {
-    file.remove(inFile)
-  }
+dir.create(file.path(RAWmisc::PROJ$SHARED_TODAY,"/WP2"))
+if(FALSE){
+  RAWmisc::RmdToDOCX(
+    inFile = "RunWP2.Rmd",outFile = paste0("reports_formatted/WP2_",gsub("-","_",lubridate::today()),".docx"))
 }
-
-
-
-
-suppressWarnings(tryCatch(
-  msgTrap <- capture.output(suppressMessages(source("RHeader.R", echo=F))),
-  error=function(err) {msgTrap <- capture.output(suppressMessages(source("/src/RHeader.R", echo=F)))}
-))
 
 suppressMessages(library(data.table))
 suppressMessages(library(ggplot2))
@@ -59,21 +19,16 @@ suppressMessages(library(foreach))
 suppressMessages(library(pomp))
 suppressMessages(library(doRedis))
 
-
 assign("RUN_ALL", FALSE, envir=globalenv())
-
-fileSources = file.path("code",list.files("code",pattern="*.[rR]$"))
-sapply(fileSources,source,.GlobalEnv)
-
 # Your code starts here
 
-if(RUN_ALL) unlink("data_clean/data.RDS")
-bake("data_clean/data.RDS",{
+if(RUN_ALL) unlink(file.path(RAWmisc::PROJ$CLEAN,"data.RDS"))
+bake(file.path(RAWmisc::PROJ$CLEAN,"data.RDS"),{
   CleanData()
 }) -> d
 
-if(RUN_ALL) unlink("results_baked/WP2_res.RDS")
-bake("results_baked/WP2_res.RDS",{
+if(RUN_ALL) unlink(file.path(RAWmisc::PROJ$BAKED,"WP2_res.RDS"))
+bake(file.path(RAWmisc::PROJ$BAKED,"WP2_res.RDS"),{
   WP2Analyses(d,ExtractValues=ExtractValues)
 }) -> all
 
@@ -114,7 +69,7 @@ data[[4]] <- plotData[water=="Under 500"]
 data[[5]] <- plotData[water=="50%+"]
 pdf(file.path("results_final","WP2",paste0("WP2_continuous.pdf")),width=12,height=6.5)
 for (i in 1:5) {
-  
+  data[[i]]
   q <- ggplot(data[[i]], aes(x = lag, y = varOfInterest, fill = dec))
   q <- q + geom_tile(data = data[[1]],alpha=0)
   q <- q + geom_tile(alpha=0.6,colour="white",lwd=0.2)

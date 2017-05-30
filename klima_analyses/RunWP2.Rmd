@@ -6,9 +6,15 @@ output:
 
 ```{r setup, message=FALSE, warning=FALSE, include=FALSE}
 suppressWarnings(suppressMessages(library(ggplot2)))
-RAWmisc::Initialise()
+RAWmisc::InitialiseProject(
+  PROJHOME = "/analyses/code_major/klima_analyses/",
+  PROJRAW = "/dropbox/data_raw/klima_analyses/",
+  PROJCLEAN = "/analyses/data_clean/klima_analyses",
+  PROJBAKED = "/analyses/results_baked/klima_analyses/",
+  PROJFINAL = "/analyses/results_final/klima_analyses/",
+  PROJSHARED = "/dropbox/results_shared/klima_analyses/")
+
 suppressWarnings(suppressMessages(library(data.table)))
-suppressWarnings(suppressMessages(library(ggplot2)))
 suppressWarnings(suppressMessages(library(foreach)))
 suppressWarnings(suppressMessages(library(pomp)))
 suppressWarnings(suppressMessages(library(doRedis)))

@@ -193,7 +193,7 @@ q <- q + theme(legend.position="bottom")
 q
 ```
 
-De fleste har lite kompetanse med R eller STATA. Mulige deltakere til "which stats methods" har den minste programmeringskompetansen, mens "sample size" har den høyeste (innen SPSS).
+De fleste oppgir at de har lite kompetanse med R eller STATA. Mulige deltakere til "which stats methods" har den minste programmeringskompetansen, mens "sample size" har den høyeste (innen SPSS).
 
 
 ```{r, echo=FALSE, fig.height=7}
