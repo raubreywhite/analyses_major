@@ -52,12 +52,12 @@ plotData[, varOfInterest := gsub("^wp950_", "", varOfInterest)]
 plotData[, varOfInterest := gsub("^wp990_", "", varOfInterest)]
 plotData[, dec := factor(dec, levels=c("Harmful","None","Protective"))]
 plotData[, season := factor(season, levels=c("All","Autumn","Winter","Spring","Summer"))]
-levels(plotData$season) <- c("All seasons\n","Autumn\n","Winter\n","Spring\n","Summer\n")
+levels(plotData$season) <- c("All seasons","Autumn","Winter","Spring","Summer")
 plotData[, varOfInterest := factor(varOfInterest,levels=c("c_rain","a_precipCorr","a_runoff"))]
 levels(plotData$varOfInterest) <- c("Rain\n(Municip. Centre)","Corrected precipication\n(Municip. Average)","Runoff\n(Municip. Average)")
 plotData[,water:=factor(water,levels=c("All","Under 10k","10k+","Under 500","50%+"))]
 plotData[,age:=factor(age,levels=c("Totalt","0-4","5-14","15-64","65+"))]
-levels(plotData$age) <- c("All ages\n","0-4 years old\n","5-14 years old\n","15-64 years old\n","65+ years old\n")
+levels(plotData$age) <- c("All ages","0-4 years old","5-14 years old","15-64 years old","65+ years old")
 
 data <- vector("list", 5)
 plots <- vector("list", 5)
@@ -67,36 +67,28 @@ data[[2]] <- plotData[water=="Under 10k"]
 data[[3]] <- plotData[water=="10k+"]
 data[[4]] <- plotData[water=="Under 500"]
 data[[5]] <- plotData[water=="50%+"]
-pdf(file.path("results_final","WP2",paste0("WP2_continuous.pdf")),width=12,height=6.5)
+pdf(file.path(RAWmisc::PROJ$SHARED_TODAY,"WP2",paste0("WP2_continuous.pdf")),width=12,height=6.5)
 for (i in 1:5) {
-  data[[i]]
+  data[[i]][pval * N > 0.05, dec:="None"]
   q <- ggplot(data[[i]], aes(x = lag, y = varOfInterest, fill = dec))
   q <- q + geom_tile(data = data[[1]],alpha=0)
   q <- q + geom_tile(alpha=0.6,colour="white",lwd=0.2)
-  q <- q + geom_text(data = data[[i]][pval * N < 0.05 & dec != "None"], label = "+", size = 14)
-  q <- q + geom_text(data = data[[i]][pval * N < 0.05 & dec != "None"], label = "+", size = 8, colour="white")
   q <- q + facet_grid(age ~ season)
   q <- q + scale_fill_manual(values=c("Red","Black","Green"),drop=F)
   q <- q + scale_x_discrete("Weeks lag")
   q <- q + scale_y_discrete("")
-  q <- q + RAWmisc::theme_SMAO(10)
+  q <- q + RAWmisc::theme_SMAO(base_size=12,v=3)
   if(i==1){
-    q <- q + labs(title="All municipalities\n")
+    q <- q + labs(title="All municipalities")
   } else if(i==2){
-    q <- q + labs(title="Municipalities with average waterwork size under 10k\n")
+    q <- q + labs(title="Municipalities with average waterwork size under 10k")
   } else if(i==3){
-    q <- q + labs(title="Municipalities with average waterwork size 10k+\n")
+    q <- q + labs(title="Municipalities with average waterwork size 10k+")
   } else if(i==4){
-    q <- q + labs(title="Municipalities with average waterwork size under 500\n")
+    q <- q + labs(title="Municipalities with average waterwork size under 500")
   } else if(i==5){
-    q <- q + labs(title="Municipalities with 50%+ not having waterworks\n")
+    q <- q + labs(title="Municipalities with 50%+ not having waterworks")
   }
-  q <- q + theme(axis.line.y = NULL)
-  q <- q + theme(axis.line.x = NULL)
-  q <- q + theme(axis.ticks.length = unit(0,"lines"))
-  q <- q + theme(axis.text.x = element_text(vjust=0.5))
-  q <- q + theme(axis.text.y = element_text(hjust=1))
-  q <- q + theme(axis.text = element_text(margin = rep(unit(1,"lines"),4)))
   print(q)
 }
 dev.off()

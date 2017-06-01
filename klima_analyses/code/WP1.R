@@ -13,9 +13,13 @@ WP1Analyses <- function(d){
   setnames(stack,"Var5","id")
   setnames(stack,"Var6","season")
   
+  stack <- stack[id=="All"]
   
   # Your code starts here
-  res <- foreach(stackIter=iter(stack, by='row')) %dopar% {
+  num <- 0
+  res <- foreach(stackIter=iter(stack, by='row')) %do% {
+    if(num%%2==1) print(paste0(num,"/",nrow(stack)))
+    num <- num + 1
     tryCatch({
       formulaBase <- paste0("value ~ factor(month)")
       if(stackIter$id=="All"){

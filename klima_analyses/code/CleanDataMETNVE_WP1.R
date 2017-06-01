@@ -1,18 +1,18 @@
 CleanDataWP1NVEGridded <- function(){
-  files <- list.files(file.path(RPROJ$PROJRAW,"WP1_Gridded","precip_rain"))
+  files <- list.files(file.path(RAWmisc::PROJ$RAW,"WP1_Gridded","precip_rain"))
   resA <- vector("list",length=length(files))
   for(i in files){
-    d <- fread(file.path(RPROJ$PROJRAW,"WP1_Gridded","precip_rain",i))
+    d <- fread(file.path(RAWmisc::PROJ$RAW,"WP1_Gridded","precip_rain",i))
     d[,waterwork:=gsub("_gP.txt","",i)]
     resA[[i]] <- d
   }
   resA <- rbindlist(resA)
   setnames(resA,c("year","month","day","gridPrecip","gridRain","waterwork"))
   
-  files <- list.files(file.path(RPROJ$PROJRAW,"WP1_Gridded","runoff"))
+  files <- list.files(file.path(RAWmisc::PROJ$RAW,"WP1_Gridded","runoff"))
   resB <- vector("list",length=length(files))
   for(i in files){
-    d <- fread(file.path(RPROJ$PROJRAW,"WP1_Gridded","runoff",i))
+    d <- fread(file.path(RAWmisc::PROJ$RAW,"WP1_Gridded","runoff",i))
     d[,waterwork:=gsub("_runoff.txt","",i)]
     resB[[i]] <- d
   }
@@ -79,14 +79,14 @@ CleanDataWP1NVEGridded <- function(){
   }
   
   
-  saveRDS(res, file.path(RPROJ$PROJCLEAN,"wp1_nve_gridrain.RDS"))
+  saveRDS(res, file.path(RAWmisc::PROJ$CLEAN,"wp1_nve_gridrain.RDS"))
 }
 
 CleanDataWP1NVENotGridded <- function(){
-  files <- list.files(file.path(RPROJ$PROJRAW,"WP1_NVE"))
+  files <- list.files(file.path(RAWmisc::PROJ$RAW,"WP1_NVE"))
   res <- vector("list",length=length(files))
   for(i in files){
-    d <- fread(file.path(RPROJ$PROJRAW,"WP1_NVE",i))
+    d <- fread(file.path(RAWmisc::PROJ$RAW,"WP1_NVE",i))
     d[,waterwork:=gsub(".txt","",i)]
     res[[i]] <- d
   }
@@ -133,28 +133,28 @@ CleanDataWP1NVENotGridded <- function(){
   }
   
   
-  saveRDS(res, file.path(RPROJ$PROJCLEAN,"wp1_nve_discharge.RDS"))
+  saveRDS(res, file.path(RAWmisc::PROJ$CLEAN,"wp1_nve_discharge.RDS"))
 }
 
 CleanDataWP1NVE <- function(){
   CleanDataWP1NVEGridded()
   CleanDataWP1NVENotGridded()
   
-  a <- readRDS(file.path(RPROJ$PROJCLEAN,"wp1_nve_gridrain.RDS"))
-  b <- readRDS(file.path(RPROJ$PROJCLEAN,"wp1_nve_discharge.RDS"))
+  a <- readRDS(file.path(RAWmisc::PROJ$CLEAN,"wp1_nve_gridrain.RDS"))
+  b <- readRDS(file.path(RAWmisc::PROJ$CLEAN,"wp1_nve_discharge.RDS"))
   d <- merge(a,b,by=c("waterwork","year","week"))
   return(d)
 }
 
 CleanDataWP1MET <- function(){
   
-  data <- readxl::read_excel(file.path(RPROJ$PROJRAW,"WP1_MET_intakepoints/WW_Precip_Rain.xlsx"))
+  data <- readxl::read_excel(file.path(RAWmisc::PROJ$RAW,"WP1_MET_intakepoints/WW_Precip_Rain.xlsx"))
   data <- data.table(data)
   setnames(data,c("met","stationNum","date","precip","rain"))
   data[,rain:=as.numeric(rain)]
   data[,precip:=as.numeric(precip)]
   
-  stationNames <- data.table(readxl::read_excel(file.path(RPROJ$PROJRAW,"names.xlsx"))) #WP1_MET_intakepoints/Kopi av Info_Vannverk.xlsx"))
+  stationNames <- data.table(readxl::read_excel(file.path(RAWmisc::PROJ$RAW,"names.xlsx"))) #WP1_MET_intakepoints/Kopi av Info_Vannverk.xlsx"))
   stationNames <- stationNames[!is.na(waterwork) & !is.na(nve) & !is.na(met),]
   stationNames <- data.table(stationNames[,c("waterwork","met"),with=F])
   stationNames[,met:=as.numeric(met)]
@@ -216,18 +216,18 @@ CleanDataWP1MET <- function(){
     var <- paste0("c_precip",i,"_",i)
     res[,(var):=shift(c_precip0_0,i),by=.(waterwork)]
   }
-  saveRDS(res, file.path(RPROJ$PROJCLEAN,"wp1_met_rain.RDS"))
+  saveRDS(res, file.path(RAWmisc::PROJ$CLEAN,"wp1_met_rain.RDS"))
 }
 
 
 CleanDataWaterworksRawWater <- function() {
-  f <- list.files(file.path(RPROJ$PROJCLEAN,"WP1_waterworks"))
-  for(i in f) file.remove(file.path(RPROJ$PROJCLEAN,"WP1_waterworks",i))
+  f <- list.files(file.path(RAWmisc::PROJ$CLEAN,"WP1_waterworks"))
+  for(i in f) file.remove(file.path(RAWmisc::PROJ$CLEAN,"WP1_waterworks",i))
   CleanDataWaterworksInternal()
-  f <- list.files(file.path(RPROJ$PROJCLEAN,"WP1_waterworks"))
+  f <- list.files(file.path(RAWmisc::PROJ$CLEAN,"WP1_waterworks"))
   d <- vector("list", length(f))
   for (i in 1:length(d)) {
-    d[[i]] <- readRDS(file.path(RPROJ$PROJCLEAN, "WP1_waterworks", f[i]))
+    d[[i]] <- readRDS(file.path(RAWmisc::PROJ$CLEAN, "WP1_waterworks", f[i]))
     d[[i]][, date := as.Date(date)]
     setcolorder(d[[i]],names(d[[1]]))
   }
@@ -309,9 +309,9 @@ CleanDataWaterworksRawWater <- function() {
   d[month %in% 6:8,season:=3]
   d[month %in% 9:11,season:=4]
   Encoding(d$waterwork) <- "UTF-8"
-  nve <- CleanDataWP1NVE() #readRDS(file.path(RPROJ$PROJCLEAN,"wp1_nve_discharge.RDS"))
+  nve <- CleanDataWP1NVE() #readRDS(file.path(RAWmisc::PROJ$CLEAN,"wp1_nve_discharge.RDS"))
   setnames(nve,"waterwork","nve")
-  stationNames <- data.table(readxl::read_excel(file.path(RPROJ$PROJRAW,"names.xlsx"))) #WP1_MET_intakepoints/Kopi av Info_Vannverk.xlsx"))
+  stationNames <- data.table(readxl::read_excel(file.path(RAWmisc::PROJ$RAW,"names.xlsx"))) #WP1_MET_intakepoints/Kopi av Info_Vannverk.xlsx"))
   stationNames <- stationNames[!is.na(waterwork) & !is.na(nve) & !is.na(met),]
   stationNames <- unique(data.table(stationNames[,c("waterwork","nve"),with=F]))
   stationNames <- stationNames[!is.na(waterwork) & !is.na(nve)]
@@ -326,7 +326,7 @@ CleanDataWaterworksRawWater <- function() {
   length(unique(nve$waterwork))
   nrow(nve)
   
-  met <- readRDS(file.path(RPROJ$PROJCLEAN,"wp1_met_rain.RDS"))
+  met <- readRDS(file.path(RAWmisc::PROJ$CLEAN,"wp1_met_rain.RDS"))
   length(unique(d$waterwork))
   d <- na.omit(d)
   d1 <- merge(d,nve,by=c("year","week","waterwork"),allow.cartesian = TRUE)
@@ -342,7 +342,7 @@ CleanDataWaterworksRawWater <- function() {
   unique(d$waterwork)[!unique(d$waterwork) %in% unique(d2$waterwork)]
   x <- unique(d[,c("waterwork"),with=F])
   x[,waterworkNum:=""]
-  if(!file.exists(file.path(RPROJ$PROJRAW,"WP1_MET_intakepoints/codes.csv"))) write.table(x,file=file.path(RPROJ$PROJRAW,"WP1_MET_intakepoints/codes.csv"),sep=";",row.names=F)
+  if(!file.exists(file.path(RAWmisc::PROJ$RAW,"WP1_MET_intakepoints/codes.csv"))) write.table(x,file=file.path(RAWmisc::PROJ$RAW,"WP1_MET_intakepoints/codes.csv"),sep=";",row.names=F)
   
   d2[type %in% c("Accredited","External"),type:="Accredited"]
   d2[,type:=factor(type,levels=c("Accredited","Internal","Online","?"))]
@@ -445,18 +445,18 @@ CleanDataWaterworksRawWater <- function() {
   d2 <- d2[!(year==2002 & week==7 & waterwork=="Nedre Romerike Vannverk IKS_Hauglifjell||?")]
   d2 <- d2[!(year==2003 & week==4 & waterwork=="Nedre Romerike Vannverk IKS_Hauglifjell||?")]
   d2 <- d2[!(year==2006 & week==16 & waterwork=="Nedre Romerike Vannverk IKS_Hauglifjell||?")]
-  saveRDS(d2,file.path(RPROJ$PROJCLEAN,"WP1_raw.RDS"))
+  saveRDS(d2,file.path(RAWmisc::PROJ$CLEAN,"WP1_raw.RDS"))
   
 }
 
 CleanDataWaterworksCleanWater <- function() {
-  f <- list.files(file.path(RPROJ$PROJCLEAN,"WP1_waterworks_clean_water"))
-  for(i in f) file.remove(file.path(RPROJ$PROJCLEAN,"WP1_waterworks_clean_water",i))
+  f <- list.files(file.path(RAWmisc::PROJ$CLEAN,"WP1_waterworks_clean_water"))
+  for(i in f) file.remove(file.path(RAWmisc::PROJ$CLEAN,"WP1_waterworks_clean_water",i))
   CleanDataWaterworksCleanWaterInternal()
-  f <- list.files(file.path(RPROJ$PROJCLEAN,"WP1_waterworks_clean_water"))
+  f <- list.files(file.path(RAWmisc::PROJ$CLEAN,"WP1_waterworks_clean_water"))
   d <- vector("list", length(f))
   for (i in 1:length(d)) {
-    d[[i]] <- readRDS(file.path(RPROJ$PROJCLEAN, "WP1_waterworks_clean_water", f[i]))
+    d[[i]] <- readRDS(file.path(RAWmisc::PROJ$CLEAN, "WP1_waterworks_clean_water", f[i]))
     d[[i]][, date := as.Date(date)]
     setcolorder(d[[i]],names(d[[1]]))
   }
@@ -540,9 +540,9 @@ CleanDataWaterworksCleanWater <- function() {
   d[month %in% 6:8,season:=3]
   d[month %in% 9:11,season:=4]
   Encoding(d$waterwork) <- "UTF-8"
-  nve <- CleanDataWP1NVE() #readRDS(file.path(RPROJ$PROJCLEAN,"wp1_nve_discharge.RDS"))
+  nve <- CleanDataWP1NVE() #readRDS(file.path(RAWmisc::PROJ$CLEAN,"wp1_nve_discharge.RDS"))
   setnames(nve,"waterwork","nve")
-  stationNames <- data.table(readxl::read_excel(file.path(RPROJ$PROJRAW,"names_clean.xlsx"))) #WP1_MET_intakepoints/Kopi av Info_Vannverk.xlsx"))
+  stationNames <- data.table(readxl::read_excel(file.path(RAWmisc::PROJ$RAW,"names_clean.xlsx"))) #WP1_MET_intakepoints/Kopi av Info_Vannverk.xlsx"))
   stationNames <- stationNames[!is.na(waterwork) & !is.na(nve) & !is.na(met),]
   stationNames <- unique(data.table(stationNames[,c("waterwork","nve"),with=F]))
   stationNames <- stationNames[!is.na(waterwork) & !is.na(nve)]
@@ -557,7 +557,7 @@ CleanDataWaterworksCleanWater <- function() {
   length(unique(nve$waterwork))
   nrow(nve)
   
-  met <- readRDS(file.path(RPROJ$PROJCLEAN,"wp1_met_rain.RDS"))
+  met <- readRDS(file.path(RAWmisc::PROJ$CLEAN,"wp1_met_rain.RDS"))
   length(unique(d$waterwork))
   d <- na.omit(d)
   d1 <- merge(d,nve,by=c("year","week","waterwork"),allow.cartesian = TRUE)
@@ -573,7 +573,7 @@ CleanDataWaterworksCleanWater <- function() {
   unique(d$waterwork)[!unique(d$waterwork) %in% unique(d2$waterwork)]
   x <- unique(d[,c("waterwork"),with=F])
   x[,waterworkNum:=""]
-  if(!file.exists(file.path(RPROJ$PROJRAW,"WP1_MET_intakepoints/codes.csv"))) write.table(x,file=file.path(RPROJ$PROJRAW,"WP1_MET_intakepoints/codes.csv"),sep=";",row.names=F)
+  if(!file.exists(file.path(RAWmisc::PROJ$RAW,"WP1_MET_intakepoints/codes.csv"))) write.table(x,file=file.path(RAWmisc::PROJ$RAW,"WP1_MET_intakepoints/codes.csv"),sep=";",row.names=F)
   
   d2[type %in% c("Accredited","External"),type:="Accredited"]
   d2[,type:=factor(type,levels=c("Accredited","Internal","Online","?"))]
@@ -676,7 +676,7 @@ CleanDataWaterworksCleanWater <- function() {
   d2 <- d2[!(year==2002 & week==7 & waterwork=="Nedre Romerike Vannverk IKS_Hauglifjell||?")]
   d2 <- d2[!(year==2003 & week==4 & waterwork=="Nedre Romerike Vannverk IKS_Hauglifjell||?")]
   d2 <- d2[!(year==2006 & week==16 & waterwork=="Nedre Romerike Vannverk IKS_Hauglifjell||?")]
-  saveRDS(d2,file.path(RPROJ$PROJCLEAN,"WP1_clean.RDS"))
+  saveRDS(d2,file.path(RAWmisc::PROJ$CLEAN,"WP1_clean.RDS"))
   
 }
 
