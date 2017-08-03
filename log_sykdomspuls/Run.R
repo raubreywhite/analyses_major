@@ -1,16 +1,17 @@
 RAWmisc::InitialiseProject(
-  HOME = "/analyses/code_major/log_sykdomspuls/",
-  RAW = "/analyses/data_raw/log_sykdomspuls/",
+  HOME = "/git/code_major/log_sykdomspuls/",
+  RAW = "/dropbox/data_raw/log_sykdomspuls/",
   CLEAN = "/analyses/data_clean/log_sykdomspuls",
   BAKED = "/analyses/results_baked/log_sykdomspuls/",
   FINAL = "/analyses/results_final/log_sykdomspuls/",
   SHARED = "/dropbox/results_shared/log_sykdomspuls/")
 
 library(data.table)
+library(ggplot2)
 
 files <- list.files(file.path(RAWmisc::PROJ$RAW))
 d <- vector("list",length=length(files))
-for(i in 1:length(files)){
+for(i in 2:length(files)){
   d[[i]] <- fread(file.path(RAWmisc::PROJ$RAW,files[i]),header=FALSE)
   setnames(d[[i]],c("date","time","x","ipForwarded","x","ipRaw","x","page","x","args"))
   d[[i]] <- d[[i]][,-which(names(d[[i]])=="x"),with=F]
@@ -25,15 +26,20 @@ locations[,ipForwarded:=ips]
 
 d <- merge(d,locations,by="ipForwarded")
 setorder(d,ipForwarded,ipRaw,date,time)
+d <- d[status=="success"]
 d[page=="/test" & args=="?x=1",session:=c(1:.N),by=ipForwarded]
 d[,session:=zoo::na.locf(session)]
 d <- d[page!="/test"]
-
+xtabs(~d$country_code)
+d <- d[country_code=="NO"]
 xtabs(~d$city_name)
+xtabs(~d$region_name)
 xtabs(~d$page)
 
-d[,.(pageVisits=.N),by=.(ipForwarded,city_name)]
-q <- ggplot(d)
+page <- d[,.(pageVisits=.N),by=.(ipForwarded,city_name,page)]
+arg <- d[,.(pageVisits=.N),by=.(ipForwarded,city_name,args)]
+
+setorder(arg,-pageVisits)
 
 
 rmarkdown::render(input = "peep_interim_white.Rmd", output_file = "peep_interim_white.pdf", 
