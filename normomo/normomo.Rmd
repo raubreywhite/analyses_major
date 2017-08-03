@@ -1,0 +1,64 @@
+---
+title: "Normomo"
+author: Richard White
+date: "`r lubridate::today()`"
+output:
+  pdf_document: default
+  
+---
+
+```{r setup, include=FALSE}
+RAWmisc::InitialiseProject(
+  HOME = "/analyses/code_major/normomo/",
+  RAW = "/analyses/data_raw/normomo/",
+  CLEAN = "/analyses/data_clean/normomo",
+  BAKED = "/analyses/results_baked/normomo/",
+  FINAL = "/analyses/results_final/normomo/",
+  SHARED = "/dropbox/results_shared/normomo/")
+
+library(data.table)
+library(ggplot2)
+
+files <- list.files(RAWmisc::PROJ$RAW)
+files <- files[stringr::str_detect(files,"^MOMOv4-3-Norway")]
+res <- vector("list",length(1000))
+i <- 1
+for(f1 in files){
+  f2 <- list.files(file.path(RAWmisc::PROJ$RAW,f1,"/"))
+  f2 <- f2[stringr::str_detect(f2,"FINAL")]
+  f3 <- list.files(file.path(RAWmisc::PROJ$RAW,f1,f2,"/"))
+  f3 <- f3[stringr::str_detect(f3,"DATA")]
+  f3 <- f3[stringr::str_detect(f3,"dta$")]
+  for(f4 in f3){
+    d <- haven::read_dta(file.path(RAWmisc::PROJ$RAW,f1,f2,f4))
+    d <- d[1:(nrow(d)-1),]
+    d$analysisWeek <- d$WoDi[nrow(d)]
+    d$analysisYear <- d$YoDi[nrow(d)]
+    d$weeksFromEnd <- nrow(d):1-1
+    res[[i]] <- d
+    i <- i + 1
+  }
+}
+res <- rbindlist(res,fill=TRUE)
+res[weeksFromEnd==4,truth:=nbc]
+res[,truth:=mean(truth,na.rm=T),by=.(GROUP,WoDi,YoDi)]
+res <- res[weeksFromEnd<4]
+res <- res[!is.na(truth)]
+
+```
+
+## Data
+### Loading
+```{r}
+setorder(res,GROUP,weeksFromEnd,YoDi,WoDi)
+res[,error:=nbc-truth]
+res[,errorRolling:=zoo::rollmean(error,3,align="center",fill=NA), by=.(GROUP,weeksFromEnd)]
+q <- ggplot(res,aes(x=wk-max(wk),y=errorRolling,colour=GROUP))
+q <- q + geom_line()
+q <- q + facet_wrap(~weeksFromEnd)
+q <- q + scale_y_continuous(lim=c(-400,200))
+q <- q + scale_colour_brewer("",palette="Set1")
+q
+
+```
+

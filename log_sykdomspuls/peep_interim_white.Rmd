@@ -1,0 +1,72 @@
+---
+title: "Peep Interim Analysis"
+author: Richard White, PhD (Biostatistics)
+date: "`r lubridate::today()`"
+output:
+  pdf_document: default
+  
+---
+
+```{r setup, include=FALSE}
+RAWmisc::InitialiseProject(
+  HOME = "/analyses/code_major/ketil_peep/",
+  RAW = "/analyses/data_raw/ketil_peep/",
+  CLEAN = "/analyses/data_clean/ketil_peep",
+  BAKED = "/analyses/results_baked/ketil_peep/",
+  FINAL = "/analyses/results_final/ketil_peep/",
+  SHARED = "/dropbox/results_shared/ketil_peep/")
+
+library(data.table)
+```
+
+## Data
+### Loading
+```{r}
+d <- haven::read_sav(file.path(RAWmisc::PROJ$RAW,"Interim analysis May 2017.sav"))
+```
+
+### Raw data
+```{r}
+table(d[,c("Outcome_24hours","Resuscitator")])
+```
+
+### Cleaning
+```{r}
+d$Outcome_24hours <- haven::as_factor(d$Outcome_24hours)
+d$Resuscitator <- haven::as_factor(d$Resuscitator)
+d <- data.table(d)
+d <- d[Outcome_24hours %in% c("Normal","still in neonatal unit","Death")]
+```
+
+### Numbers
+```{r, warning=FALSE, results='asis'}
+tab <- table(d[,c("Outcome_24hours","Resuscitator")],
+             exclude=c("FSB","MSB","seizures","Standard"))
+prop <- prop.table(tab, margin=2)
+
+displayTab <- tab
+for(i in 1:nrow(displayTab)) for(j in 1:ncol(displayTab)){
+  displayTab[i,j] <- sprintf("%s (%s%%)",displayTab[i,j], round(prop[i,j]*100))
+}
+pander::pandoc.table(displayTab)
+```
+
+\newpage
+
+## Analysis
+
+### Fisher's Exact Test (Outcome_24hours vs Resuscitator)
+```{r}
+fisher.test(tab)
+```
+
+### Chi-Squared Test (Outcome_24hours vs Resuscitator)
+```{r}
+chisq.test(tab)
+```
+
+## Conclusion
+
+Neither the Fisher's exact test nor the Chi-Squared test were significant at an $\alpha$=5% level when testing Outcome_24hours vs Resuscitator.
+
+There is no evidence to warrant suspension of the trial. I therefore recommend continuing with the trial.

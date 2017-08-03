@@ -1,6 +1,5 @@
 WP2WaterworkRawAnalyses <- function(d,ExtractValues,useWeights=F){
-  #UploadWP2DataToRedis(d)
-  
+
   exposures1 <- data.table(expand.grid(variable=unique(d$variable),varOfInterest=c("value0","value1","value2","value3","value4"),stringsAsFactors = F))
   
   exposures1[,season:="Summer"]
@@ -81,11 +80,10 @@ WP2WaterworkRawAnalyses <- function(d,ExtractValues,useWeights=F){
     
     txt <- paste0("fitData[,withinEffect:=",varOfInterest,"-betweenEffect]")
     eval(parse(text=txt))
-    
-    rescaledMean <- mean(fitData[[varOfInterest]],na.rm=T)
-    fitData[[varOfInterest]] <- fitData[[varOfInterest]] - rescaledMean
+  
     rescaledSD <- sd(fitData[[varOfInterest]],na.rm=T)
-    fitData[[varOfInterest]] <- fitData[[varOfInterest]]/rescaledSD
+    if(rescaledSD==0) return(NULL)
+    #if(exposuresIter$variable!="pH") fitData[[varOfInterest]] <- log(1+fitData[[varOfInterest]])
     
     retval <- NULL
     try({
@@ -109,8 +107,8 @@ WP2WaterworkRawAnalyses <- function(d,ExtractValues,useWeights=F){
       }
       
       retval <- ExtractValues(fit, varOfInterest, removeLead = TRUE, format = FALSE)
-      retval$est <- retval$est/rescaledSD
-      retval$se <- retval$se/rescaledSD
+      #retval$est <- retval$est/rescaledSD
+      #retval$se <- retval$se/rescaledSD
       retval$variable <- exposuresIter$variable
       retval$varOfInterest <- varOfInterest
       retval$outcome <- outcomeOfInterest
@@ -145,46 +143,27 @@ PlotWP2WaterworkRawDataAnalyses <- function(res){
   plotData <- copy(res)
   
   plotData[,dec:="None"]
-  plotData[pval < 0.05 & est<0,dec:="Protective"]
-  plotData[pval < 0.05 & est > 0, dec := "Harmful"]
-  if(sum(names(res)=="r2increase")>0){
-    #plotData[r2increase<0.01,dec:="None"]
-  }
+  plotData[.N*pval < 0.05 & est<0,dec:="Protective"]
+  plotData[.N*pval < 0.05 & est > 0, dec := "Harmful"]
   
   plotData[, N := .N]
   plotData[, lag:=factor(lag)]
-  #plotData[, cutoff := stringr::str_sub(varOfInterest, 1, 5)]
-  #plotData[, varOfInterest := gsub("^wp950_", "", varOfInterest)]
-  #plotData[, varOfInterest := gsub("^wp990_", "", varOfInterest)]
+  
   plotData[, dec := factor(dec, levels=c("Harmful","None","Protective"))]
   plotData[, season := factor(season, levels=c("All","Autumn","Winter","Spring","Summer"))]
-  levels(plotData$season) <- c("All seasons\n","Autumn\n","Winter\n","Spring\n","Summer\n")
-  #plotData[, varOfInterest := factor(varOfInterest,levels=c("c_rain","a_precipCorr","a_runoff"))]
-  #levels(plotData$varOfInterest) <- c("Rain\n(Municip. Centre)","Corrected precipication\n(Municip. Average)","Runoff\n(Municip. Average)")
-  #plotData[,water:=factor(water,levels=c("All","Under 10k","10k+","Under 500","50%+"))]
+  levels(plotData$season) <- c("All seasons","Autumn","Winter","Spring","Summer")
+  
   plotData[,age:=factor(age,levels=c("Totalt","0-4","5-14","15-64","65+"))]
-  levels(plotData$age) <- c("All ages\n","0-4 years old\n","5-14 years old\n","15-64 years old\n","65+ years old\n")
-  
-  
+  levels(plotData$age) <- c("All ages","0-4 years old","5-14 years old","15-64 years old","65+ years old")
   
     q <- ggplot(plotData, aes(x = lag, y = variable, fill = dec))
     q <- q + geom_tile(data = plotData,alpha=0)
     q <- q + geom_tile(alpha=0.6,colour="white",lwd=0.2)
-    q <- q + geom_text(data = plotData[pval * N < 0.05 & dec != "None"], label = "+", size = 14)
-    q <- q + geom_text(data = plotData[pval * N < 0.05 & dec != "None"], label = "+", size = 8, colour="white")
     q <- q + facet_grid(age ~ season)
-    q <- q + scale_fill_manual(values=c("Red","Black","Green"),drop=F)
+    q <- q + scale_fill_manual("Association",values=c("Red","Black","Green"),drop=F)
     q <- q + scale_x_discrete("Weeks lag")
     q <- q + scale_y_discrete("")
-    q <- q + RAWmisc::theme_SMAO(14)
-    q <- q + labs(title="Municipalities with raw waterwork data\n")
-    
-    q <- q + theme(axis.line.y = NULL)
-    q <- q + theme(axis.line.x = NULL)
-    q <- q + theme(axis.ticks.length = unit(0,"lines"))
-    q <- q + theme(axis.text.x = element_text(vjust=0.5))
-    q <- q + theme(axis.text.y = element_text(hjust=1))
-    q <- q + theme(axis.text = element_text(margin = rep(unit(1,"lines"),4)))
+    q <- q + RAWmisc::theme_SMAO(base_size=12,v=3)
     
   return(q)
 }

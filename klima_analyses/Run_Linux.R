@@ -22,6 +22,7 @@ outputDirs <- c(
 importantDirs <- c(
   file.path(RAWmisc::PROJ$CLEAN,"WP1_waterworks"),
   file.path(RAWmisc::PROJ$CLEAN,"WP1_waterworks_clean_water"),
+  file.path(RAWmisc::PROJ$SHARED_TODAY,"WP2"),
   outputDirs
 )
 for(i in importantDirs) if(!dir.exists(i)) dir.create(i,recursive=TRUE)
@@ -219,10 +220,53 @@ dev.off()
 
 d <- WP2WaterworkRawData()
 
-if(RUN_ALL) unlink("results_baked/WP2_waterwork_raw_res.RDS")
-bake("results_baked/WP2_waterwork_raw_res.RDS",{
+if(RUN_ALL) unlink(file.path(RAWmisc::PROJ$BAKED,"WP2_waterwork_raw_res.RDS"))
+bake(file.path(RAWmisc::PROJ$BAKED,"WP2_waterwork_raw_res.RDS"),{
   WP2WaterworkRawAnalyses(d,ExtractValues=ExtractValues)
 }) -> res
 
-print(PlotWP2WaterworkRawDataAnalyses(res))
+pdf(file.path(RAWmisc::PROJ$SHARED_TODAY,"WP2",paste0("WP2_waterwork_raw.pdf")),width=12,height=6.5)
+q <- PlotWP2WaterworkRawDataAnalyses(res)
+q <- q + labs(title="Outbreaks in municipalities with raw waterwork data")
+print(q)
+dev.off()
+
+### WP1.5 WITH CLEAN WATERWORKS
+
+d <- WP2WaterworkCleanData()
+
+if(RUN_ALL) unlink(file.path(RAWmisc::PROJ$BAKED,"WP2_waterwork_clean_res.RDS"))
+bake(file.path(RAWmisc::PROJ$BAKED,"WP2_waterwork_clean_res.RDS"),{
+  WP2WaterworkRawAnalyses(d,ExtractValues=ExtractValues)
+}) -> res
+
+pdf(file.path(RAWmisc::PROJ$SHARED_TODAY,"WP2",paste0("WP2_waterwork_clean.pdf")),width=12,height=6.5)
+q <- PlotWP2WaterworkRawDataAnalyses(res)
+q <- q + labs(title="Outbreaks in municipalities with clean waterwork data")
+print(q)
+dev.off()
+
+
+res[pval*.N<0.05]
+
+fitData <- d[variable=="Intestinal Enterococci" & 
+               season=="Spring" & 
+               age=="0-4"]
+fitData$value0
+fit <- lme4::lmer(s_outbreakLege ~ value + (1|municip),data=fitData)
+summary(fit)
+
+
+outcomeOfInterest <- exposuresIter$outcome
+varOfInterest <- exposuresIter$varOfInterest
+variablex <- exposuresIter$variable
+x <- d[age==exposuresIter$age]
+x <- x[variable==variablex]
+x <- x[season == exposuresIter$season]
+ 
+
+
+
+
+
 
