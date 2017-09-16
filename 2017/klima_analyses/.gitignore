@@ -1,0 +1,11 @@
+.Rproj.user
+.Rhistory
+.RData
+results_baked/
+results_final/
+data_raw/
+data_temp/
+data_clean/
+reports_formatted/
+pres_formatted/
+KlimaAnalyses/*
