@@ -98,6 +98,11 @@ CleanData <- function(){
   dataCentrePrecip <- rbind(dataCentrePrecip1,dataCentrePrecip2)
   dataCentrePrecip[,STNR:=NULL]
   setnames(dataCentrePrecip,c("Municipality.number","Date","prec","rain"))
+  
+  dataCentreTemperature <- data.table(readxl::read_excel(file.path(RAWmisc::PROJ$RAW,"WP2/Centre_Max_Temp_Dept1-20.xlsx")))
+  dataCentreTemperature[,STNR:=NULL]
+  setnames(dataCentreTemperature,c("Municipality.number","Date","temperature"))
+  
   dataAverage <- fread(file.path(RAWmisc::PROJ$RAW,"WP2/SeNorge_data_2000_2014.dat"))
   dataAverageCorrected <- fread(file.path(RAWmisc::PROJ$RAW,"WP2/Corrected_SeNorgeData.dat"))
   dim(dataAverage)
@@ -110,7 +115,12 @@ CleanData <- function(){
   dim(dataCentrePrecip)
   dim(dataCentre)
   
-  setnames(dataCentre,c("municip","date","c_precip","c_rain","c_radiation"))
+  dim(dataCentre)
+  dataCentre <- merge(dataCentre, dataCentreTemperature, by=c("Municipality.number","Date"),all.x=TRUE,all.y=TRUE)
+  dim(dataCentreTemperature)
+  dim(dataCentre)
+  
+  setnames(dataCentre,c("municip","date","c_precip","c_rain","c_radiation","c_temperature"))
   setnames(dataAverage,c("municip","date","a_precipUncorr","a_precipCorr","a_temp","a_runoff"))
   dataCentre[,date:=as.character(date)]
   dataCentre[,c_rain:=as.numeric(c_rain)]
@@ -131,13 +141,18 @@ CleanData <- function(){
   data[, wp950_a_runoff0_0 := AbovePercentile(a_runoff, 0.95), by = municip]
   data[, wp950_a_precipCorr0_0 := AbovePercentile(a_precipCorr, 0.95), by = municip]
   data[, wp950_c_rain0_0 := AbovePercentile(c_rain, 0.95), by = municip]
+  data[, wp950_c_temperature0_0 := 0]
+  data[c_temperature>=20, wp950_c_temperature0_0 := 1]
 
   data[, wp990_a_runoff0_0 := AbovePercentile(a_runoff, 0.99), by = municip]
   data[, wp990_a_precipCorr0_0 := AbovePercentile(a_precipCorr, 0.99), by = municip]
   data[, wp990_c_rain0_0 := AbovePercentile(c_rain, 0.99), by = municip]
+  data[, wp990_c_temperature0_0 := 0]
+  data[c_temperature>=20, wp990_c_temperature0_0 := 1]
   
   dataWeek <- data[week %in% c(1:52) & year <=2014,
     .(c_rain = mean(c_rain),
+      c_temperature = mean(c_temperature),
       a_precipCorr = mean(a_precipCorr),
       a_temp = mean(a_temp),
       a_runoff = mean(a_runoff),
@@ -145,9 +160,11 @@ CleanData <- function(){
       wp950_a_runoff0_0 = sum(wp950_a_runoff0_0),
       wp950_a_precipCorr0_0 = sum(wp950_a_precipCorr0_0),
       wp950_c_rain0_0 = sum(wp950_c_rain0_0),
+      wp950_c_temperature0_0 = sum(wp950_c_temperature0_0),
       wp990_a_runoff0_0 = sum(wp990_a_runoff0_0),
       wp990_a_precipCorr0_0 = sum(wp990_a_precipCorr0_0),
-      wp990_c_rain0_0 = sum(wp990_c_rain0_0)
+      wp990_c_rain0_0 = sum(wp990_c_rain0_0),
+      wp990_c_temperature0_0 = sum(wp990_c_temperature0_0)
     ),
     by=.(
       municip,year,week

@@ -147,12 +147,21 @@ CleanDataWP1NVE <- function(){
 }
 
 CleanDataWP1MET <- function(){
+  tempdata <- readxl::read_excel(file.path(RAWmisc::PROJ$RAW,"WP1_MET_intakepoints/WW_Max_Temp.xlsx"))
+  tempdata <- data.table(tempdata)
+  setnames(tempdata,c("met","stationNum","date","temperature"))
+  tempdata[,temperature:=as.numeric(temperature)]
+  tempdata[,stationNum:=NULL]
   
   data <- readxl::read_excel(file.path(RAWmisc::PROJ$RAW,"WP1_MET_intakepoints/WW_Precip_Rain.xlsx"))
   data <- data.table(data)
   setnames(data,c("met","stationNum","date","precip","rain"))
   data[,rain:=as.numeric(rain)]
   data[,precip:=as.numeric(precip)]
+  
+  dim(data)
+  data <- merge(data,tempdata,by=c("met","date"),all.x=T)
+  dim(data)
   
   stationNames <- data.table(readxl::read_excel(file.path(RAWmisc::PROJ$RAW,"names.xlsx"))) #WP1_MET_intakepoints/Kopi av Info_Vannverk.xlsx"))
   stationNames <- stationNames[!is.na(waterwork) & !is.na(nve) & !is.na(met),]
@@ -167,7 +176,7 @@ CleanDataWP1MET <- function(){
   x[,stationNum:=NULL]
   res <- x[!is.na(waterwork)]
   dim(res)
-  res <- res[,.(precip=mean(precip),rain=mean(rain)),by=.(date,waterwork)]
+  res <- res[,.(precip=mean(precip,na.rm=T),rain=mean(rain,na.rm=T),temperature=mean(temperature,na.rm=T)),by=.(date,waterwork)]
   dim(res)
   
   res[,year := format.Date(date,"%G")] #Week-based year, instead of normal year (%Y)
@@ -180,13 +189,21 @@ CleanDataWP1MET <- function(){
   res[, wp990_precip0_0 := AbovePercentile(precip, 0.99), by = waterwork]
   res[, wp950_precip0_0 := AbovePercentile(precip, 0.95), by = waterwork]
   
+  res[, wp990_temperature0_0 := 0]
+  res[, wp950_temperature0_0 := 0]
+  res[temperature>=20, wp990_temperature0_0 := 1]
+  res[temperature>=20, wp950_temperature0_0 := 1]
+  
   res <- res[week %in% c(1:52) & year <=2014,
              .(wp990_rain0_0 = sum(wp990_rain0_0,na.rm=T),
                wp950_rain0_0 = sum(wp950_rain0_0,na.rm=T),
                wp990_precip0_0 = sum(wp990_precip0_0,na.rm=T),
                wp950_precip0_0 = sum(wp950_precip0_0,na.rm=T),
+               wp990_temperature0_0 = sum(wp990_temperature0_0,na.rm=T),
+               wp950_temperature0_0 = sum(wp950_temperature0_0,na.rm=T),
                c_rain0_0 = mean(rain,na.rm=T),
-               c_precip0_0 = mean(precip,na.rm=T)
+               c_precip0_0 = mean(precip,na.rm=T),
+               c_temperature0_0 = mean(temperature,na.rm=T)
              ),
              by=.(
                waterwork,year,week
@@ -215,6 +232,17 @@ CleanDataWP1MET <- function(){
     
     var <- paste0("c_precip",i,"_",i)
     res[,(var):=shift(c_precip0_0,i),by=.(waterwork)]
+  }
+  
+  for(i in 1:4){
+    var <- paste0("wp950_temperature",i,"_",i)
+    res[,(var):=shift(wp950_temperature0_0,i),by=.(waterwork)]
+    
+    var <- paste0("wp990_temperature",i,"_",i)
+    res[,(var):=shift(wp990_temperature0_0,i),by=.(waterwork)]
+    
+    var <- paste0("c_temperature",i,"_",i)
+    res[,(var):=shift(c_temperature0_0,i),by=.(waterwork)]
   }
   saveRDS(res, file.path(RAWmisc::PROJ$CLEAN,"wp1_met_rain.RDS"))
 }
@@ -381,6 +409,11 @@ CleanDataWaterworksRawWater <- function() {
     wp950_precip2_2=mean(wp950_precip2_2,na.rm=T),
     wp950_precip3_3=mean(wp950_precip3_3,na.rm=T),
     wp950_precip4_4=mean(wp950_precip4_4,na.rm=T),
+    wp950_temperature0_0=mean(wp950_temperature0_0,na.rm=T),
+    wp950_temperature1_1=mean(wp950_temperature1_1,na.rm=T),
+    wp950_temperature2_2=mean(wp950_temperature2_2,na.rm=T),
+    wp950_temperature3_3=mean(wp950_temperature3_3,na.rm=T),
+    wp950_temperature4_4=mean(wp950_temperature4_4,na.rm=T),
     wp950_gridRain0_0=mean(wp950_gridRain0_0,na.rm=T),
     wp950_gridRain1_1=mean(wp950_gridRain1_1,na.rm=T),
     wp950_gridRain2_2=mean(wp950_gridRain2_2,na.rm=T),
@@ -411,6 +444,11 @@ CleanDataWaterworksRawWater <- function() {
     c_precip2_2=mean(c_precip2_2,na.rm=T),
     c_precip3_3=mean(c_precip3_3,na.rm=T),
     c_precip4_4=mean(c_precip4_4,na.rm=T),
+    c_temperature0_0=mean(c_temperature0_0,na.rm=T),
+    c_temperature1_1=mean(c_temperature1_1,na.rm=T),
+    c_temperature2_2=mean(c_temperature2_2,na.rm=T),
+    c_temperature3_3=mean(c_temperature3_3,na.rm=T),
+    c_temperature4_4=mean(c_temperature4_4,na.rm=T),
     c_gridRain0_0=mean(c_gridRain0_0,na.rm=T),
     c_gridRain1_1=mean(c_gridRain1_1,na.rm=T),
     c_gridRain2_2=mean(c_gridRain2_2,na.rm=T),
@@ -612,6 +650,11 @@ CleanDataWaterworksCleanWater <- function() {
     wp950_precip2_2=mean(wp950_precip2_2,na.rm=T),
     wp950_precip3_3=mean(wp950_precip3_3,na.rm=T),
     wp950_precip4_4=mean(wp950_precip4_4,na.rm=T),
+    wp950_temperature0_0=mean(wp950_temperature0_0,na.rm=T),
+    wp950_temperature1_1=mean(wp950_temperature1_1,na.rm=T),
+    wp950_temperature2_2=mean(wp950_temperature2_2,na.rm=T),
+    wp950_temperature3_3=mean(wp950_temperature3_3,na.rm=T),
+    wp950_temperature4_4=mean(wp950_temperature4_4,na.rm=T),
     wp950_gridRain0_0=mean(wp950_gridRain0_0,na.rm=T),
     wp950_gridRain1_1=mean(wp950_gridRain1_1,na.rm=T),
     wp950_gridRain2_2=mean(wp950_gridRain2_2,na.rm=T),
@@ -642,6 +685,11 @@ CleanDataWaterworksCleanWater <- function() {
     c_precip2_2=mean(c_precip2_2,na.rm=T),
     c_precip3_3=mean(c_precip3_3,na.rm=T),
     c_precip4_4=mean(c_precip4_4,na.rm=T),
+    c_temperature0_0=mean(c_temperature0_0,na.rm=T),
+    c_temperature1_1=mean(c_temperature1_1,na.rm=T),
+    c_temperature2_2=mean(c_temperature2_2,na.rm=T),
+    c_temperature3_3=mean(c_temperature3_3,na.rm=T),
+    c_temperature4_4=mean(c_temperature4_4,na.rm=T),
     c_gridRain0_0=mean(c_gridRain0_0,na.rm=T),
     c_gridRain1_1=mean(c_gridRain1_1,na.rm=T),
     c_gridRain2_2=mean(c_gridRain2_2,na.rm=T),

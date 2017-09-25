@@ -1,11 +1,11 @@
 suppressMessages(library(ggplot2))
 RAWmisc::InitialiseProject(
-  HOME = "/analyses/code_major/klima_analyses/",
-  RAW = "/dropbox/data_raw/klima_analyses/",
-  CLEAN = "/analyses/data_clean/klima_analyses",
-  BAKED = "/analyses/results_baked/klima_analyses/",
-  FINAL = "/analyses/results_final/klima_analyses/",
-  SHARED = "/dropbox/results_shared/klima_analyses/")
+  HOME = "/git/code_major/2017/klima_analyses/",
+  RAW = "/analyses/data_raw/code_major/2017/klima_analyses/",
+  CLEAN = "/analyses/data_clean/code_major/2017/klima_analyses",
+  BAKED = "/analyses/results_baked/code_major/2017/klima_analyses/",
+  FINAL = "/analyses/results_final/code_major/2017/klima_analyses/",
+  SHARED = "/dropbox/results_shared/code_major/2017/klima_analyses/")
 
 dir.create(file.path(RAWmisc::PROJ$SHARED_TODAY,"/WP2"))
 if(FALSE){

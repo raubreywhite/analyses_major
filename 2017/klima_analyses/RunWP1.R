@@ -1,11 +1,11 @@
-suppressWarnings(suppressMessages(library(ggplot2)))
+suppressMessages(library(ggplot2))
 RAWmisc::InitialiseProject(
-  PROJHOME = "/analyses/code_major/klima_analyses/",
-  PROJRAW = "/dropbox/data_raw/klima_analyses/",
-  PROJCLEAN = "/analyses/data_clean/klima_analyses",
-  PROJBAKED = "/analyses/results_baked/klima_analyses/",
-  PROJFINAL = "/analyses/results_final/klima_analyses/",
-  PROJSHARED = "/dropbox/results_shared/klima_analyses/")
+  HOME = "/git/code_major/2017/klima_analyses/",
+  RAW = "/analyses/data_raw/code_major/2017/klima_analyses/",
+  CLEAN = "/analyses/data_clean/code_major/2017/klima_analyses",
+  BAKED = "/analyses/results_baked/code_major/2017/klima_analyses/",
+  FINAL = "/analyses/results_final/code_major/2017/klima_analyses/",
+  SHARED = "/dropbox/results_shared/code_major/2017/klima_analyses/")
 
 suppressWarnings(suppressMessages(library(data.table)))
 suppressWarnings(suppressMessages(library(ggplot2)))
