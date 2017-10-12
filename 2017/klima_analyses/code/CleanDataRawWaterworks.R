@@ -3284,7 +3284,7 @@ CleanDataWaterworksInternal <- function(){
                                      sheet = "Råvann",
                                      skip = 4,
                                      col_names = FALSE,
-                                     col_types = c("text","date",rep("text", 11))))
+                                     col_types = c("text","date",rep("text", 10))))
   
   setnames(d, c("X", "date",
                 "pH",
@@ -3292,7 +3292,7 @@ CleanDataWaterworksInternal <- function(){
                 "X",
                 "Turbidity",
                 "TOC",
-                "X","X","X","X","X","X"))
+                "X","X","X","X","X"))
   
   d <- d[, which(names(d) != "X"), with = F]
   
@@ -3324,7 +3324,7 @@ CleanDataWaterworksInternal <- function(){
                                      sheet = "Råvann",
                                      skip = 4,
                                      col_names = FALSE,
-                                     col_types = c("text","date",rep("text", 11))))
+                                     col_types = c("text","date",rep("text", 10))))
   
   setnames(d, c("X", "date",
                 "pH",
@@ -3332,7 +3332,7 @@ CleanDataWaterworksInternal <- function(){
                 "X",
                 "Turbidity",
                 "TOC",
-                "X","X","X","X","X","X"))
+                "X","X","X","X","X"))
   
   d <- d[, which(names(d) != "X"), with = F]
   
@@ -3424,7 +3424,7 @@ CleanDataWaterworksInternal <- function(){
       sheet = 1,
       skip = 8,
       col_names = FALSE,
-      col_types = c("text", "text", "date", rep("text", 5))))
+      col_types = c("text", "text", "date", rep("text", 4))))
 
   setnames(d, c(
             "X","X",
@@ -3432,8 +3432,7 @@ CleanDataWaterworksInternal <- function(){
             "X",
             "var",
             "value",
-            "units",
-            "X"))
+            "units"))
 
   d <- d[!is.na(var), which(names(d) != "X"), with = F]
 
@@ -3545,7 +3544,7 @@ CleanDataWaterworksInternal <- function(){
                                      skip = 6,
                                      col_names = FALSE,
                                      col_types = c("text", rep("text", 7))))
-  d[,X0:=as.Date(as.numeric(X0),origin="1899-12-30")]
+  d[,X__1:=as.Date(as.numeric(X__1),origin="1899-12-30")]
   
   setnames(d, c("date",
                 "Coliform Bacteria",
@@ -3646,7 +3645,7 @@ CleanDataWaterworksInternal <- function(){
                                      skip = 5,
                                      col_names = FALSE,
                                      col_types = c("text", rep("text", 4))))
-  d[,X0:=as.Date(as.numeric(X0),origin="1899-12-30")]
+  d[,X__1:=as.Date(as.numeric(X__1),origin="1899-12-30")]
   
   setnames(d, c("date",
                 "pH",
@@ -3688,7 +3687,7 @@ CleanDataWaterworksInternal <- function(){
                                      skip = 4,
                                      col_names = FALSE,
                                      col_types = c("text", rep("text", 4))))
-  d[,X0:=as.Date(as.numeric(X0),origin="1899-12-30")]
+  d[,X__1:=as.Date(as.numeric(X__1),origin="1899-12-30")]
   
   setnames(d, c("date",
                 "Coliform Bacteria",

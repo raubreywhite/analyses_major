@@ -596,6 +596,43 @@ CleanDataWaterworksCleanWater <- function() {
   nrow(nve)
   
   met <- readRDS(file.path(RAWmisc::PROJ$CLEAN,"wp1_met_rain.RDS"))
+  
+  RAWmisc::RecodeDT(met,
+                    c(
+                      "Alesund_Vasstrandlia||?"="Ålesund||Vasstrandlia",
+                      "Arendal_Rore||01 Råvann Rore"="Arendal||02 Rentvann Hølen",
+                      "Asker og Baerum vannverk IKS_Aurevann||?"="Asker og Bærum IKS||Aurevann",
+                      "Asker og Baerum vannverk IKS_Kattås||?"="Asker og Bærum IKS||Holsfjorden",
+                      "Bergen_Espeland||Espeland, rå"="Bergen_Espeland||Espeland",
+                      "Bergen_Espeland||Jordalsvatnet, rå"="Bergen_Jordalsvatnet||Jordalsvatnet",
+                      "Bergen_Espeland||Kismul, rå"="Bergen_Kismul||Kismul",
+                      "Bergen_Espeland||Sædalen, rå" ="Bergen_Saedalen||Saedalen",
+                      "Bergen_Espeland||Svartediket"="Bergen_Svartediket||Svartediket",
+                      "Glitrevannverket IKS_Kleivdammen||Kleivdammen"="Glitrevannverket||Kleivdammen",
+                      "Glitrevannverket IKS_Landfall||Landfall"="Glitrevannverket||Landfall",
+                      "Halden_Lille Erte||?"="Halden||Lille_Erte",
+                      "HIAS_Hamar||?"="HIAS_Hamar||HVBA Rentvann",
+                      "HIAS_Stange||?"="HIAS_Stange||Hemstad Rentvann",
+                      "IVAR IKS_Langevatn||Storevatn"="IVAR IKS||Langevatn",
+                      "Karmøy_Brekke||?"="Karmøy||Brekke",
+                      "Kongsvinger_Granli_GIVAS||01 Granli Råvann brønn 1"="Kongsvinger||Granli",
+                      "Kristiansand_Rossevann||Rossevann - Råvann"="Kristiansand||Rossevann",
+                      "Kristiansand_Tronstadvann||TIV - Råvann"="Kristiansand||Tronstadvann",
+                      "Lillehammer||LILLEHAMMER-KORGEN-RÅVANN"="Lillehammer||Lillehammer",
+                      "MOVAR_Vansjø||?"="Movar||Vansjø",
+                      "Oppegard||?"="Oppegård||?",
+                      "Oslo_Oset||Oset"="Oslo||Oset",
+                      "Oslo_Oset||Skullerud" ="Oslo||Skullerud",
+                      "Sarpsborg_Baterod||Glomma"="Sarpsborg_Baterød||?",
+                      "Tromsø_Simavik||0101 Råvann Langvann"="Tromsø_Kvaløya||0103 Simavik Rentvann",
+                      "Tromsø_Kvaløya||0201 Kvaløya Råvann"="Tromsø_Kvaløya||0202 Kvaløya Rentvann",
+                      "Trondheim_Vikelvdalen||?"="Trondheim||Vikelvdalen",
+                      "Univann_Sjunken||?"="Univann_Sjunken||117 UNIVANN Sjunken Rentvann",
+                      "Vestfold Vann IKS_Eidsfoss||?"="Vestfold||Eidsfoss",
+                      "Vestfold Vann IKS_Seierstad||?"="Vestfold||Seierstad"
+                    )
+                    ,"waterwork")
+  
   length(unique(d$waterwork))
   d <- na.omit(d)
   d1 <- merge(d,nve,by=c("year","week","waterwork"),allow.cartesian = TRUE)

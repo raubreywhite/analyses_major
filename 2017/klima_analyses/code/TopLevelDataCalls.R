@@ -11,6 +11,17 @@ WP1DataRaw <- function(){
     CleanDataWaterworksRawWater()
     d <- readRDS(file.path(RAWmisc::PROJ$CLEAN,"WP1_raw.RDS"))
     d <- d[value>=0]
+    
+    d[,wp950_gridRunoffStandardised0_3:=wp950_gridRunoffStandardised0_0+wp950_gridRunoffStandardised1_1+wp950_gridRunoffStandardised2_2+wp950_gridRunoffStandardised3_3]
+    d[,wp950_gridRain0_3:=wp950_gridRain0_0+wp950_gridRain1_1+wp950_gridRain2_2+wp950_gridRain3_3]
+    d[,wp950_gridPrecip0_3:=wp950_gridPrecip0_0+wp950_gridPrecip1_1+wp950_gridPrecip2_2+wp950_gridPrecip3_3]
+    d[,wp950_temperature0_3:=wp950_temperature0_0+wp950_temperature1_1+wp950_temperature2_2+wp950_temperature3_3]
+    
+    d[,c_gridRunoffStandardised0_3:=(c_gridRunoffStandardised0_0+c_gridRunoffStandardised1_1+c_gridRunoffStandardised2_2+c_gridRunoffStandardised3_3)/4]
+    d[,c_gridRain0_3:=(c_gridRain0_0+c_gridRain1_1+c_gridRain2_2+c_gridRain3_3)/4]
+    d[,c_gridPrecip0_3:=(c_gridPrecip0_0+c_gridPrecip1_1+c_gridPrecip2_2+c_gridPrecip3_3)/4]
+    d[,c_temperature0_3:=(c_temperature0_0+c_temperature1_1+c_temperature2_2+c_temperature3_3)/4]
+    
     }) -> d
   return(d)
 }
@@ -26,6 +37,17 @@ WP1DataClean <- function(){
     CleanDataWaterworksCleanWater()
     d <- readRDS(file.path(RAWmisc::PROJ$CLEAN,"WP1_clean.RDS"))
     d <- d[value>=0]
+    
+    d[,wp950_gridRunoffStandardised0_3:=wp950_gridRunoffStandardised0_0+wp950_gridRunoffStandardised1_1+wp950_gridRunoffStandardised2_2+wp950_gridRunoffStandardised3_3]
+    d[,wp950_gridRain0_3:=wp950_gridRain0_0+wp950_gridRain1_1+wp950_gridRain2_2+wp950_gridRain3_3]
+    d[,wp950_gridPrecip0_3:=wp950_gridPrecip0_0+wp950_gridPrecip1_1+wp950_gridPrecip2_2+wp950_gridPrecip3_3]
+    d[,wp950_temperature0_3:=wp950_temperature0_0+wp950_temperature1_1+wp950_temperature2_2+wp950_temperature3_3]
+    
+    d[,c_gridRunoffStandardised0_3:=(c_gridRunoffStandardised0_0+c_gridRunoffStandardised1_1+c_gridRunoffStandardised2_2+c_gridRunoffStandardised3_3)/4]
+    d[,c_gridRain0_3:=(c_gridRain0_0+c_gridRain1_1+c_gridRain2_2+c_gridRain3_3)/4]
+    d[,c_gridPrecip0_3:=(c_gridPrecip0_0+c_gridPrecip1_1+c_gridPrecip2_2+c_gridPrecip3_3)/4]
+    d[,c_temperature0_3:=(c_temperature0_0+c_temperature1_1+c_temperature2_2+c_temperature3_3)/4]
+    
   }) -> d
   return(d)
 }
