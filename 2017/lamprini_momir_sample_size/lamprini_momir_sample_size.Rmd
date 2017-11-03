@@ -1,0 +1,185 @@
+---
+title: "Mouse Radiation"
+author: Richard White
+date: "`r lubridate::today()`"
+output:
+  pdf_document: default
+editor_options: 
+  chunk_output_type: console
+---
+
+# Neccessary functions
+```{r, results='hide', message=FALSE, warning=FALSE}
+RAWmisc::AllowFileManipulationFromInitialiseProject()
+RAWmisc::InitialiseProject(
+  HOME = "/git/code_major/2017/lamprini_momir_sample_size/",
+  RAW = "/analyses/data_raw/code_major/2017/lamprini_momir_sample_size/",
+  CLEAN = "/analyses/data_clean/code_major/2017/lamprini_momir_sample_size",
+  BAKED = "/analyses/results_baked/code_major/2017/lamprini_momir_sample_size/",
+  FINAL = "/analyses/results_final/code_major/2017/lamprini_momir_sample_size/",
+  SHARED = "/dropbox/results_shared/code_major/2017/lamprini_momir_sample_size/")
+
+suppressWarnings(suppressMessages(library(data.table)))
+suppressWarnings(suppressMessages(library(ggplot2)))
+
+GenerateSample <- function(N=10000){
+  # age, sex, types of salmonella, antibiotics
+  x1 = rnorm(N)
+  x2 = rnorm(N)
+  z = 1 + 2*x1 + 3*x2
+  pr = 1/(1+exp(-z))
+  y = rbinom(N,1,pr)
+
+  #now feed it to glm:
+  df = data.frame(y=y,x1=x1,x2=x2)
+  glm( y~x1+x2,data=df,family="binomial")
+  
+  d <- data.table(expand.grid(dose=c(0,0.1,1,3),rate=c(2.5,100)))
+  d[,weighting:=weighting/2]
+  d[,isHighRate:=0]
+  d[rate==100,isHighRate:=1]
+  #d[,medianSurvivalDays:=exp(5.5225-0.055*dose - 0.065*dose*isHighRate)]
+  d[,medianSurvivalDays:=exp(5.5225-0.025*dose - 0.035*dose*isHighRate)]
+  
+  d[,miceAssigned:=as.numeric(NA)]
+  d[is.na(miceAssigned), miceAssigned:=0]
+  d[, miceNew := 0]
+  d[miceAssigned == 0, miceNew := round(micePossible*weighting)]
+  d[,mice:=miceAssigned+miceNew]
+  
+  d[,miceAssigned:=NULL]
+  d[,miceNew := NULL]
+  
+  d
+  dt <- d[rep(seq(.N), mice), !"mice", with=F]
+  dt[, survivalTime := rweibull(.N, scale=medianSurvivalDays, shape=10)]
+  dt[, dead:=0]
+  dt[survivalTime<=440, dead:=1]
+  
+  dt[, time := survivalTime]
+  dt[survivalTime > 440, time:=440]
+  dt[,label:=factor(sprintf("Dose: %s/Rate: %s",dose,rate),levels=c(
+    "Dose: 0/Rate: 2.5",
+    "Dose: 0.1/Rate: 2.5",
+    "Dose: 1/Rate: 2.5",
+    "Dose: 3/Rate: 2.5",
+    "Dose: 0/Rate: 100",
+    "Dose: 0.1/Rate: 100",
+    "Dose: 1/Rate: 100",
+    "Dose: 3/Rate: 100"
+  ))]
+  
+  return(list(d=d,dt=dt))
+}
+
+Power <- function(micePossible=280, weighting=c(0.25, 0.25, 0.25, 0.25)){
+  res <- vector("list",1000)
+  for(run in 1:1000){
+    dt <- GenerateMice(micePossible=micePossible, weighting=weighting)[["dt"]]
+    s <- Surv(time=dt$time, event=dt$dead)
+    fit <- coxph(s ~ dose + dose*isHighRate,data = dt)
+    summary(fit)
+    
+    res[[run]] <- as.data.frame(coef(summary(fit)))
+    res[[run]]$var <- row.names(res[[run]])
+  }
+  
+  res <- rbindlist(res)
+  setnames(res,c("beta","hr","se","z","p","var"))
+  res[,isSig:=p<0.05]
+  return(res[,.(power=mean(isSig)),by=.(var)])
+}
+```
+
+\newpage
+
+# Observing the data
+```{r}
+mice <- GenerateMice(28000)
+print(mice[["d"]])
+mice <- mice[["dt"]]
+q <- ggplot(mice,aes(x=label,y=time))
+q <- q + geom_boxplot()
+q <- q + theme(axis.text.x = element_text(angle = 90, hjust = 0.5, vjust=0.5))
+q
+```
+
+\newpage
+
+```{r, fig.height=6}
+fit <- survfit(Surv(time, dead) ~ label,
+               data = mice)
+# Visualize with survminer
+ggsurvplot(fit, data = mice, risk.table = F, palette="Set2", legend="right")
+
+```
+
+\newpage
+
+# Cox regressions
+
+```{r, warning=FALSE}
+s <- Surv(time=mice$time, event=mice$dead)
+fit <- coxph(s ~ factor(dose)*isHighRate,data = mice)
+summary(fit)
+
+fit <- coxph(s ~ dose*isHighRate,data = mice)
+summary(fit)
+```
+
+\newpage
+
+# Weibull regressions
+
+```{r, warning=FALSE}
+fit <- WeibullReg(Surv(survivalTime, rep(1,nrow(mice)))~factor(dose)*isHighRate, data=mice)
+fit$HR
+
+fit <- WeibullReg(Surv(survivalTime, rep(1,nrow(mice)))~dose*isHighRate, data=mice)
+fit$HR
+```
+
+\newpage
+
+# Power
+
+```{r}
+res <- list()
+resIndex <- 1
+weighting <- list(
+  "0.25, 0.25, 0.25, 0.25"=c(0.25,0.25,0.25,0.25)
+)
+for(micePossible in c(200)) for(w in 1:length(weighting)){
+  print("*******")
+  print("*******")
+  print("*******")
+  x <- GenerateMice(micePossible=micePossible, weighting=weighting[[w]])
+  print(sprintf("THE FOLLOWING APPLIES FOR %s MICE",micePossible))
+  print(sprintf("WITH WEIGHTING OF %s",names(weighting)[w]))
+  print(x[["d"]])
+  res[[resIndex]] <- Power(micePossible=micePossible, weighting=weighting[[w]])
+  res[[resIndex]][,mice:=micePossible]
+  res[[resIndex]][,weighting:=names(weighting)[w]]
+  print(res[[resIndex]])
+  resIndex <- resIndex + 1
+}
+```
+
+\newpage
+
+```{r}
+res <- rbindlist(res)
+res[,facet:=sprintf("Weighting of mice: %s",weighting)]
+q <- ggplot(res[var %in% c("dose","dose:isHighRate")],aes(x=mice,y=power,colour=var))
+q <- q + geom_line()
+q <- q + geom_point()
+q <- q + geom_label(aes(y=power+0.02,label=RAWmisc::Format(power,2)))
+q <- q + expand_limits(y=0)
+q <- q + facet_wrap(~facet,ncol=1)
+q
+```
+
+```{r}
+print(res[var %in% c("dose","dose:isHighRate"),c("var","power","mice","weighting")])
+```
+

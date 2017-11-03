@@ -1,0 +1,151 @@
+---
+title: "Health Workforce Validation"
+author: Richard White
+date: "`r lubridate::today()`"
+output:
+  pdf_document: default
+---
+
+\newpage
+
+# Loading in data
+```{r, results='hide', message=FALSE, warning=FALSE}
+RAWmisc::InitialiseProject(
+  HOME = "/git/code_major/2017/hadeel_health_workforce/",
+  RAW = "/dropbox/data_raw/code_major/2017/hadeel_health_workforce/",
+  CLEAN = "/analyses/data_clean/code_major/2017/hadeel_health_workforce/",
+  BAKED = "/analyses/results_baked/code_major/2017/hadeel_health_workforce/",
+  FINAL = "/analyses/results_final/code_major/2017/hadeel_health_workforce/",
+  SHARED = "/dropbox/data_raw/code_major/2017/hadeel_health_workforce/results/")
+
+library(data.table)
+library(ggplot2)
+
+# FACILITIES
+d1 <- readxl::read_excel(file.path(RAWmisc::PROJ$RAW,
+                                    "Data collected by PCBS - Gaza 1st phase",
+                                    "Gaza Phase I - After auditing by Fayez",
+                                    "FACILITY_MAIN_Gaza I_Richard.xlsx"))
+
+d2 <- readxl::read_excel(file.path(RAWmisc::PROJ$RAW,
+                                    "Data collected by PCBS - WB 1st phase",
+                                    "WB - Phase I",
+                                    "FACILITY_MAIN WB I_Richard.xlsx"))
+
+dFacilities <- data.table(rbind(d1,d2))
+dFacilities[,IDH01:=as.numeric(IDH01)]
+
+# WORKERS
+d1 <- readxl::read_excel(file.path(RAWmisc::PROJ$RAW,
+                                    "Data collected by PCBS - Gaza 1st phase",
+                                    "Gaza Phase I - After auditing by Fayez",
+                                    "WORKERS_MAIN (1).xlsx"))
+
+d2 <- readxl::read_excel(file.path(RAWmisc::PROJ$RAW,
+                                    "Data collected by PCBS - WB 1st phase",
+                                    "WB - Phase I",
+                                    "WORKERS_MAIN WB.xlsx"))
+d1 <- d1[,names(d2)]
+
+dWorkers <- data.table(rbind(d1,d2))
+
+# DISTRICTS
+dLocation <- list()
+for(i in c("North WB","Middle WB", "South WB", "North Gaza", "Middle Gaza", "South Gaza", "Jerusalem District (J2)", "East Jerusalem (J1)")){
+  dLocation[[i]] <- readxl::read_excel(file.path(RAWmisc::PROJ$RAW,
+                                                   "Districts and localities codes - Richard.xls"),
+                                         sheet = i)
+  dLocation[[i]]$region <- i
+}
+dLocation <- rbindlist(dLocation)
+dLocation[,isGaza := 0]
+dLocation[region %in% c("North Gaza", "Middle Gaza", "South Gaza"), isGaza := 1]
+setnames(dLocation,c("district","districtCode","localityCode","localityName","urbanRural","region","isGaza"))
+dLocation[,districtCode:=as.numeric(districtCode)]
+dLocation <- dLocation[!is.na(districtCode)]
+dLocation[,districtJerusalemClean:=district]
+dLocation[district %in% c("Jerusalem (J2)", "East Jerusalem (J1)"),districtJerusalemClean:="Jerusalem"]
+```
+
+```{r}
+nrow(dFacilities)
+nrow(dWorkers)
+```
+
+\newpage 
+
+# Pre-service training indicators
+
+## Total number of facilities that provide clinical trainings ( pre-graduation ) in Palestine
+
+- Source: Facility questionnaire
+- Calculation: TR01 answer 1
+- Indicator description: Total number of health facilities in Palestine that offer clinical trainings sites 
+
+```{r}
+xtabs(~dFacilities$TR01)
+```
+
+\newpage 
+
+## Total number of facilities that provide clinical trainings ( pre-graduation ) in the West Bank
+
+- Source: Facility questionnaire
+- Calculation: Sum of all TR01 answer 1 per  IDH 01 District in West Bank
+- Indicator description: Total number of health facilities in the West Bank that offer clinical trainings sites 
+
+```{r}
+dLoc <- unique(dLocation[,c("districtCode","districtJerusalemClean","isGaza")])
+setnames(dLoc,"districtCode","IDH01")
+
+nrow(d)
+d <- merge(dFacilities,dLoc,by="IDH01",all.x=T)
+nrow(d)
+
+with(d[isGaza==0],xtabs(~districtJerusalemClean+TR01))
+```
+
+\newpage 
+
+## Total number of facilities that provide clinical trainings (pre-graduation ) in Gaza
+
+- Source: Facility questionnaire
+- Calculation: Sum of all TR01 answer 1 per IDH 01 district in Gaza
+- Indicator description: Total number of health facilities in Gaza that offer clinical trainings sites 
+
+```{r}
+dLoc <- unique(dLocation[,c("districtCode","districtJerusalemClean","isGaza")])
+setnames(dLoc,"districtCode","IDH01")
+
+nrow(d)
+d <- merge(dFacilities,dLoc,by="IDH01",all.x=T)
+nrow(d)
+
+with(d[isGaza==1],xtabs(~districtJerusalemClean+TR01))
+```
+
+\newpage
+
+\newpage
+
+
+d[,isDoctor:=as.numeric(NA)]
+d[CW00 %in% c(221101:221251),isDoctor:=1]
+
+xtabs(~d$isDoctor)
+
+d[,CW00]
+```
+
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*. 
+
+```{r}
+plot(cars)
+```
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Cmd+Option+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Cmd+Shift+K* to preview the HTML file).
