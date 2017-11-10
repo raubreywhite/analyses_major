@@ -22,164 +22,109 @@ RAWmisc::InitialiseProject(
 suppressWarnings(suppressMessages(library(data.table)))
 suppressWarnings(suppressMessages(library(ggplot2)))
 
-GenerateSample <- function(N=10000){
-  # age, sex, types of salmonella, antibiotics
-  x1 = rnorm(N)
-  x2 = rnorm(N)
-  z = 1 + 2*x1 + 3*x2
-  pr = 1/(1+exp(-z))
-  y = rbinom(N,1,pr)
-
-  #now feed it to glm:
-  df = data.frame(y=y,x1=x1,x2=x2)
-  glm( y~x1+x2,data=df,family="binomial")
+GenerateSample <- function(N=10000,OR=2){
+  age <- rep(0:3,N/4)
+  isMale <- rep(0:1,N/2)
+  salmonella <- rep(0:3,N/4)
+  isAntibiotics <- rep(0:1,N/2)
   
-  d <- data.table(expand.grid(dose=c(0,0.1,1,3),rate=c(2.5,100)))
-  d[,weighting:=weighting/2]
-  d[,isHighRate:=0]
-  d[rate==100,isHighRate:=1]
-  #d[,medianSurvivalDays:=exp(5.5225-0.055*dose - 0.065*dose*isHighRate)]
-  d[,medianSurvivalDays:=exp(5.5225-0.025*dose - 0.035*dose*isHighRate)]
+  xData <- data.table(
+    age=sample(age),
+    isMale=sample(isMale),
+    salmonella=sample(salmonella),
+    isAntibiotics=sample(isAntibiotics))
   
-  d[,miceAssigned:=as.numeric(NA)]
-  d[is.na(miceAssigned), miceAssigned:=0]
-  d[, miceNew := 0]
-  d[miceAssigned == 0, miceNew := round(micePossible*weighting)]
-  d[,mice:=miceAssigned+miceNew]
+  xData[,z:=-2.5]
+  xData[age!=0,z:=z+log(OR)]
+  xData[isMale!=0,z:=z+log(OR)]
+  xData[salmonella!=0,z:=z+log(OR)]
+  xData[isAntibiotics!=0,z:=z+log(OR)]
+  xData[,pr:=1/(1+exp(-z))]
+  xData[,y:=rbinom(.N,1,pr)]
   
-  d[,miceAssigned:=NULL]
-  d[,miceNew := NULL]
-  
-  d
-  dt <- d[rep(seq(.N), mice), !"mice", with=F]
-  dt[, survivalTime := rweibull(.N, scale=medianSurvivalDays, shape=10)]
-  dt[, dead:=0]
-  dt[survivalTime<=440, dead:=1]
-  
-  dt[, time := survivalTime]
-  dt[survivalTime > 440, time:=440]
-  dt[,label:=factor(sprintf("Dose: %s/Rate: %s",dose,rate),levels=c(
-    "Dose: 0/Rate: 2.5",
-    "Dose: 0.1/Rate: 2.5",
-    "Dose: 1/Rate: 2.5",
-    "Dose: 3/Rate: 2.5",
-    "Dose: 0/Rate: 100",
-    "Dose: 0.1/Rate: 100",
-    "Dose: 1/Rate: 100",
-    "Dose: 3/Rate: 100"
-  ))]
-  
-  return(list(d=d,dt=dt))
+  return(xData)
 }
 
-Power <- function(micePossible=280, weighting=c(0.25, 0.25, 0.25, 0.25)){
-  res <- vector("list",1000)
-  for(run in 1:1000){
-    dt <- GenerateMice(micePossible=micePossible, weighting=weighting)[["dt"]]
-    s <- Surv(time=dt$time, event=dt$dead)
-    fit <- coxph(s ~ dose + dose*isHighRate,data = dt)
-    summary(fit)
-    
-    res[[run]] <- as.data.frame(coef(summary(fit)))
-    res[[run]]$var <- row.names(res[[run]])
+PValues <- function(N=10000,OR=2){
+  xData <- GenerateSample(N=N,OR=OR)
+  
+  fit0 <- glm(y~factor(age)+isMale+factor(salmonella)+isAntibiotics,data=xData, family="binomial")
+  
+  fit1 <- glm(y~isMale+factor(salmonella)+isAntibiotics,data=xData, family="binomial")
+  pAge <- lmtest::lrtest(fit0,fit1)$`Pr(>Chisq)`[2]
+  
+  fit1 <- glm(y~factor(age)+factor(salmonella)+isAntibiotics,data=xData, family="binomial")
+  pMale <- lmtest::lrtest(fit0,fit1)$`Pr(>Chisq)`[2]
+  
+  fit1 <- glm(y~factor(age)+isMale+isAntibiotics,data=xData, family="binomial")
+  pSalmonella <- lmtest::lrtest(fit0,fit1)$`Pr(>Chisq)`[2]
+  
+  fit1 <- glm(y~factor(age)+isMale+factor(salmonella),data=xData, family="binomial")
+  pAntibiotics <- lmtest::lrtest(fit0,fit1)$`Pr(>Chisq)`[2]
+  
+  pval <- data.table(
+    var=c("age","male","salmonella","antibiotics"),
+    p=c(pAge,pMale,pSalmonella,pAntibiotics),
+    N=N,
+    OR=OR
+  )
+  
+  return(pval)
+}
+
+```
+
+\newpage
+
+# Observing the data with N=10,000
+```{r}
+d <- GenerateSample(N=10000,OR=3)
+fit0 <- glm(y~factor(age)+isMale+factor(salmonella)+isAntibiotics,data=d, family="binomial")
+summary(fit0)
+
+mean(d$y)
+
+xtabs(~d$age)
+xtabs(~d$y + d$age)
+
+xtabs(~d$isMale)
+xtabs(~d$y + d$isMale)
+
+xtabs(~d$salmonella)
+xtabs(~d$y + d$salmonella)
+
+xtabs(~d$isAntibiotics)
+xtabs(~d$y + d$isAntibiotics)
+
+```
+
+# Power calculations
+```{r}
+set.seed(4)
+retval <- vector("list", 3000)
+index <- 1
+for(N in c(100,152,200,300,400,500,600,700,800,900,1000)){
+  print(N)
+  for(OR in c(2,3,4)) for(i in 1:1000){
+    retval[[index]] <- PValues(N=N,OR=OR)
+    index <- index + 1
   }
-  
-  res <- rbindlist(res)
-  setnames(res,c("beta","hr","se","z","p","var"))
-  res[,isSig:=p<0.05]
-  return(res[,.(power=mean(isSig)),by=.(var)])
 }
+retval <- rbindlist(retval)
+
+retval[,isSig:=0]
+retval[p<0.05,isSig:=1]
+
+retval[,isBonfSig:=0]
+retval[p<0.05/4,isBonfSig:=1]
+
+power <- retval[,.(power=mean(isSig),
+                  powerBonf=mean(isBonfSig)),by=.(N,OR,var)]
+print(power)
+openxlsx::write.xlsx(power,file=file.path(RAWmisc::PROJ$SHARED_TODAY,"power.xlsx"))
 ```
 
-\newpage
 
-# Observing the data
-```{r}
-mice <- GenerateMice(28000)
-print(mice[["d"]])
-mice <- mice[["dt"]]
-q <- ggplot(mice,aes(x=label,y=time))
-q <- q + geom_boxplot()
-q <- q + theme(axis.text.x = element_text(angle = 90, hjust = 0.5, vjust=0.5))
-q
-```
 
-\newpage
 
-```{r, fig.height=6}
-fit <- survfit(Surv(time, dead) ~ label,
-               data = mice)
-# Visualize with survminer
-ggsurvplot(fit, data = mice, risk.table = F, palette="Set2", legend="right")
-
-```
-
-\newpage
-
-# Cox regressions
-
-```{r, warning=FALSE}
-s <- Surv(time=mice$time, event=mice$dead)
-fit <- coxph(s ~ factor(dose)*isHighRate,data = mice)
-summary(fit)
-
-fit <- coxph(s ~ dose*isHighRate,data = mice)
-summary(fit)
-```
-
-\newpage
-
-# Weibull regressions
-
-```{r, warning=FALSE}
-fit <- WeibullReg(Surv(survivalTime, rep(1,nrow(mice)))~factor(dose)*isHighRate, data=mice)
-fit$HR
-
-fit <- WeibullReg(Surv(survivalTime, rep(1,nrow(mice)))~dose*isHighRate, data=mice)
-fit$HR
-```
-
-\newpage
-
-# Power
-
-```{r}
-res <- list()
-resIndex <- 1
-weighting <- list(
-  "0.25, 0.25, 0.25, 0.25"=c(0.25,0.25,0.25,0.25)
-)
-for(micePossible in c(200)) for(w in 1:length(weighting)){
-  print("*******")
-  print("*******")
-  print("*******")
-  x <- GenerateMice(micePossible=micePossible, weighting=weighting[[w]])
-  print(sprintf("THE FOLLOWING APPLIES FOR %s MICE",micePossible))
-  print(sprintf("WITH WEIGHTING OF %s",names(weighting)[w]))
-  print(x[["d"]])
-  res[[resIndex]] <- Power(micePossible=micePossible, weighting=weighting[[w]])
-  res[[resIndex]][,mice:=micePossible]
-  res[[resIndex]][,weighting:=names(weighting)[w]]
-  print(res[[resIndex]])
-  resIndex <- resIndex + 1
-}
-```
-
-\newpage
-
-```{r}
-res <- rbindlist(res)
-res[,facet:=sprintf("Weighting of mice: %s",weighting)]
-q <- ggplot(res[var %in% c("dose","dose:isHighRate")],aes(x=mice,y=power,colour=var))
-q <- q + geom_line()
-q <- q + geom_point()
-q <- q + geom_label(aes(y=power+0.02,label=RAWmisc::Format(power,2)))
-q <- q + expand_limits(y=0)
-q <- q + facet_wrap(~facet,ncol=1)
-q
-```
-
-```{r}
-print(res[var %in% c("dose","dose:isHighRate"),c("var","power","mice","weighting")])
-```
 

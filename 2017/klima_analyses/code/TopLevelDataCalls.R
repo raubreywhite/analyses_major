@@ -63,7 +63,9 @@ WP2Data <- function(initialDataCall=FALSE){
 
 WP2WaterworkRawData <- function(){
   d1 <- readRDS(file.path(RAWmisc::PROJ$CLEAN,"WP1_raw.RDS"))
-  d2 <- readRDS(file.path(RAWmisc::PROJ$CLEAN,"WP2.RDS"))$data
+  d2 <- readRDS(file.path(RAWmisc::PROJ$CLEAN,"WP2.RDS"))
+  
+  d1 <- d1[type %in% c("Accredited","Internal")]
   
   keys <- readxl::read_excel(file.path(RAWmisc::PROJ$RAW,"waterworks_to_kommune.xlsx"),skip=2,sheet=2)
   keys <- keys[,c("waterworkRaw","Mottatt - K nr","Forsynings-grad 2014")]
@@ -92,13 +94,16 @@ WP2WaterworkRawData <- function(){
   d[,value3:=shift(value,n=3L),by=.(variable,age,municip)]
   d[,value4:=shift(value,n=4L),by=.(variable,age,municip)]
   d[,s_pop:=round(s_pop)]
+  d[,id:=municip]
   return(d)
 }
 
 
 WP2WaterworkCleanData <- function(){
   d1 <- readRDS(file.path(RAWmisc::PROJ$CLEAN,"WP1_clean.RDS"))
-  d2 <- readRDS(file.path(RAWmisc::PROJ$CLEAN,"WP2.RDS"))$data
+  d2 <- readRDS(file.path(RAWmisc::PROJ$CLEAN,"WP2.RDS"))
+  
+  d1 <- d1[type %in% c("Accredited","Internal")]
   
   keys <- readxl::read_excel(file.path(RAWmisc::PROJ$RAW,"waterworks_to_kommune.xlsx"),skip=2,sheet=2)
   keys <- keys[,c("waterworkClean","Mottatt - K nr","Forsynings-grad 2014")]
@@ -127,6 +132,7 @@ WP2WaterworkCleanData <- function(){
   d[,value3:=shift(value,n=3L),by=.(variable,age,municip)]
   d[,value4:=shift(value,n=4L),by=.(variable,age,municip)]
   d[,s_pop:=round(s_pop)]
+  d[,id:=municip]
   return(d)
 }
 

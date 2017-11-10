@@ -179,6 +179,11 @@ CleanData <- function(){
   
   #alloc.col(dataWeek,3000)
   
+  for(i in 1:10){
+    var <- paste0("wp950_c_temperature",i,"_",i)
+    dataWeek[,(var):=shift(wp950_c_temperature0_0,i),by=municip]
+  }
+  
   wp950_exposures_a_runoff <- expand.grid(0:4, 1:1)
   names(wp950_exposures_a_runoff) <- c("lag","window")
   wp950_exposures_a_runoff$end <- wp950_exposures_a_runoff$lag+wp950_exposures_a_runoff$window-1
@@ -238,64 +243,64 @@ CleanData <- function(){
   dataWeek[,cat_wp950_c_rain4_4:=cut(wp950_c_rain4_4,breaks=c(-1,0,3,100),include.lowest = TRUE)]
   
   ###
-
-wp990_exposures_a_runoff <- expand.grid(0:4, 1:1)
-names(wp990_exposures_a_runoff) <- c("lag", "window")
-wp990_exposures_a_runoff$end <- wp990_exposures_a_runoff$lag + wp990_exposures_a_runoff$window - 1
-wp990_exposures_a_runoff$varOfInterest <- paste0("wp990_a_runoff", wp990_exposures_a_runoff$lag, "_", wp990_exposures_a_runoff$end)
-
-wp990_exposures_a_runoff <- data.table(wp990_exposures_a_runoff)
-
-for (i in 1:10) {
-  var <- paste0("wp990_a_runoff", i, "_", i)
-  dataWeek[, (var) := shift(wp990_a_runoff0_0, i), by = municip]
-}
-
-dataWeek[, cat_wp990_a_runoff0_0 := cut(wp990_a_runoff0_0, breaks = c(-1, 0, 3, 100), include.lowest = TRUE)]
-dataWeek[, cat_wp990_a_runoff1_1 := cut(wp990_a_runoff1_1, breaks = c(-1, 0, 3, 100), include.lowest = TRUE)]
-dataWeek[, cat_wp990_a_runoff2_2 := cut(wp990_a_runoff2_2, breaks = c(-1, 0, 3, 100), include.lowest = TRUE)]
-dataWeek[, cat_wp990_a_runoff3_3 := cut(wp990_a_runoff3_3, breaks = c(-1, 0, 3, 100), include.lowest = TRUE)]
-dataWeek[, cat_wp990_a_runoff4_4 := cut(wp990_a_runoff4_4, breaks = c(-1, 0, 3, 100), include.lowest = TRUE)]
-
-########
-
-wp990_exposures_a_precipCorr <- expand.grid(0:4, 1:1)
-names(wp990_exposures_a_precipCorr) <- c("lag", "window")
-wp990_exposures_a_precipCorr$end <- wp990_exposures_a_precipCorr$lag + wp990_exposures_a_precipCorr$window - 1
-wp990_exposures_a_precipCorr$varOfInterest <- paste0("wp990_a_precipCorr", wp990_exposures_a_precipCorr$lag, "_", wp990_exposures_a_precipCorr$end)
-
-wp990_exposures_a_precipCorr <- data.table(wp990_exposures_a_precipCorr)
-
-for (i in 1:10) {
-  var <- paste0("wp990_a_precipCorr", i, "_", i)
-  dataWeek[, (var) := shift(wp990_a_precipCorr0_0, i), by = municip]
-}
-
-dataWeek[, cat_wp990_a_precipCorr0_0 := cut(wp990_a_precipCorr0_0, breaks = c(-1, 0, 3, 100), include.lowest = TRUE)]
-dataWeek[, cat_wp990_a_precipCorr1_1 := cut(wp990_a_precipCorr1_1, breaks = c(-1, 0, 3, 100), include.lowest = TRUE)]
-dataWeek[, cat_wp990_a_precipCorr2_2 := cut(wp990_a_precipCorr2_2, breaks = c(-1, 0, 3, 100), include.lowest = TRUE)]
-dataWeek[, cat_wp990_a_precipCorr3_3 := cut(wp990_a_precipCorr3_3, breaks = c(-1, 0, 3, 100), include.lowest = TRUE)]
-dataWeek[, cat_wp990_a_precipCorr4_4 := cut(wp990_a_precipCorr4_4, breaks = c(-1, 0, 3, 100), include.lowest = TRUE)]
-
-#########
-
-wp990_exposures_c_rain <- expand.grid(0:4, 1:1)
-names(wp990_exposures_c_rain) <- c("lag", "window")
-wp990_exposures_c_rain$end <- wp990_exposures_c_rain$lag + wp990_exposures_c_rain$window - 1
-wp990_exposures_c_rain$varOfInterest <- paste0("wp990_c_rain", wp990_exposures_c_rain$lag, "_", wp990_exposures_c_rain$end)
-
-wp990_exposures_c_rain <- data.table(wp990_exposures_c_rain)
-
-for (i in 1:10) {
-  var <- paste0("wp990_c_rain", i, "_", i)
-  dataWeek[, (var) := shift(wp990_c_rain0_0, i), by = municip]
-}
-
-dataWeek[, cat_wp990_c_rain0_0 := cut(wp990_c_rain0_0, breaks = c(-1, 0, 3, 100), include.lowest = TRUE)]
-dataWeek[, cat_wp990_c_rain1_1 := cut(wp990_c_rain1_1, breaks = c(-1, 0, 3, 100), include.lowest = TRUE)]
-dataWeek[, cat_wp990_c_rain2_2 := cut(wp990_c_rain2_2, breaks = c(-1, 0, 3, 100), include.lowest = TRUE)]
-dataWeek[, cat_wp990_c_rain3_3 := cut(wp990_c_rain3_3, breaks = c(-1, 0, 3, 100), include.lowest = TRUE)]
-dataWeek[, cat_wp990_c_rain4_4 := cut(wp990_c_rain4_4, breaks = c(-1, 0, 3, 100), include.lowest = TRUE)]
+  
+  wp990_exposures_a_runoff <- expand.grid(0:4, 1:1)
+  names(wp990_exposures_a_runoff) <- c("lag", "window")
+  wp990_exposures_a_runoff$end <- wp990_exposures_a_runoff$lag + wp990_exposures_a_runoff$window - 1
+  wp990_exposures_a_runoff$varOfInterest <- paste0("wp990_a_runoff", wp990_exposures_a_runoff$lag, "_", wp990_exposures_a_runoff$end)
+  
+  wp990_exposures_a_runoff <- data.table(wp990_exposures_a_runoff)
+  
+  for (i in 1:10) {
+    var <- paste0("wp990_a_runoff", i, "_", i)
+    dataWeek[, (var) := shift(wp990_a_runoff0_0, i), by = municip]
+  }
+  
+  dataWeek[, cat_wp990_a_runoff0_0 := cut(wp990_a_runoff0_0, breaks = c(-1, 0, 3, 100), include.lowest = TRUE)]
+  dataWeek[, cat_wp990_a_runoff1_1 := cut(wp990_a_runoff1_1, breaks = c(-1, 0, 3, 100), include.lowest = TRUE)]
+  dataWeek[, cat_wp990_a_runoff2_2 := cut(wp990_a_runoff2_2, breaks = c(-1, 0, 3, 100), include.lowest = TRUE)]
+  dataWeek[, cat_wp990_a_runoff3_3 := cut(wp990_a_runoff3_3, breaks = c(-1, 0, 3, 100), include.lowest = TRUE)]
+  dataWeek[, cat_wp990_a_runoff4_4 := cut(wp990_a_runoff4_4, breaks = c(-1, 0, 3, 100), include.lowest = TRUE)]
+  
+  ########
+  
+  wp990_exposures_a_precipCorr <- expand.grid(0:4, 1:1)
+  names(wp990_exposures_a_precipCorr) <- c("lag", "window")
+  wp990_exposures_a_precipCorr$end <- wp990_exposures_a_precipCorr$lag + wp990_exposures_a_precipCorr$window - 1
+  wp990_exposures_a_precipCorr$varOfInterest <- paste0("wp990_a_precipCorr", wp990_exposures_a_precipCorr$lag, "_", wp990_exposures_a_precipCorr$end)
+  
+  wp990_exposures_a_precipCorr <- data.table(wp990_exposures_a_precipCorr)
+  
+  for (i in 1:10) {
+    var <- paste0("wp990_a_precipCorr", i, "_", i)
+    dataWeek[, (var) := shift(wp990_a_precipCorr0_0, i), by = municip]
+  }
+  
+  dataWeek[, cat_wp990_a_precipCorr0_0 := cut(wp990_a_precipCorr0_0, breaks = c(-1, 0, 3, 100), include.lowest = TRUE)]
+  dataWeek[, cat_wp990_a_precipCorr1_1 := cut(wp990_a_precipCorr1_1, breaks = c(-1, 0, 3, 100), include.lowest = TRUE)]
+  dataWeek[, cat_wp990_a_precipCorr2_2 := cut(wp990_a_precipCorr2_2, breaks = c(-1, 0, 3, 100), include.lowest = TRUE)]
+  dataWeek[, cat_wp990_a_precipCorr3_3 := cut(wp990_a_precipCorr3_3, breaks = c(-1, 0, 3, 100), include.lowest = TRUE)]
+  dataWeek[, cat_wp990_a_precipCorr4_4 := cut(wp990_a_precipCorr4_4, breaks = c(-1, 0, 3, 100), include.lowest = TRUE)]
+  
+  #########
+  
+  wp990_exposures_c_rain <- expand.grid(0:4, 1:1)
+  names(wp990_exposures_c_rain) <- c("lag", "window")
+  wp990_exposures_c_rain$end <- wp990_exposures_c_rain$lag + wp990_exposures_c_rain$window - 1
+  wp990_exposures_c_rain$varOfInterest <- paste0("wp990_c_rain", wp990_exposures_c_rain$lag, "_", wp990_exposures_c_rain$end)
+  
+  wp990_exposures_c_rain <- data.table(wp990_exposures_c_rain)
+  
+  for (i in 1:10) {
+    var <- paste0("wp990_c_rain", i, "_", i)
+    dataWeek[, (var) := shift(wp990_c_rain0_0, i), by = municip]
+  }
+  
+  dataWeek[, cat_wp990_c_rain0_0 := cut(wp990_c_rain0_0, breaks = c(-1, 0, 3, 100), include.lowest = TRUE)]
+  dataWeek[, cat_wp990_c_rain1_1 := cut(wp990_c_rain1_1, breaks = c(-1, 0, 3, 100), include.lowest = TRUE)]
+  dataWeek[, cat_wp990_c_rain2_2 := cut(wp990_c_rain2_2, breaks = c(-1, 0, 3, 100), include.lowest = TRUE)]
+  dataWeek[, cat_wp990_c_rain3_3 := cut(wp990_c_rain3_3, breaks = c(-1, 0, 3, 100), include.lowest = TRUE)]
+  dataWeek[, cat_wp990_c_rain4_4 := cut(wp990_c_rain4_4, breaks = c(-1, 0, 3, 100), include.lowest = TRUE)]
 
   ###
   
@@ -328,14 +333,14 @@ dataWeek[, cat_wp990_c_rain4_4 := cut(wp990_c_rain4_4, breaks = c(-1, 0, 3, 100)
   vreg$municip <- paste0("municip", formatC(vreg$municip, width=4, flag="0"))
   vreg <- data.table(vreg[,c("municip","avwaterworksize","waterworkcat","waterworkcat2","notWaterworkcat")])
   
-  q <- ggplot(vreg,aes(x=avwaterworksize),w=0.5,h=0.5)
-  q <- q + geom_histogram()
-  q <- q + RAWmisc::theme_SMAO(24)
-  q <- q + scale_x_continuous("Average waterwork size per municipality")
-  q <- q + scale_y_continuous("Count")
-  RAWmisc::SMAOpng(file.path(RAWmisc::PROJ$SHARED_TODAY,"WP2/waterworksize.png"))
-  print(q)
-  dev.off()
+  #q <- ggplot(vreg,aes(x=avwaterworksize),w=0.5,h=0.5)
+  #q <- q + geom_histogram()
+  #q <- q + RAWmisc::theme_SMAO(24)
+  #q <- q + scale_x_continuous("Average waterwork size per municipality")
+  #q <- q + scale_y_continuous("Count")
+  #RAWmisc::SMAOpng(file.path(RAWmisc::PROJ$SHARED_TODAY,"WP2/waterworksize.png"))
+  #print(q)
+  #dev.off()
   
   dim(data)
   data2 <- merge(data,vreg,by="municip")
@@ -362,6 +367,11 @@ dataWeek[, cat_wp990_c_rain4_4 := cut(wp990_c_rain4_4, breaks = c(-1, 0, 3, 100)
   set(x=data2,j=which(stringr::str_detect(names(data2),"990")),value=NULL)
   for(i in c("5_5","6_6","7_7","8_8","9_9")) set(x=data2,j=which(stringr::str_detect(names(data2),i)),value=NULL)
   
+  data2[,wp950_a_runoff0_3:=wp950_a_runoff0_0+wp950_a_runoff1_1+wp950_a_runoff2_2+wp950_a_runoff3_3]
+  data2[,wp950_a_precipCorr0_3:=wp950_a_precipCorr0_0+wp950_a_precipCorr1_1+wp950_a_precipCorr2_2+wp950_a_precipCorr3_3]
+  data2[,wp950_c_temperature0_3:=wp950_c_temperature0_0+wp950_c_temperature1_1+wp950_c_temperature2_2+wp950_c_temperature3_3]
+  
+  return(data2)
   d <- list(
     data=data2,
     wp950_exposures_a_runoff=wp950_exposures_a_runoff,

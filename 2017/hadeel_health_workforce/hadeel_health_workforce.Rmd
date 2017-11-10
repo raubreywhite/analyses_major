@@ -8,6 +8,17 @@ output:
 
 \newpage
 
+# Weird things
+
+No one works in East Jerusalem?
+
+```
+dWorkers[get(i)==1 & IDH03 %in% c(dLocation[district=="East Jerusalem (J1)"]$localityCode)]
+```
+
+
+\newpage
+
 # Loading in data
 ```{r, results='hide', message=FALSE, warning=FALSE}
 RAWmisc::InitialiseProject(
@@ -32,19 +43,56 @@ d2 <- readxl::read_excel(file.path(RAWmisc::PROJ$RAW,
                                     "WB - Phase I",
                                     "FACILITY_MAIN WB I_Richard.xlsx"))
 
-dFacilities <- data.table(rbind(d1,d2))
+d3 <- readxl::read_excel(file.path(
+  RAWmisc::PROJ$RAW,
+  "Data collected by PNIPH - Gaza 2nd phase",
+  "FACILITY_MAIN_GAZA-2nd phase-final-Richard.xlsx"))
+
+d4 <- readxl::read_excel(file.path(
+  RAWmisc::PROJ$RAW,
+  "Data collected by PNIPH - WB 2nd phase",
+  "FACILITY_MAIN_WB-second phase-final-Richard.xlsx"))
+
+dFacilities <- data.table(rbind(d1,d2,d3[names(d1)],d4[names(d1)]))
 dFacilities[,IDH01:=as.numeric(IDH01)]
+
+table(dFacilities$IS04,useNA = "always")
+dFacilities[,facilitySector:=as.character(NA)]
+dFacilities[IS04 %in% c(7),facilitySector:="Ministry of Health"]
+dFacilities[IS04 %in% c(9),facilitySector:="Military Health Services"]
+dFacilities[IS04 %in% c(8),facilitySector:="UNRWA"]
+dFacilities[IS04 %in% c(1,12),facilitySector:="Private"]
+dFacilities[IS04 %in% c(2,3,4,5,6,10,11,13,14),facilitySector:="NGO"]
+
+xtabs(~dFacilities$IS04,addNA=TRUE)
+xtabs(~dFacilities$facilitySector,addNA=TRUE)
+xtabs(~dFacilities$IS04+dFacilities$facilitySector,addNA=TRUE)
 
 # WORKERS
 d1 <- readxl::read_excel(file.path(RAWmisc::PROJ$RAW,
                                     "Data collected by PCBS - Gaza 1st phase",
                                     "Gaza Phase I - After auditing by Fayez",
                                     "WORKERS_MAIN (1).xlsx"))
+d1 <- d1[,names(d1)[1:which(names(d1)=="MD03_1_B")]]
 
 d2 <- readxl::read_excel(file.path(RAWmisc::PROJ$RAW,
                                     "Data collected by PCBS - WB 1st phase",
                                     "WB - Phase I",
                                     "WORKERS_MAIN WB.xlsx"))
+d2 <- d2[,names(d2)[1:which(names(d2)=="MD03_1_B")]]
+
+d3a <- readxl::read_excel(file.path(RAWmisc::PROJ$RAW,
+                                    "Data collected by PNIPH - Gaza 2nd phase",
+                                    "WORKERS_MAIN_GAZA-final-2nd phase.xlsx"))
+d3b <- readxl::read_excel(file.path(RAWmisc::PROJ$RAW,
+                                    "Data collected by PNIPH - Gaza 2nd phase",
+                                    "WORKERS_ED03_GAZA-2nd phase-final.xlsx"))
+
+d4 <- readxl::read_excel(file.path(RAWmisc::PROJ$RAW,
+                                    "Data collected by PCBS - WB 1st phase",
+                                    "WB - Phase I",
+                                    "WORKERS_MAIN WB.xlsx"))
+
 d1 <- d1[,names(d2)]
 
 dWorkers <- data.table(rbind(d1,d2))
@@ -65,6 +113,84 @@ dLocation[,districtCode:=as.numeric(districtCode)]
 dLocation <- dLocation[!is.na(districtCode)]
 dLocation[,districtJerusalemClean:=district]
 dLocation[district %in% c("Jerusalem (J2)", "East Jerusalem (J1)"),districtJerusalemClean:="Jerusalem"]
+
+# WORKER CODES
+dWorkerCodes <- list()
+for(i in c("Doctor",
+           "Specialized doctor",
+           "Dentist",
+           "Pharmacist",
+           "Nurse",
+           "Midwife",
+           "Psychologist,counselors, therap",
+           "Psychiatrist",
+           "Allied health sciences",
+           "Alternative  Medicine",
+           "Administrative & support staff"
+)){
+    dWorkerCodes[[i]] <- readxl::read_excel(file.path(RAWmisc::PROJ$RAW,
+                                                   "Groups - ULTIMIT.xlsx"),
+                                         sheet = i)
+    dWorkerCodes[[i]]$groupedProfession <- i
+    if(ncol(dWorkerCodes[[i]])!=5) dWorkerCodes[[i]]$`Profession sub-category` <- ""
+    if(i!="Doctor"){
+      dWorkerCodes[[i]] <- dWorkerCodes[[i]][names(dWorkerCodes[["Doctor"]])]  
+    }
+}
+for(i in names(dWorkerCodes)){
+    newName <- stringr::str_replace_all(i,"[& ,]","")
+    newName <- sprintf("isProf_%s",newName)
+    dWorkerCodes[[i]][[newName]] <- 1
+}
+dWorkerCodes <- rbindlist(dWorkerCodes,fill=T)
+setnames(dWorkerCodes,c(1:5),c("CW00","profession","arabicProfession","professionGrouped","progessionSubCategory"))
+
+professionVarsTemp <- c(
+  "isProf_Doctor",
+  "isProf_Specializeddoctor",
+  "isProf_Dentist",          
+  "isProf_Pharmacist",
+  "isProf_Nurse",
+  "isProf_Midwife",
+  "isProf_Psychologistcounselorstherap",
+  "isProf_Psychiatrist",
+  "isProf_Alliedhealthsciences",
+  "isProf_AlternativeMedicine",
+  "isProf_Administrativesupportstaff"  
+  )
+
+professionVarsTempHealthCare <- c(
+  "isProf_Doctor",
+  "isProf_Specializeddoctor",
+  "isProf_Dentist",          
+  "isProf_Pharmacist",
+  "isProf_Nurse",
+  "isProf_Midwife",
+  "isProf_Psychologistcounselorstherap",
+  "isProf_Psychiatrist",
+  "isProf_Alliedhealthsciences"
+  )
+professionVars <- c(professionVarsTemp,"isProf_Healthworker","isProf_DocNurseMid")
+
+for (col in professionVarsTemp) dWorkerCodes[is.na(get(col)), (col) := 0]
+dWorkerCodes <- dWorkerCodes[, lapply(.SD, max, na.rm=T), by = CW00, .SDcols = professionVarsTemp]
+dWorkerCodes[,isProf_Healthworker:=matrixStats::rowMaxs(as.matrix(.SD)),.SDcols=professionVarsTempHealthCare]
+dWorkerCodes[,isProf_DocNurseMid:=matrixStats::rowMaxs(as.matrix(.SD)),.SDcols=c("isProf_Doctor","isProf_Nurse","isProf_Midwife")]
+
+nrow(dWorkers)
+dWorkers[,CW00:=as.numeric(CW00)]
+dWorkers <- merge(dWorkers,dWorkerCodes,by="CW00",all.x=T)
+nrow(dWorkers)
+
+# POPULATION
+pop <- data.table(readxl::read_excel(file.path(RAWmisc::PROJ$RAW,"Districts population estimates 2016.xlsx")))
+setnames(pop,c("districtName","pop","districtCode","area"))
+
+PrintTableNPerc <- function(d){
+  print(xtabs(~d$numerator,addNA=TRUE))
+  cat(sprintf("\nN=%s\n", nrow(d)))
+  cat(sprintf("Percentage indicator: %s%%\n", RAWmisc::Format(mean(d$numerator*100,na.rm=T),1)))
+}
 ```
 
 ```{r}
@@ -76,19 +202,21 @@ nrow(dWorkers)
 
 # Pre-service training indicators
 
-## Total number of facilities that provide clinical trainings ( pre-graduation ) in Palestine
+## 1. Total number of facilities that provide clinical trainings ( pre-graduation ) in Palestine
 
 - Source: Facility questionnaire
 - Calculation: TR01 answer 1
 - Indicator description: Total number of health facilities in Palestine that offer clinical trainings sites 
 
+### Results
+
 ```{r}
-xtabs(~dFacilities$TR01)
+xtabs(~dFacilities$TR01,addNA=TRUE)
 ```
 
 \newpage 
 
-## Total number of facilities that provide clinical trainings ( pre-graduation ) in the West Bank
+## 2. Total number of facilities that provide clinical trainings ( pre-graduation ) in the West Bank
 
 - Source: Facility questionnaire
 - Calculation: Sum of all TR01 answer 1 per  IDH 01 District in West Bank
@@ -98,16 +226,20 @@ xtabs(~dFacilities$TR01)
 dLoc <- unique(dLocation[,c("districtCode","districtJerusalemClean","isGaza")])
 setnames(dLoc,"districtCode","IDH01")
 
-nrow(d)
+nrow(dFacilities)
 d <- merge(dFacilities,dLoc,by="IDH01",all.x=T)
 nrow(d)
+```
 
-with(d[isGaza==0],xtabs(~districtJerusalemClean+TR01))
+### Results
+
+```{r}
+with(d[isGaza==0],xtabs(~districtJerusalemClean+TR01,addNA=TRUE))
 ```
 
 \newpage 
 
-## Total number of facilities that provide clinical trainings (pre-graduation ) in Gaza
+## 3. Total number of facilities that provide clinical trainings (pre-graduation ) in Gaza
 
 - Source: Facility questionnaire
 - Calculation: Sum of all TR01 answer 1 per IDH 01 district in Gaza
@@ -117,35 +249,1041 @@ with(d[isGaza==0],xtabs(~districtJerusalemClean+TR01))
 dLoc <- unique(dLocation[,c("districtCode","districtJerusalemClean","isGaza")])
 setnames(dLoc,"districtCode","IDH01")
 
-nrow(d)
+nrow(dFacilities)
 d <- merge(dFacilities,dLoc,by="IDH01",all.x=T)
 nrow(d)
-
-with(d[isGaza==1],xtabs(~districtJerusalemClean+TR01))
 ```
 
-\newpage
-
-\newpage
-
-
-d[,isDoctor:=as.numeric(NA)]
-d[CW00 %in% c(221101:221251),isDoctor:=1]
-
-xtabs(~d$isDoctor)
-
-d[,CW00]
-```
-
-
-This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
-
-Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*. 
+### Results
 
 ```{r}
-plot(cars)
+with(d[isGaza==1],xtabs(~districtJerusalemClean+TR01,addNA=TRUE))
 ```
 
-Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Cmd+Option+I*.
+\newpage 
 
-When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Cmd+Shift+K* to preview the HTML file).
+## 4. Total number of facilities that provide internships (post-graduation) in Palestine
+
+- Source: Facility questionnaire
+- Calculation: Sum of all TR05 answer 1
+- Indicator description: Total number of health facilities in Palestine that offer internship sites needed to apply for licensing
+
+```{r}
+xtabs(~dFacilities$TR05,addNA=TRUE)
+```
+
+\newpage 
+
+## 5. Total number of facilities that provide internships (post-graduation) in the West Bank
+
+- Source: Facility questionnaire
+- Calculation: Sum of all TR05 answer 1 per IDH01 district in West Bank
+- Indicator description: Total number of health facilities in the West Bank that offer internship sites needed to apply for licensing
+
+```{r}
+dLoc <- unique(dLocation[,c("districtCode","districtJerusalemClean","isGaza")])
+setnames(dLoc,"districtCode","IDH01")
+
+nrow(dFacilities)
+d <- merge(dFacilities,dLoc,by="IDH01",all.x=T)
+nrow(d)
+```
+
+### Results
+
+```{r}
+with(d[isGaza==0],xtabs(~districtJerusalemClean+TR05,addNA=TRUE))
+```
+
+
+\newpage 
+
+## 6. Total number of facilities that provide internships (post-graduation) in Gaza 
+
+- Source: Facility questionnaire
+- Calculation: Sum of all TR05 answer 1 per IDH01 district in Gaza
+- Indicator description: Total number of health facilities in Gaza that offer internship sites needed to apply for licensing
+
+```{r}
+dLoc <- unique(dLocation[,c("districtCode","districtJerusalemClean","isGaza")])
+setnames(dLoc,"districtCode","IDH01")
+
+nrow(dFacilities)
+d <- merge(dFacilities,dLoc,by="IDH01",all.x=T)
+nrow(d)
+```
+
+### Results
+
+```{r}
+with(d[isGaza==1],xtabs(~districtJerusalemClean+TR05,addNA=TRUE))
+```
+
+\newpage
+
+## 7. Percentage of facilities with semi-structured clinical training programs in Palestine
+
+- Source: Facility questionnaire
+- Calculation: ( Sum of all TR01 answer 1. who answered at least 3 Yes from TR03   / sum of TR01 answer 1.  ) * 100
+- Indicator description: Percentage of clinical training sites that offer semi-structures taining programs
+
+```{r}
+dFacilities[,sumYesTR03:=0]
+dFacilities[,numMissing:=0]
+for(l in c("A","B","C","D","E","F","G")){
+  newVar <- sprintf("TR03_%s",l)
+  dFacilities[get(newVar)==1,sumYesTR03:=sumYesTR03+1]
+  dFacilities[is.na(get(newVar)),numMissing:=numMissing+1]
+}
+dFacilities[numMissing==7,sumYesTR03:=NA]
+
+dFacilities[,three_or_more_TR03:=as.numeric(NA)]
+dFacilities[!is.na(sumYesTR03),three_or_more_TR03:=0]
+dFacilities[sumYesTR03>=3,three_or_more_TR03:=1]
+
+d <- dFacilities[TR01==1]
+d[,numerator:=three_or_more_TR03]
+```
+
+### Results
+
+```{r}
+nrow(dFacilities[TR01==1 & sumYesTR03==1])/nrow(dFacilities[TR01==1])*100
+```
+
+\newpage
+
+## 8. Percentage of facilities with semi-structured internship programs in Palestine
+
+- Source: Facility questionnaire
+- Calculation: ( Sum of all TR05 answer 1. who answered at least 3 YES from TR07  / sum of all TR05 answer 1 ) * 100
+- Indicator description: Percentage of internship sites that offer semi-structures training programs
+
+```{r}
+dFacilities[,sumYesTR07:=0]
+dFacilities[,numMissing:=0]
+for(l in c("A","B","C","D","E","F","G")){
+  newVar <- sprintf("TR07_%s",l)
+  dFacilities[get(newVar)==1,sumYesTR07:=sumYesTR07+1]
+  dFacilities[is.na(get(newVar)),numMissing:=numMissing+1]
+}
+dFacilities[numMissing==7,sumYesTR07:=NA]
+
+dFacilities[,three_or_more_TR07:=as.numeric(NA)]
+dFacilities[!is.na(sumYesTR07),three_or_more_TR07:=0]
+dFacilities[sumYesTR07>=3,three_or_more_TR07:=1]
+
+d <- dFacilities[TR05==1]
+d[,numerator:=three_or_more_TR07]
+```
+
+### Results
+
+```{r}
+PrintTableNPerc(d)
+```
+
+\newpage 
+
+# CPD Indicators
+
+## 5. Percentage distribution of health workers per profession who took CPD courses within the past year
+
+- Source: Workforce questionnaire 
+- Calculation: ( CW00 nurses who answered SK02 with 1. Yes  / sum of CW00 nurses) * 100
+- Indicator description: Percentage distribution of health workers from each profession, who took certified CPD courses within the past year
+- Note: Note that this indicator needs to be repeated for each profession in CW00 and present percentage distribution ( the calculation provided was an example, repeat the indicator for doctors, allied health sciences, pharmacists, dentists, psychologists)
+
+### Results
+
+```{r message=FALSE, warning=FALSE}
+for(i in professionVars){
+  d <- dWorkers[get(i)==1]
+  d[,numerator:=as.numeric(NA)]
+  d[!is.na(SK02),numerator:=0]
+  d[SK02==1,numerator:=1]
+  
+  d <- d[,.(
+    numerator=max(numerator,na.rm=T)
+  ),by=.(
+    HR01
+  )]
+  
+  d[is.infinite(numerator),numerator:=NA]
+  cat(sprintf("***** %s *****\n",i))
+  PrintTableNPerc(d)
+  cat("\n\n")
+}
+```
+
+## 6. Percentage distribution of health workers  per sector who took CPD courses within the past year
+
+- Source: Workforce questionnaire 
+- Calculation: ( sum of SK02 with 1. Yes  / All health workers ) * 100----> this is done by sector
+- Percentage distritbution of health workers from each sector, who took certified CPD courses within the past year 
+- Note: Note that this indicators is combined from 2 forms. We need the facility sector ) + this indicator needs to be repeated for each sector (Ministry of Health, Military Health Services, UNRWA, Private and NGO from IS04 ) and present percentage distribution and shows different values in same indicator
+
+```{r}
+dMaster <- merge(dWorkers, dFacilities[,c("IDH00","facilitySector")], by="IDH00")
+nrow(dWorkers)
+nrow(dMaster)
+
+```
+
+
+### Results
+
+```{r message=FALSE, warning=FALSE}
+for(i in unique(dMaster$facilitySector)){
+  d <- dMaster[facilitySector==i & isProf_Healthworker==1]
+  d[,numerator:=as.numeric(NA)]
+  d[!is.na(SK02),numerator:=0]
+  d[SK02==1,numerator:=1]
+  
+  d <- d[,.(
+    numerator=max(numerator,na.rm=T)
+  ),by=.(
+    HR01
+  )]
+  
+  d[is.infinite(numerator),numerator:=NA]
+  cat(sprintf("***** %s *****\n",i))
+  PrintTableNPerc(d)
+  cat("\n\n")
+}
+```
+
+
+# Health Workforce Indicators
+
+## 1. Total number of working doctors in Palestine
+
+- Source: Workforce questionnaire 
+- Calculation: Sum of CW00 ( doctors )
+- Indicator description: Total number of doctors ( General Doctors and Specialized Doctors ) currently working in Palestine
+- Note: 
+
+### Results
+
+```{r message=FALSE, warning=FALSE}
+d <- dWorkers[isProf_Doctor==1]
+d[,numerator:=1]
+
+d <- d[,.(
+  numerator=max(numerator,na.rm=T)
+),by=.(
+  HR01
+)]
+
+d[is.infinite(numerator),numerator:=NA]
+PrintTableNPerc(d)
+
+cat("***PER 1000 PEOPLE ***\n")
+d[is.infinite(numerator),numerator:=NA]
+sum(d$numerator)/pop[districtName=="Palestine population"]$pop*100
+```
+
+
+## 3. Total number of working specialized doctors per specialization in Palestine
+
+- Source: Workforce questionnaire 
+- Calculation: Sum of CW00 ( specialized doctors )
+- Indicator description: Total number of specialized doctors currently working in Palestine
+- Note: 
+
+### Results
+
+```{r message=FALSE, warning=FALSE}
+d <- dWorkers[isProf_Specializeddoctor==1]
+d[,numerator:=1]
+
+d <- d[,.(
+  numerator=max(numerator,na.rm=T)
+),by=.(
+  HR01
+)]
+
+d[is.infinite(numerator),numerator:=NA]
+PrintTableNPerc(d)
+
+cat("***PER 1000 PEOPLE ***\n")
+d[is.infinite(numerator),numerator:=NA]
+sum(d$numerator)/pop[districtName=="Palestine population"]$pop*100
+```
+
+## 5. Total number of  working dentists in Palestine
+
+- Source: Workforce questionnaire 
+- Calculation: Sum of CW00 dentists
+- Indicator description: Total number of dentists currently working in Palestine 
+- Note: 
+
+### Results
+
+```{r message=FALSE, warning=FALSE}
+d <- dWorkers[isProf_Dentist==1]
+d[,numerator:=1]
+
+d <- d[,.(
+  numerator=max(numerator,na.rm=T)
+),by=.(
+  HR01
+)]
+
+d[is.infinite(numerator),numerator:=NA]
+PrintTableNPerc(d)
+
+cat("***PER 1000 PEOPLE ***\n")
+d[is.infinite(numerator),numerator:=NA]
+sum(d$numerator)/pop[districtName=="Palestine population"]$pop*100
+```
+
+## 7. Total number of working pharmacists in Palestine
+
+- Source: Workforce questionnaire 
+- Calculation: Sum of CW00 pharmacists 
+- Indicator description: Total number of pharmacists working in Palestine
+
+### Results
+
+```{r message=FALSE, warning=FALSE}
+d <- dWorkers[isProf_Pharmacist==1]
+d[,numerator:=1]
+
+d <- d[,.(
+  numerator=max(numerator,na.rm=T)
+),by=.(
+  HR01
+)]
+
+d[is.infinite(numerator),numerator:=NA]
+PrintTableNPerc(d)
+
+cat("***PER 1000 PEOPLE ***\n")
+d[is.infinite(numerator),numerator:=NA]
+sum(d$numerator)/pop[districtName=="Palestine population"]$pop*100
+```
+
+## 9. Total number of working nurses in Palestine
+
+- Source: Workforce questionnaire 
+- Calculation: Sum of CW00 nurses
+- Indicator description: Total number of nurses ( Registered and Practical ) working in Palestine
+
+### Results
+
+```{r message=FALSE, warning=FALSE}
+d <- dWorkers[isProf_Nurse==1]
+d[,numerator:=1]
+
+d <- d[,.(
+  numerator=max(numerator,na.rm=T)
+),by=.(
+  HR01
+)]
+
+d[is.infinite(numerator),numerator:=NA]
+PrintTableNPerc(d)
+
+cat("***PER 1000 PEOPLE ***\n")
+d[is.infinite(numerator),numerator:=NA]
+sum(d$numerator)/pop[districtName=="Palestine population"]$pop*100
+```
+
+## 11. Total number of working midwives in Palestine
+
+- Source: Workforce questionnaire 
+- Calculation: Sum of CW00 midwives
+- Indicator description: Total number of midwives working in Palestine
+
+### Results
+
+```{r message=FALSE, warning=FALSE}
+d <- dWorkers[isProf_Midwife==1]
+d[,numerator:=1]
+
+d <- d[,.(
+  numerator=max(numerator,na.rm=T)
+),by=.(
+  HR01
+)]
+
+d[is.infinite(numerator),numerator:=NA]
+PrintTableNPerc(d)
+
+cat("***PER 1000 PEOPLE ***\n")
+d[is.infinite(numerator),numerator:=NA]
+sum(d$numerator)/pop[districtName=="Palestine population"]$pop*100
+```
+
+## 13. Total number of working allied health sciences professionals in Palestine
+
+- Source: Workforce questionnaire 
+- Calculation: Sum of CW00 allied health sciences
+- Indicator description: Total number of allied health sciences professionals working in Palestine
+
+### Results
+
+```{r message=FALSE, warning=FALSE}
+d <- dWorkers[isProf_Alliedhealthsciences==1]
+d[,numerator:=1]
+
+d <- d[,.(
+  numerator=max(numerator,na.rm=T)
+),by=.(
+  HR01
+)]
+
+d[is.infinite(numerator),numerator:=NA]
+PrintTableNPerc(d)
+
+cat("***PER 1000 PEOPLE ***\n")
+d[is.infinite(numerator),numerator:=NA]
+sum(d$numerator)/pop[districtName=="Palestine population"]$pop*100
+```
+
+## 15. Total number of working psychologists, counselors and therapists in Palestine
+
+- Source: Workforce questionnaire 
+- Calculation: Sum of CW00 ( psychologists, counselor and therapists )
+- Indicator description: Total number of psychologists, counselors and therapists working in Palestine
+
+### Results
+
+```{r message=FALSE, warning=FALSE}
+d <- dWorkers[isProf_Psychologistcounselorstherap==1]
+d[,numerator:=1]
+
+d <- d[,.(
+  numerator=max(numerator,na.rm=T)
+),by=.(
+  HR01
+)]
+
+d[is.infinite(numerator),numerator:=NA]
+PrintTableNPerc(d)
+
+cat("***PER 1000 PEOPLE ***\n")
+d[is.infinite(numerator),numerator:=NA]
+sum(d$numerator)/pop[districtName=="Palestine population"]$pop*100
+```
+
+## 17. Total number of working psychaitrists in Palestine
+
+- Source: Workforce questionnaire 
+- Calculation: Sum of CW00 psychaitrists
+- Indicator description: Total number of psychologists, counselors and therapists working in Palestine
+
+### Results
+
+```{r message=FALSE, warning=FALSE}
+d <- dWorkers[isProf_Psychiatrist==1]
+d[,numerator:=1]
+
+d <- d[,.(
+  numerator=max(numerator,na.rm=T)
+),by=.(
+  HR01
+)]
+
+d[is.infinite(numerator),numerator:=NA]
+PrintTableNPerc(d)
+
+cat("***PER 1000 PEOPLE ***\n")
+d[is.infinite(numerator),numerator:=NA]
+sum(d$numerator)/pop[districtName=="Palestine population"]$pop*100
+```
+
+## 19. Total number of working alternative medicine practitioners in Palestine 
+
+- Source: Workforce questionnaire 
+- Calculation: Sum of CW00 alternative medicine practitioners
+- Indicator description: Total number of alternative medicine practitioners in Palestine
+
+### Results
+
+```{r message=FALSE, warning=FALSE}
+d <- dWorkers[isProf_AlternativeMedicine==1]
+d[,numerator:=1]
+
+d <- d[,.(
+  numerator=max(numerator,na.rm=T)
+),by=.(
+  HR01
+)]
+
+d[is.infinite(numerator),numerator:=NA]
+PrintTableNPerc(d)
+
+cat("***PER 1000 PEOPLE ***\n")
+d[is.infinite(numerator),numerator:=NA]
+sum(d$numerator)/pop[districtName=="Palestine population"]$pop*100
+```
+
+## 21. Total number of working doctors, nurses and midwives per 1,000 population in Palestine
+
+- Source: Workforce questionnaire 
+- Calculation: ( CW00 doctors + CW00 nurses + CW00 midwives / total Palestine population ) * 1,000
+- Indicator description: Total number of doctors, nurses and midwives working in Palestine per 1,000 population
+
+### Results
+
+```{r message=FALSE, warning=FALSE}
+d <- dWorkers[isProf_Doctor==1 | isProf_Nurse==1 | isProf_Midwife==1]
+d[,numerator:=1]
+
+d <- d[,.(
+  numerator=max(numerator,na.rm=T)
+),by=.(
+  HR01
+)]
+
+d[is.infinite(numerator),numerator:=NA]
+PrintTableNPerc(d)
+
+cat("***PER 1000 PEOPLE ***\n")
+d[is.infinite(numerator),numerator:=NA]
+sum(d$numerator)/pop[districtName=="Palestine population"]$pop*100
+```
+
+## 22. Total number of administrative and support staff in the health sector in Palestine
+
+- Source: Workforce questionnaire 
+- Calculation: Sum of CW00 administrative and support staff
+- Indicator description: Total number of administrative and support staff working in the health sector in Palestine
+
+### Results
+
+```{r message=FALSE, warning=FALSE}
+d <- dWorkers[isProf_Administrativesupportstaff==1]
+d[,numerator:=1]
+
+d <- d[,.(
+  numerator=max(numerator,na.rm=T)
+),by=.(
+  HR01
+)]
+
+d[is.infinite(numerator),numerator:=NA]
+PrintTableNPerc(d)
+```
+
+## 23. Health workers : administrative and support staff per sector of employment in Palestine
+
+- Source: Workforce questionnaire and linked by faciity sector from facility questionnaire
+- Calculation: sum of all health workers / sum of all administrative and support staff ----(this should be applied for all workers under each sector)
+- Indicator description: Ratio of health workers to administrative and supportstaff in each sector of employment ( repeat for each sector of employment )
+
+```{r}
+dMaster <- merge(dWorkers, dFacilities[,c("IDH00","facilitySector")], by="IDH00")
+nrow(dWorkers)
+nrow(dMaster)
+```
+
+
+### Results
+
+```{r message=FALSE, warning=FALSE}
+for(i in unique(dMaster$facilitySector)){
+  d <- dMaster[facilitySector==i & (isProf_Healthworker==1 | isProf_Administrativesupportstaff==1)]
+  
+  d[,numerator:=isProf_Healthworker]
+  d[,denominator:=isProf_Administrativesupportstaff]
+  
+  d <- d[,.(
+    numerator=max(numerator,na.rm=T),
+    denominator=max(denominator,na.rm=T)
+  ),by=.(
+    HR01
+  )]
+  
+  cat(sprintf("***** %s *****\n",i))
+  cat(sprintf("Healthcare worker: %s\n",sum(d$numerator)))
+  cat(sprintf("Admin staff: %s\n",sum(d$denominator)))
+  cat(sprintf("Ratio: %s\n",sum(d$numerator)/sum(d$denominator)))
+  cat("\n\n")
+}
+```
+
+
+## 24. Percentage distribution of health workers per sector  of employment in Palestine
+
+- Source: Workforce and facility questionnaire
+- Calculation: ( total number of health workers in MoH / total number of health workers ) * 100 --This is repeated for all sectors to come out with percentage distribution
+- Indicator description: Percentge of total health workers at each sector to total health workers in all sectors ( repeat indicator for each sector of employment )
+
+```{r}
+dMaster <- merge(dWorkers, dFacilities[,c("IDH00","facilitySector")], by="IDH00")
+nrow(dWorkers)
+nrow(dMaster)
+
+d <- dMaster[isProf_Healthworker==1]
+d[,numerator:=1]
+d <- d[,.(
+    numerator=max(numerator,na.rm=T)
+  ),by=.(
+    HR01,
+    facilitySector
+  )]
+d <- d[,.(numerator=sum(numerator)),by=.(facilitySector)]
+d[,denominator:=sum(d$numerator)]
+d[,percent:=RAWmisc::Format(numerator/denominator*100,1)]
+```
+
+
+### Results
+
+```{r message=FALSE, warning=FALSE}
+print(d)
+```
+
+## 25. Percentage distribution of each health profession per sector of employment in Palestine
+
+- Source: Workforce and facility questionnaire
+- Calculation: ( total numer of nurses in MoH / total number of nurses ) * 100 --> this is repeated for all professions and for all sectors of employment
+- Indicator description: Percentage of each profession per sector to all health workers from that professions from all sectors 
+
+### Results
+
+```{r}
+dMaster <- merge(dWorkers, dFacilities[,c("IDH00","facilitySector")], by="IDH00")
+nrow(dWorkers)
+nrow(dMaster)
+
+for(i in professionVars){
+  d <- dMaster[get(i)==1]
+  d[,numerator:=1]
+  d <- d[,.(
+      numerator=max(numerator,na.rm=T)
+    ),by=.(
+      HR01,
+      facilitySector
+    )]
+  d <- d[,.(numerator=sum(numerator)),by=.(facilitySector)]
+  d[,denominator:=sum(d$numerator)]
+  d[,percent:=RAWmisc::Format(numerator/denominator*100,1)]
+  
+  cat(sprintf("***** %s *****\n",i))
+  print(d)
+  cat("\n\n")
+}
+```
+
+## 26/27. Ratio of total working nurses to working doctors in Palestine
+
+- Source: Workforce and facility questionnaire
+- Calculation: All CW00 nurses / All CW00 doctors
+- Indicator description: Ratio of working nurses to working doctors in Palestine
+
+### Results
+
+```{r}
+dMaster <- merge(dWorkers, dFacilities[,c("IDH00","facilitySector")], by="IDH00")
+nrow(dWorkers)
+nrow(dMaster)
+
+for(i in c("All",unique(dMaster$facilitySector))){
+  d <- dMaster[isProf_Doctor==1 | isProf_Nurse==1]
+  if(i!="All") d <- d[facilitySector==i]
+  
+  d[,numerator:=isProf_Nurse]
+  d[,denominator:=isProf_Doctor]
+  
+  d <- d[,.(
+    numerator=max(numerator,na.rm=T),
+    denominator=max(denominator,na.rm=T)
+  ),by=.(
+    HR01
+  )]
+  
+  cat(sprintf("***** %s *****\n",i))
+  cat(sprintf("Nurse: %s\n",sum(d$numerator)))
+  cat(sprintf("Doctor: %s\n",sum(d$denominator)))
+  cat(sprintf("Ratio: %s\n",sum(d$numerator)/sum(d$denominator)))
+  cat("\n\n")
+}
+```
+
+## 28/30. Percentage of health workers from the Ministry of Health who dual practice 
+
+- Source: Workforce and facility questionnaire
+- Calculation: ( Health workers at Ministry of Health (IS04) with IDs found in outside MoH sector / all MoH workers ) * 100
+- Indicator description: Percentage of health workers at the Ministry of Health of who dual practice
+
+### Results
+
+```{r}
+dMaster <- merge(dWorkers, dFacilities[,c("IDH00","facilitySector")], by="IDH00")
+nrow(dWorkers)
+nrow(dMaster)
+unique(dMaster$facilitySector)
+
+for(i in professionVars){
+  d <- dMaster[get(i)==1]
+  
+  d[,numerator:=0]
+  d[facilitySector!="Ministry of Health",numerator:=1]
+  d[,denominator:=0]
+  d[denominator=="Ministry of Health",denominator:=1]
+  
+  d <- d[,.(
+    numerator=max(numerator,na.rm=T),
+    denominator=max(denominator,na.rm=T)
+  ),by=.(
+    HR01
+  )]
+  d <- d[denominator==1]
+  
+  cat(sprintf("***** %s *****\n",i))
+  cat(sprintf("Numerator: %s\n",sum(d$numerator)))
+  cat(sprintf("Denominator: %s\n",sum(d$denominator)))
+  cat(sprintf("Ratio: %s\n",sum(d$numerator)/sum(d$denominator)))
+  cat("\n\n")
+}
+```
+
+## 31. Percentage of doctors working in hospitals in Palestine
+
+- Source: Workforce and facility questionnaire
+- Calculation: ( sum of CW00 doctors with answer 9 in facility questionnaire IS06 / total doctors ) * 100
+- Indicator description: Percentage of doctors working in Palestine who work in hospitals
+
+### Results
+
+```{r}
+d <- merge(dWorkers, dFacilities[,c("IDH00","IS06")], by="IDH00")
+d <- d[isProf_Doctor==1]
+d[!is.na(IS06),numerator:=0]
+d[IS06==9,numerator:=1]
+
+d <- d[,.(
+  numerator=max(numerator,na.rm=T)
+),by=.(
+  HR01
+)]
+ 
+PrintTableNPerc(d) 
+```
+
+## 32. Percentage of nurses working in hospitals in Palestine
+
+- Source: Workforce and facility questionnaire
+- Calculation: ( sum of CW00 nurses with answer 9 in facility questionnaire IS06 / total nurses ) * 100
+- Indicator description: Percentage of nurses working in Palestine who work in hospitals
+
+### Results
+
+```{r}
+d <- merge(dWorkers, dFacilities[,c("IDH00","IS06")], by="IDH00")
+d <- d[isProf_Nurse==1]
+d[!is.na(IS06),numerator:=0]
+d[IS06==9,numerator:=1]
+
+d <- d[,.(
+  numerator=max(numerator,na.rm=T)
+),by=.(
+  HR01
+)]
+ 
+PrintTableNPerc(d) 
+```
+
+## 33. Percentage of working doctors in private clinics in Palestine
+
+- Source: Workforce and facility questionnaire
+- Calculation: ( sum of CW00 doctors with answers in facility questionnaire IS06 1 +2 (and IS04--Private sector) / total number of CW00 doctors ) * 100
+- Indicator description: Percentage of doctors working in Palestine who work in private clinics
+
+### Results
+
+```{r}
+d <- merge(dWorkers, dFacilities[,c("IDH00","IS06","facilitySector")], by="IDH00")
+d <- d[isProf_Doctor==1]
+d[!is.na(IS06),numerator:=0]
+d[IS06 %in% c(1,2),numerator:=1]
+d[facilitySector=="Private",numerator:=1]
+
+d <- d[,.(
+  numerator=max(numerator,na.rm=T)
+),by=.(
+  HR01
+)]
+ 
+PrintTableNPerc(d) 
+```
+
+## 34. Percentage of working specialized doctors in private clinics in Palestine
+
+- Source: Workforce and facility questionnaire
+- Calculation: ( sum of CW00 specialized doctors with answers in facilitiy questionnaire IS06 1+ 2 (ad IS04--private sector)/ total number of CW00 specialized doctors ) * 100
+- Indicator description: Percentage of working specialized doctors in private clinics in Palestine
+
+### Results
+
+```{r}
+d <- merge(dWorkers, dFacilities[,c("IDH00","IS06","facilitySector")], by="IDH00")
+d <- d[isProf_Specializeddoctor==1]
+d[!is.na(IS06),numerator:=0]
+d[IS06 %in% c(1,2),numerator:=1]
+d[facilitySector=="Private",numerator:=1]
+
+d <- d[,.(
+  numerator=max(numerator,na.rm=T)
+),by=.(
+  HR01
+)]
+ 
+PrintTableNPerc(d) 
+```
+
+## 35x-41x. Total number of X working in East Jerusalem hospitals
+
+
+- Source: Workforce and facility questionnaire
+- Calculation: ( sum of CW00 doctors IDH03 who work in a facility in East Jerusalem and IS06 9. hospitals )
+- Indicator description: Total number of doctors working in East Jerusalem hospitals
+
+### Results
+
+```{r message=FALSE, warning=FALSE}
+
+dMaster <- merge(dWorkers, dFacilities[,c("IDH00","IS06")], by="IDH00")
+
+for(i in professionVars){
+  #d <- dWorkers[get(i)==1 & IDH03 %in% c(dLocation[district=="East Jerusalem (J1)"]$localityCode)]
+  d <- dMaster[get(i)==1 & 
+                  IDH03 %in% c(dLocation[district=="East Jerusalem (J1)"]$localityCode) &
+                  IS06==9]
+  
+  d[,numerator:=1]
+  
+  d <- d[,.(
+    numerator=max(numerator,na.rm=T)
+  ),by=.(
+    HR01
+  )]
+  
+  cat(sprintf("***** %s *****\n",i))
+  cat(sprintf("Numerator: %s\n",sum(d$numerator)))
+  cat("\n\n")
+}
+```
+
+# At Risk Area Indicators
+
+- Number/per 1000 
+- Doctors, Dentists, Pharmacists, Nurses, Midwives, Doctors+Nurses+Midwives
+- Area C, Jordan Valley, Jerusalem District
+
+```{r message=FALSE, warning=FALSE}
+
+#dMaster <- merge(dWorkers, dFacilities[,c("IDH00","RE02")], by="IDH00")
+#xtabs(~dMaster$RE02)
+
+dWorkers[RE02==1,isAreaC:=1]
+dWorkers[RE01==1,isJordanValley:=1]
+dWorkers[IDH01 %in% dLocation[districtJerusalemClean=="Jerusalem"]$districtCode, isJerusalem:=1]
+
+res <- list()
+index <- 1
+for(prof in c(
+  "isProf_Doctor",
+  "isProf_Dentist",
+  "isProf_Pharmacist",
+  "isProf_Nurse",
+  "isProf_Midwife",
+  "isProf_DocNurseMid"
+  )) for(area in c(
+    "isAreaC",
+    "isJordanValley",
+    "isJerusalem"
+  )){
+    d <- dWorkers[get(prof)==1 & get(area)==1]
+    d[,numerator:=1]
+  
+    d <- d[,.(
+     numerator=max(numerator,na.rm=T)
+    ),by=.(
+     HR01
+    )]
+    res[[index]] <- data.frame(prof=prof,area=area,n=nrow(d))
+    index <- index + 1
+  }
+
+res <- rbindlist(res)
+print(res)
+```
+
+
+# Age Indicators
+
+- Age -> should sum up to 100%
+- Stratified by professionVars
+- Stratified by Palestine/Gaza/WB
+- Doctors, Dentists, Pharmacists, Nurses, Midwives, Doctors+Nurses+Midwives
+- Area C, Jordan Valley, Jerusalem District
+
+```{r message=FALSE, warning=FALSE}
+
+dWorkers[,isPalestine:=1]
+dWorkers[IDH01 %in% dLocation[isGaza==1]$districtCode, isGaza:=1]
+dWorkers[IDH01 %in% dLocation[isGaza==0]$districtCode, isWB:=1]
+dWorkers[,age:=floor(as.numeric(difftime(lubridate::today(),dWorkers$HR03,units="days"))/365.25)]
+
+dWorkers[,ageCat:=as.character(NA)]
+dWorkers[age>=18 & age<=30,ageCat:="18-30"]
+dWorkers[age>=31 & age<=45,ageCat:="31-45"]
+dWorkers[age>=46 & age<=54,ageCat:="46-54"]
+dWorkers[age>=55 & age<=59,ageCat:="55-59"]
+dWorkers[age>=60,ageCat:="60+"]
+
+for(prof in professionVars) for(area in c(
+    "isPalestine",
+    "isGaza",
+    "isWB"
+  )){
+    d <- dWorkers[get(prof)==1 & get(area)==1]
+    d[,numerator:=1]
+  
+    d <- d[,.(
+     numerator=max(numerator,na.rm=T)
+    ),by=.(
+     HR01,
+     ageCat
+    )]
+    
+    d <- d[,.(numerator=sum(numerator)),by=ageCat]
+    d[!is.na(ageCat),denominator_excl_miss:=sum(numerator)]
+    d[,perc:=RAWmisc::Format(numerator/denominator_excl_miss*100,1)]
+    d[,ageCat:=factor(ageCat,levels=c(
+      "18-30",
+      "31-45",
+      "46-54",
+      "55-59",
+      "60+"
+      ))]
+    setorder(d,ageCat)
+
+    cat("*******\n")
+    cat(sprintf("%s %s\n",prof,area))
+    print(d)
+    cat("\n\n")
+  }
+
+```
+
+
+# Gender Indicators
+
+- Sex -> should sum up to 100% (numbers and percentages)
+- Stratified by professionVars
+- Stratified by Palestine/Gaza/WB/Gaza Districts/WB Districts
+- Doctors, Dentists, Pharmacists, Nurses, Midwives, Doctors+Nurses+Midwives
+- Area C, Jordan Valley, Jerusalem District
+
+```{r message=FALSE, warning=FALSE}
+
+dWorkers[,isPalestine:=1]
+dWorkers[IDH01 %in% dLocation[isGaza==1]$districtCode, isGaza:=1]
+dWorkers[IDH01 %in% dLocation[isGaza==0]$districtCode, isWB:=1]
+
+dWorkers[IDH01 %in% dLocation[urbanRural=="Urban"]$districtCode,
+         isPalestineUrban:=1]
+dWorkers[IDH01 %in% dLocation[isGaza==1 & urbanRural=="Urban"]$districtCode,
+         isGazaUrban:=1]
+dWorkers[IDH01 %in% dLocation[isGaza==0 & urbanRural=="Urban"]$districtCode,
+         isWBUrban:=1]
+
+dWorkers[IDH01 %in% dLocation[urbanRural=="Rural"]$districtCode,
+         isPalestineRural:=1]
+dWorkers[IDH01 %in% dLocation[isGaza==1 & urbanRural=="Rural"]$districtCode,
+         isGazaRural:=1]
+dWorkers[IDH01 %in% dLocation[isGaza==0 & urbanRural=="Rural"]$districtCode,
+         isWBRural:=1]
+
+dWorkers[IDH01 %in% dLocation[urbanRural=="Camp"]$districtCode,
+         isPalestineCamp:=1]
+dWorkers[IDH01 %in% dLocation[isGaza==1 & urbanRural=="Camp"]$districtCode,
+         isGazaCamp:=1]
+dWorkers[IDH01 %in% dLocation[isGaza==0 & urbanRural=="Camp"]$districtCode,
+         isWBCamp:=1]
+
+dWorkers[,isFemale:=HR02-1]
+
+districtNames <- c("isPalestine","isGaza","isWB",
+                   "isPalestineUrban","isGazaUrban","isWBUrban",
+                   "isPalestineRural","isGazaRural","isWBRural",
+                   "isPalestineCamp","isGazaCamp","isWBCamp")
+
+for(i in unique(dLocation$districtJerusalemClean)){
+  newName <- stringr::str_replace_all(i,"[& ,\\-]","")
+  newName <- sprintf("isDistrict_%s",newName)
+  districtNames <- c(districtNames, newName)
+  dWorkers[IDH01 %in% dLocation[districtJerusalemClean==i]$districtCode, (newName):=1]
+}
+
+stack <- data.table(expand.grid(prof=professionVars,dist=districtNames,stringsAsFactors = F))
+
+for(i in 1:nrow(stack)){
+  s <- stack[i]
+  d <- dWorkers[get(s$prof)==1 & get(s$dist)==1]
+  d[,numerator:=1]
+
+  d <- d[,.(
+   numerator=max(numerator,na.rm=T)
+  ),by=.(
+   HR01,
+   isFemale
+  )]
+  
+  d <- d[,.(numerator=sum(numerator)),by=isFemale]
+  d[!is.na(isFemale),denominator_excl_miss:=sum(numerator)]
+  d[,perc:=RAWmisc::Format(numerator/denominator_excl_miss*100,1)]
+  d[,ratio:=RAWmisc::Format(numerator/(denominator_excl_miss-numerator),2)]
+  setorder(d,isFemale)
+  cat("*******\n")
+  cat(sprintf("%s %s\n",s$prof,s$dist))
+  print(d)
+  cat("\n\n")
+}
+
+```
+
+## BY SECTOR
+
+- Sex -> should sum up to 100% (numbers and percentages)
+- Stratified by professionVars
+- Stratified by Palestine/Gaza/WB/Gaza Districts/WB Districts
+- Doctors, Dentists, Pharmacists, Nurses, Midwives, Doctors+Nurses+Midwives
+- Area C, Jordan Valley, Jerusalem District
+
+```{r message=FALSE, warning=FALSE}
+
+dMaster <- merge(dWorkers, dFacilities[,c("IDH00","facilitySector")], by="IDH00")
+nrow(dWorkers)
+nrow(dMaster)
+
+for(i in unique(dMaster$facilitySector)){
+  d <- dMaster[facilitySector==i & isProf_Healthworker==1]
+  d[,numerator:=1]
+
+  d <- d[,.(
+   numerator=max(numerator,na.rm=T)
+  ),by=.(
+   HR01,
+   isFemale
+  )]
+  
+  d <- d[,.(numerator=sum(numerator)),by=isFemale]
+  d[!is.na(isFemale),denominator_excl_miss:=sum(numerator)]
+  d[,perc:=RAWmisc::Format(numerator/denominator_excl_miss*100,1)]
+  d[,ratio:=RAWmisc::Format(numerator/(denominator_excl_miss-numerator),2)]
+  setorder(d,isFemale)
+  cat("*******\n")
+  cat(sprintf("%s\n",i))
+  print(d)
+  cat("\n\n")
+}
+
+```
+
