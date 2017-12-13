@@ -1,3 +1,4 @@
+RAWmisc::AllowFileManipulationFromInitialiseProject()
 RAWmisc::InitialiseProject(
   HOME = "/git/code_major/2017/hadeel_health_workforce/",
   RAW = "/dropbox/data_raw/code_major/2017/hadeel_health_workforce/",

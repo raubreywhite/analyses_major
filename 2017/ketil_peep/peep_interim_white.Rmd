@@ -3,18 +3,21 @@ title: "Peep Interim Analysis"
 author: Richard White, PhD (Biostatistics)
 date: "`r lubridate::today()`"
 output:
-  pdf_document: default
   
+  pdf_document: default
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r setup, include=FALSE}
+RAWmisc::AllowFileManipulationFromInitialiseProject()
 RAWmisc::InitialiseProject(
-  HOME = "/analyses/code_major/ketil_peep/",
-  RAW = "/analyses/data_raw/ketil_peep/",
-  CLEAN = "/analyses/data_clean/ketil_peep",
-  BAKED = "/analyses/results_baked/ketil_peep/",
-  FINAL = "/analyses/results_final/ketil_peep/",
-  SHARED = "/dropbox/results_shared/ketil_peep/")
+  HOME = "/git/code_major/2017/ketil_peep/",
+  RAW = "/analyses/data_raw/code_major/2017/ketil_peep/",
+  CLEAN = "/analyses/data_clean/code_major/2017/ketil_peep",
+  BAKED = "/analyses/results_baked/code_major/2017/ketil_peep/",
+  FINAL = "/analyses/results_final/code_major/2017/ketil_peep/",
+  SHARED = "/dropbox/results_shared/code_major/2017/ketil_peep/")
 
 library(data.table)
 ```
@@ -22,7 +25,7 @@ library(data.table)
 ## Data
 ### Loading
 ```{r}
-d <- haven::read_sav(file.path(RAWmisc::PROJ$RAW,"Interim analysis May 2017.sav"))
+d <- haven::read_sav(file.path(RAWmisc::PROJ$RAW,"171117 INTERIM SHORT Safer Births 260916_300917.sav"))
 ```
 
 ### Raw data
