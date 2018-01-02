@@ -17,9 +17,10 @@ d <- CleanData()
 
 stack <- data.table(expand.grid(c("Whole year",unique(d$season)),
                                 rev(unique(d$age)),
-                                c("wp950_a_runoff0_3","wp950_a_precipCorr0_3","wp950_c_temperature0_3"),
+                                c("wp950_a_runoff0_3","wp950_c_rain0_3","wp950_c_temperature0_3"),
                                 stringsAsFactors = FALSE))
 setnames(stack,c("season","age","exposure"))
+stack <- stack[!(exposure=="wp950_c_temperature0_3" & season!="Whole year")]
 
 res <- vector("list",length=nrow(stack))
 pb <- RAWmisc::ProgressBarCreate(min=0,max=length(res))

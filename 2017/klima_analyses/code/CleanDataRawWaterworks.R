@@ -370,6 +370,7 @@ CleanData <- function(){
   data2[,wp950_a_runoff0_3:=wp950_a_runoff0_0+wp950_a_runoff1_1+wp950_a_runoff2_2+wp950_a_runoff3_3]
   data2[,wp950_a_precipCorr0_3:=wp950_a_precipCorr0_0+wp950_a_precipCorr1_1+wp950_a_precipCorr2_2+wp950_a_precipCorr3_3]
   data2[,wp950_c_temperature0_3:=wp950_c_temperature0_0+wp950_c_temperature1_1+wp950_c_temperature2_2+wp950_c_temperature3_3]
+  data2[,wp950_c_rain0_3:=wp950_c_rain0_0+wp950_c_rain1_1+wp950_c_rain2_2+wp950_c_rain3_3]
   
   return(data2)
   d <- list(

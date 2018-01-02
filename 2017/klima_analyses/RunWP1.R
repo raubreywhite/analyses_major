@@ -56,17 +56,25 @@ for(type in c("raw","clean","raw_outbreaks","clean_outbreaks")){
     d[,season:=NULL]
     d[,season:=seasonchar]
   
-    stack <- data.table(expand.grid(c("temperature0_3","gridRain0_3","gridPrecip0_3","gridRunoffStandardised0_3"),
-                        c("wp950","c"),
-                        unique(d$variable),
-                        c("Whole year",unique(d$season)),
-                        stringsAsFactors = FALSE))
+    stack <- data.table(expand.grid(
+      c("temperature0_3","gridRain0_3","gridRunoffStandardised0_3",
+        "temperature0_0","gridRain0_0","gridRunoffStandardised0_0",
+        "temperature1_1","gridRain1_1","gridRunoffStandardised1_1",
+        "temperature2_2","gridRain2_2","gridRunoffStandardised2_2",
+        "temperature3_3","gridRain3_3","gridRunoffStandardised3_3",
+        "temperature4_4","gridRain4_4","gridRunoffStandardised4_4"
+        ),
+      c("c"),
+      unique(d$variable),
+      c("Whole year",unique(d$season)),
+      stringsAsFactors = FALSE))
     stack <- stack[Var3!="Conductivity at 25 degrees"]
     stack[,exposure:=paste0(Var2,"_",Var1)]
     stack[,Var1:=NULL]
     stack[,Var2:=NULL]
     setnames(stack,"Var3","watervariable")
     setnames(stack,"Var4","season")
+
   } else {
     stack <- data.table(expand.grid(c("value"),
                         unique(d$variable),
@@ -77,6 +85,12 @@ for(type in c("raw","clean","raw_outbreaks","clean_outbreaks")){
     setnames(stack,c("exposure","watervariable","season","age"))
   }
   
+  stack <- stack[watervariable%in% c(
+    "Coliform bacteria",
+    "E. Coli",
+    "Intestinal Enterococci",
+    "Turbidity"
+  )]
   
   # Your code starts here
   #stackIter <- stack[35]
@@ -182,6 +196,41 @@ for(type in c("raw","clean","raw_outbreaks","clean_outbreaks")){
   res <- rbindlist(res)
  
   if(type %in% c("raw","clean")){ 
+    # graph
+    graphing <- res[!stringr::str_detect(exposure,"0_3")]
+    graphing[,week:=stringr::str_extract(exposure,"[0-9]$")]
+    graphing[,exposureName:=stringr::str_extract(exposure,"[a-zA-Z_]*")]
+    graphing[,effect:="None"]
+    graphing[pval<0.05/.N & est<0,effect:="Decreases"]
+    graphing[pval<0.05/.N & est>0,effect:="Increases"]
+    graphing[,effect:=factor(effect,levels=c("Increases","None","Decreases"))]
+    RAWmisc::RecodeDT(graphing,c(
+      "c_temperature"="Temperature",
+      "c_gridRunoffStandardised"="Runoff",
+      "c_gridRain"="Rain"
+    ),"exposureName")
+    graphing[,season:=factor(season,levels=c(
+      "Whole year","Winter","Spring","Summer","Autumn"
+    ))]
+    RAWmisc::RecodeDT(graphing,c(
+      "Intestinal Enterococci"="Intestinal\nEnterococci"
+    ),"outcome")
+    graphing3 <- graphing[1:3]
+    graphing3[1,effect:="Increases"]
+    graphing3[2,effect:="None"]
+    graphing3[3,effect:="Decreases"]
+    q <- ggplot(graphing,aes(x=week,y=exposureName,fill=effect))
+    q <- q + geom_tile(data=graphing3,alpha=0.0)
+    q <- q + geom_tile(alpha=0.6,colour="black")
+    q <- q + facet_grid(outcome~season,scales="free")
+    q <- q + scale_fill_manual("",values=c("red","gray","blue"))
+    q <- q + scale_x_discrete("Weeks lag")
+    q <- q + scale_y_discrete("Exposure (continuous)")
+    RAWmisc::saveA4(q,filename=file.path(RAWmisc::PROJ$SHARED_TODAY,
+                    sprintf("WP10_%s.png",type)))
+    
+    # table
+    res <- res[stringr::str_detect(exposure,"0_3")]
     res[,effect:=sprintf("%s%% (%s%%, %s%%)",
                          RAWmisc::Format((exp(est)-1)*100),
                          RAWmisc::Format((exp(est-1.96*se)-1)*100),
