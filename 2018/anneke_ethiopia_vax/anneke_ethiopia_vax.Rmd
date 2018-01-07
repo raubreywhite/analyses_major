@@ -1,0 +1,216 @@
+---
+title: "Anneke Ethiopia Vax"
+author: Richard White
+date: "`r lubridate::today()`"
+output:
+  pdf_document: default
+editor_options: 
+  chunk_output_type: console
+---
+
+# Neccessary functions
+```{r, results='hide', message=FALSE, warning=FALSE}
+RAWmisc::AllowFileManipulationFromInitialiseProject()
+RAWmisc::InitialiseProject(
+  HOME = "/git/code_major/2018/anneke_ethiopia_vax/",
+  RAW = "/analyses/data_raw/code_major/2018/anneke_ethiopia_vax/",
+  CLEAN = "/analyses/data_clean/code_major/2018/anneke_ethiopia_vax",
+  BAKED = "/analyses/results_baked/code_major/2018/anneke_ethiopia_vax/",
+  FINAL = "/analyses/results_final/code_major/2018/anneke_ethiopia_vax/",
+  SHARED = "/dropbox/results_shared/code_major/2018/anneke_ethiopia_vax/")
+
+suppressWarnings(suppressMessages(library(data.table)))
+suppressWarnings(suppressMessages(library(ggplot2)))
+suppressWarnings(suppressMessages(library(lme4)))
+
+
+GenData <- function(nhealthposts=2,nhouseholds=5,val_after_intervention=0.00,val_received_intervention=0.19,val_intercept = 0.38, sdVal=0.11){
+  
+  data <- data.table(expand.grid(
+    districtid=1:5,
+    healthcenterid=1:10,
+    healthpostid=1:nhealthposts,
+    householdid=1:nhouseholds,
+    after_intervention=0:1
+  ))
+  
+ data[, received_intervention:=0]
+ data[healthcenterid %in% 1:5, received_intervention:=1]
+ data[,householdid:=sprintf("%s_%s_%s_%s",districtid,healthcenterid,healthpostid,householdid)]
+ data[,healthpostid:=sprintf("%s_%s_%s",districtid,healthcenterid,healthpostid)]
+ data[,healthcenterid:=sprintf("%s_%s",districtid,healthcenterid)]
+ data[,districtid:=sprintf("%s",districtid)]
+ 
+ for(i in c("district","healthcenter","healthpost")){
+   id <- sprintf("%sid",i)
+   intercept <- sprintf("intercept_%s",i)
+   x <- unique(data[,id,with=F])
+   x[,(intercept):=rnorm(.N,sd=sdVal)]
+   data <- merge(data,x,by=id)
+ }
+   
+  data[,intercept:=val_intercept]
+  
+  data[,intercept_after_intervention:=0]
+  data[after_intervention==1,intercept_after_intervention:=val_after_intervention]
+  
+  data[,intercept_received_intervention:=0]
+  data[received_intervention==1,intercept_received_intervention:=val_received_intervention]
+  
+  data[,p:=intercept + intercept_district + intercept_healthcenter + intercept_healthpost + intercept_after_intervention + intercept_received_intervention]
+  data[,r:=runif(n=.N)]
+  data[,outcome:=0]
+  data[r<p,outcome:=1]
+ 
+  return(data) 
+}
+```
+
+\newpage
+
+# Fully vaccinated 
+## Observing the data
+```{r message=FALSE, warning=FALSE}
+res <- vector("list",100)
+#pb <- RAWmisc::ProgressBarCreate(min=0,max=length(res))
+for(i in 1:length(res)){
+  #RAWmisc::ProgressBarSet(pb,i)
+  d <- GenData(nhealthposts=2,nhouseholds=5,val_after_intervention=0.00,val_received_intervention=0.19,val_intercept = 0.42, sdVal=0.11)
+  mean(d$fully_vaccinated)
+  
+  fit <- lme4::lmer(outcome ~ received_intervention + (1|districtid) + (1|healthcenterid) + (1|healthpostid),data=d)
+  fit
+  
+  v <- data.table(as.data.frame(lme4::VarCorr(fit)))
+  v[,icc:=vcov/sum(vcov)]
+  res[[i]] <- copy(v)
+}
+res <- rbindlist(res)
+res <- res[,.(icc=mean(icc)),by=.(grp)]
+res[,icc:=RAWmisc::Format(icc,2)]
+print(res)
+```
+
+\newpage
+
+```{r message=FALSE, warning=FALSE}
+PvalFromEstAndSE <- function(est,se){
+  return(2*(1-pnorm(abs(est/se))))
+}
+
+properRes <- list()
+for(nhealthposts in c(2)) for(nhouseholds in c(1,2)){
+  res <- vector("list",100)
+  #pb <- RAWmisc::ProgressBarCreate(min=0,max=length(res))
+  for(i in 1:length(res)){
+    #RAWmisc::ProgressBarSet(pb,i)
+    d <- GenData(nhealthposts=nhealthposts,nhouseholds=nhouseholds,val_after_intervention=0.00,val_received_intervention=0.19,val_intercept = 0.42, sdVal=0.11)
+    
+    formula <- "outcome ~ received_intervention + (1|districtid) + (1|healthcenterid)"
+    if(nhealthposts>1 & nhouseholds>1){
+      formula <- sprintf("%s + (1|healthpostid)",formula)
+    }
+    
+    fit <- lme4::lmer(as.formula(formula),data=d)
+    fit1 <- as.data.frame(summary(fit)$coef)
+    fit1$var <- row.names(fit1)
+    fit1$model <- "baseline+after_intervention"
+     
+    fit <- lme4::lmer(as.formula(formula),data=d[after_intervention==1])
+    fit2 <- as.data.frame(summary(fit)$coef)
+    fit2$var <- row.names(fit2)
+    fit2$model <- "after_intervention"
+    
+    res[[i]] <- rbind(fit1,fit2)
+  }
+  res <- rbindlist(res)
+  res[,pval:=PvalFromEstAndSE(Estimate,`Std. Error`)]
+  res[,sig:=pval<0.05]
+  res <- res[,.(est=mean(Estimate),se=mean(`Std. Error`),power=mean(sig)),by=.(var,model)]
+  res[,effectEstimate:=RAWmisc::FormatEstCIFromEstSE(est,se, exp=F)]
+  res[,est:=NULL]
+  res[,se:=NULL]
+  res[,nhealthposts:=nhealthposts]
+  res[,nhouseholds:=nhouseholds]
+  res[,npeoplepersurvey:=nrow(d)/2]
+  print("*******")
+  print(sprintf("*** nhealthposts: %s, nhouseholds: %s, npeople after intervention: %s",
+                nhealthposts,
+                nhouseholds,
+                nrow(d)/2))
+  print(res)
+}
+```
+
+\newpage
+
+# No vaccination at all 
+## Observing the data
+```{r message=FALSE, warning=FALSE}
+res <- vector("list",100)
+#pb <- RAWmisc::ProgressBarCreate(min=0,max=length(res))
+for(i in 1:length(res)){
+  #RAWmisc::ProgressBarSet(pb,i)
+  d <- GenData(nhealthposts=nhealthposts,nhouseholds=nhouseholds,val_after_intervention=0.00,val_received_intervention=-0.04,val_intercept = 0.16, sdVal=0.05)
+  mean(d$fully_vaccinated)
+  
+  fit <- lme4::lmer(outcome ~ received_intervention + (1|districtid) + (1|healthcenterid) + (1|healthpostid),data=d)
+  fit
+  
+  v <- data.table(as.data.frame(lme4::VarCorr(fit)))
+  v[,icc:=vcov/sum(vcov)]
+  res[[i]] <- copy(v)
+}
+res <- rbindlist(res)
+res <- res[,.(icc=mean(icc)),by=.(grp)]
+res[,icc:=RAWmisc::Format(icc,2)]
+print(res)
+```
+
+\newpage
+
+```{r message=FALSE, warning=FALSE}
+PvalFromEstAndSE <- function(est,se){
+  return(2*(1-pnorm(abs(est/se))))
+}
+
+for(nhealthposts in c(2,5)) for(nhouseholds in c(10,20)){
+  res <- vector("list",100)
+  #pb <- RAWmisc::ProgressBarCreate(min=0,max=length(res))
+  for(i in 1:length(res)){
+    #RAWmisc::ProgressBarSet(pb,i)
+    d <- GenData(nhealthposts=nhealthposts,nhouseholds=nhouseholds,val_after_intervention=0.00,val_received_intervention=-0.04,val_intercept = 0.16, sdVal=0.05)
+    
+    formula <- "outcome ~ received_intervention + (1|districtid) + (1|healthcenterid)"
+    if(nhealthposts>1 & nhouseholds>1){
+      formula <- sprintf("%s + (1|healthpostid)",formula)
+    }
+    
+    fit <- lme4::lmer(as.formula(formula),data=d)
+    fit1 <- as.data.frame(summary(fit)$coef)
+    fit1$var <- row.names(fit1)
+    fit1$model <- "baseline+after_intervention"
+     
+    fit <- lme4::lmer(as.formula(formula),data=d[after_intervention==1])
+    fit2 <- as.data.frame(summary(fit)$coef)
+    fit2$var <- row.names(fit2)
+    fit2$model <- "after_intervention"
+    
+    res[[i]] <- rbind(fit1,fit2)
+  }
+  res <- rbindlist(res)
+  res[,pval:=PvalFromEstAndSE(Estimate,`Std. Error`)]
+  res[,sig:=pval<0.05]
+  res <- res[,.(est=mean(Estimate),se=mean(`Std. Error`),power=mean(sig)),by=.(var,model)]
+  res[,effectEstimate:=RAWmisc::FormatEstCIFromEstSE(est,se, exp=F)]
+  res[,est:=NULL]
+  res[,se:=NULL]
+  print("*******")
+  print(sprintf("*** nhealthposts: %s, nhouseholds: %s, npeople after intervention: %s",
+                nhealthposts,
+                nhouseholds,
+                nrow(d)/2))
+  print(res)
+}
+```
+

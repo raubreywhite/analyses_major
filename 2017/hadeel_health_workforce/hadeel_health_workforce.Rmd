@@ -143,7 +143,10 @@ dGender[Gender=="male",HR02_new:=1]
 dGender[Gender=="female",HR02_new:=2]
 dGender <- unique(dGender[,c("HR01","HR02_new")])
 sum(is.na(dGender$HR02_new)) # 22
-dGender <- dGender[!is.na(HR02_new)]
+dGender[,N:=.N,by=HR01]
+dGender[N>1]
+dGender <- dGender[!is.na(HR02_new) & N==1]
+dGender[,N:=NULL]
 nrow(dGender) # 489
 
 nrow(dWorkers)
@@ -154,6 +157,12 @@ dWorkers[is.na(HR02) & !is.na(HR02_new), HR02:=HR02_new]
 sum(is.na(dWorkers$HR02)) #26
 
 length(unique(dWorkers[is.na(HR02)]$HR01)) #22
+
+# midwives that should be female
+femaleWorkers <- data.table(readxl::read_excel(file.path(RAWmisc::PROJ$RAW,
+                                                         "data_richard",
+                                                         "Workers to be changed from male to female.xlsx")))
+dWorkers[HR01 %in% femaleWorkers$`Worker ID Number`, HR02:=2]
 
 # update old workers facilities data with new facilities data
 xtabs(~updatedFacilitiesList$IDH01)
@@ -180,7 +189,7 @@ nrow(dWorkers)
 dWorkers <- merge(dWorkers,fixable,by="IDH00",all.x=T)
 nrow(dWorkers)
 dWorkers[is.na(IDH03),IDH03:=IDH03_from_facility]
-
+nrow(dWorkers)
 # DISTRICTS
 dLocation <- list()
 for(i in c("North WB","Middle WB", "South WB", "North Gaza", "Middle Gaza", "South Gaza", "East Jerusalem (J1)")){
