@@ -1,10 +1,11 @@
+RAWmisc::AllowFileManipulationFromInitialiseProject()
 RAWmisc::InitialiseProject(
-  HOME = "/git/code_major/log_sykdomspuls/",
+  HOME = "/git/code_major/2017/log_sykdomspuls/",
   RAW = "/dropbox/data_raw/log_sykdomspuls/",
-  CLEAN = "/analyses/data_clean/log_sykdomspuls",
-  BAKED = "/analyses/results_baked/log_sykdomspuls/",
-  FINAL = "/analyses/results_final/log_sykdomspuls/",
-  SHARED = "/dropbox/results_shared/log_sykdomspuls/")
+  CLEAN = "/analyses/data_clean/code_major/2017/log_sykdomspuls",
+  BAKED = "/analyses/results_baked/code_major/2017/log_sykdomspuls/",
+  FINAL = "/analyses/results_final/code_major/2017/log_sykdomspuls/",
+  SHARED = "/dropbox/results_shared/code_major/2017/log_sykdomspuls/")
 
 library(data.table)
 library(ggplot2)
@@ -50,16 +51,29 @@ for(i in 2:length(files)){
     return(fread(newFile,header=FALSE,sep=' '))
   }
   d[[i]] <- tryCatch(normalFunction(), error=exceptionFunction, warning=exceptionFunction)
-  setnames(d[[i]],c("date","time","x","ipForwarded","x","ipRaw","x","page","x","args"))
-  d[[i]] <- d[[i]][,-which(names(d[[i]])=="x"),with=F]
+  if(ncol(d[[i]])==10){
+    setnames(d[[i]],c("date","time","x","ipForwarded","x","ipRaw","x","page","x","args"))
+    d[[i]] <- d[[i]][,-which(names(d[[i]])=="x"),with=F]
+  } else {
+    d[[i]] <- NULL
+  }
 }
 
 d <- rbindlist(d)
 d[,ipForwarded:=stringr::str_extract(ipForwarded,"^[0-9]*.[0-9]*.[0-9]*.[0-9]*")]
 
 ips <- unique(d$ipForwarded)
-locations <- data.table(rgeolocate::ip_api(ips))
-locations[,ipForwarded:=ips]
+ips <- ips[!ips %in% ips[stringr::str_detect(ips,"[0-9][0-9][0-9][0-9]$")]]
+
+locations <- list()
+desiredIPS <- split(ips, ceiling(seq_along(ips)/20))
+for(i in 16:length(desiredIPS)){
+  print(i)
+  locations[[i]] <- data.table(rgeolocate::ip_api(desiredIPS[[i]]))
+  #locations[[i]][,ipForwarded:=desiredIPS[[i]]]
+  Sys.sleep(2)
+}
+locations <- rbindlist(locations)
 
 d <- merge(d,locations,by="ipForwarded")
 setorder(d,ipForwarded,ipRaw,date,time)
@@ -134,7 +148,9 @@ q <- ggplot(people,aes(x=yrwk,y=uniqueIPs,fill=region_name))
 q <- q + geom_bar(stat="identity",colour="black",alpha=0.75)
 q <- q + scale_fill_manual(values=Colours(length(unique(peopleTotal$region_name))))
 q <- q + labs(caption=sprintf("%s unique IPs in total",sum(peopleTotal$uniqueIPs)))
+q <- q + theme(axis.text.x = element_text(angle = 90, hjust = 0.5, vjust=0.5))
 q
+RAWmisc::saveA4(q, file.path(RAWmisc::PROJ$SHARED_TODAY,"unique_ips_per_week.png"))
 
 sum(peopleTotal$uniqueIPs)
 

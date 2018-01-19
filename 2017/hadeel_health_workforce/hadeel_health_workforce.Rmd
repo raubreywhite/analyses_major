@@ -23,6 +23,9 @@ RAWmisc::InitialiseProject(
 library(data.table)
 library(ggplot2)
 
+jordanValley <- readxl::read_excel(file.path(RAWmisc::PROJ$RAW,
+                                             "Jordan valley villages (OCHA).xlsx"))
+
 updatedFacilitiesList <- readxl::read_excel(file.path(RAWmisc::PROJ$RAW,
                                     "data_richard",
                                     "All Facilities FINAL - Richard.xlsx"))
@@ -50,6 +53,10 @@ d4 <- readxl::read_excel(file.path(
 
 dFacilities <- data.table(rbind(d1,d2,d3[names(d1)],d4[names(d1)]))
 dFacilities[,IDH01:=as.numeric(IDH01)]
+dFacilities[!is.na(IDH03),isJordanValley:=0]
+dFacilities[IDH03 %in% jordanValley$`Basic:Geo PCBS Code`,isJordanValley:=1]
+xtabs(~dFacilities$isJordanValley)
+xtabs(~dFacilities$RE01)
 
 dFacilities[,NUMDUP:=.N, by=IDH00]
 setorder(dFacilities,IDH00)
@@ -135,12 +142,29 @@ dWorkers[IDH03==45540,IDH03:=452240]
 dWorkers[IDH03==310810,IDH03:=301810]
 nrow(dWorkers)
 
+# workers from system
+workersFromSystem <- data.table(readxl::read_excel(file.path(RAWmisc::PROJ$RAW,
+                                    "Workers records from system.xlsx")))
+
+x1 <- data.table(table(dWorkers$HR01))
+setnames(x1,c("HR01","n_richard"))
+
+x2 <- data.table(table(workersFromSystem$HR01))
+setnames(x2,c("HR01","n_system"))
+
+x <- merge(x1,x2,by="HR01",all=T)
+x[is.na(n_system),n_system:=0]
+x[is.na(n_richard),n_richard:=0]
+openxlsx::write.xlsx(x[n_richard!=n_system],file.path(RAWmisc::PROJ$SHARED_TODAY,"HR01_discrepancies.xlsx"))
+
+
+
 # updating genders by their names
 dGender <- data.table(readxl::read_excel(file.path(RAWmisc::PROJ$RAW,
                                     "2017_12_14_hadeel_missing_gender.xlsx")))
 dGender <- dGender[!is.na(HR01) & HR01!=999999999]
-dGender[Gender=="male",HR02_new:=1]
-dGender[Gender=="female",HR02_new:=2]
+dGender[tolower(Gender)=="male",HR02_new:=1]
+dGender[tolower(Gender)=="female",HR02_new:=2]
 dGender <- unique(dGender[,c("HR01","HR02_new")])
 sum(is.na(dGender$HR02_new)) # 22
 dGender[,N:=.N,by=HR01]
@@ -152,17 +176,43 @@ nrow(dGender) # 489
 nrow(dWorkers)
 dWorkers <- merge(dWorkers,dGender,by=c("HR01"),all.x=T)
 nrow(dWorkers)
-sum(is.na(dWorkers$HR02)) #591
+sum(is.na(dWorkers$HR02)) #587
 dWorkers[is.na(HR02) & !is.na(HR02_new), HR02:=HR02_new]
-sum(is.na(dWorkers$HR02)) #26
+sum(is.na(dWorkers$HR02)) #32
+dWorkers[,HR02_new:=NULL]
 
-length(unique(dWorkers[is.na(HR02)]$HR01)) #22
+length(unique(dWorkers[is.na(HR02)]$HR01)) #25
 
 # midwives that should be female
 femaleWorkers <- data.table(readxl::read_excel(file.path(RAWmisc::PROJ$RAW,
                                                          "data_richard",
                                                          "Workers to be changed from male to female.xlsx")))
 dWorkers[HR01 %in% femaleWorkers$`Worker ID Number`, HR02:=2]
+
+# updating genders for people with dual genders in same ID
+dGender <- data.table(readxl::read_excel(file.path(RAWmisc::PROJ$RAW,
+                                    "Workers records same ID but different gender.xlsx")))
+setnames(dGender,c("HR01","Gender"))
+dGender[tolower(Gender)=="male",HR02_new:=1]
+dGender[tolower(Gender)=="female",HR02_new:=2]
+dGender <- unique(dGender[,c("HR01","HR02_new")])
+sum(is.na(dGender$HR02_new)) # 0
+dGender[,N:=.N,by=HR01]
+dGender[N>1]
+dGender <- dGender[!is.na(HR02_new) & N==1]
+dGender[,N:=NULL]
+nrow(dGender) # 17
+
+nrow(dWorkers)
+dWorkers <- merge(dWorkers,dGender,by=c("HR01"),all.x=T)
+nrow(dWorkers)
+sum(is.na(dWorkers$HR02)) #32
+dWorkers[is.na(HR02) & !is.na(HR02_new), HR02:=HR02_new]
+sum(is.na(dWorkers$HR02)) #26
+
+namesIDGender <- unique(dWorkers[,c("HR00","HR01","HR02")])
+namesIDGender <- namesIDGender[,.(N=.N),by=.(HR00,HR01)]
+openxlsx::write.xlsx(namesIDGender[N>1],file.path(RAWmisc::PROJ$SHARED_TODAY,"two_genders_same_name.xlsx"))
 
 # update old workers facilities data with new facilities data
 xtabs(~updatedFacilitiesList$IDH01)
@@ -441,7 +491,7 @@ areaC <- dFacilities[RE02==1,
 
 openxlsx::write.xlsx(areaC,file.path(RAWmisc::PROJ$SHARED_TODAY,"facilities_areaC.xlsx"))
 
-jordanvalley <- dFacilities[RE01==1,
+jordanvalley <- dFacilities[isJordanValley==1,
                            c("IDH00","IDH01","IDH02","IDH03","IS06","IS04","facilitySector","RE01","RE02")]
 
 openxlsx::write.xlsx(jordanvalley,file.path(RAWmisc::PROJ$SHARED_TODAY,"facilities_jordan_valley.xlsx"))
@@ -523,7 +573,7 @@ print(d)
 ### Taking a look at JORDAN VALLEY [HADEEL CHECK THIS]
 
 ```{r}
-d <- dFacilities[RE01==1,.(N=.N),by=.(facilitySector,IS06)]
+d <- dFacilities[isJordanValley==1,.(N=.N),by=.(facilitySector,IS06)]
 setorder(d,facilitySector,IS06)
 print(d)
 ```
@@ -572,7 +622,7 @@ d4 <- readxl::read_excel(file.path(
   "Data collected by PNIPH - WB 2nd phase",
   "WORKERS_ED03_WB-final-2nd phase.xlsx"))
 
-dED03 <- data.table(rbind(d1,d2,d3[names(d1)],d4[names(d1)]))
+masterdED03 <- dED03 <- data.table(rbind(d1,d2,d3[names(d1)],d4[names(d1)]))
 #dED03[ED03C %in% 720101:720152 & ED03A<4]
 dED03 <- dED03[ED03C %in% 720101:720152 & ED03A>=4]
 dED03[,lowest:=min(ED03A),by=HR01]
@@ -624,7 +674,7 @@ cat("\n\n")
 
 ```{r}
 d <- copy(dWorkers)
-d[,age:=floor(as.numeric(difftime("2017-01-01",HR03,units="days"))/365.25)]
+d[,age:=floor(as.numeric(difftime("2016-01-01",HR03,units="days"))/365.25)]
 
 d[,ageCat:=as.character(NA)]
 d[age>=18 & age<=30,ageCat:="18-30"]
@@ -654,7 +704,7 @@ print(d)
 ```{r}
 for(i in professionVarsBOTH){
   d <- dWorkers[get(i)==1]
-  d[,age:=floor(as.numeric(difftime("2017-01-01",HR03,units="days"))/365.25)]
+  d[,age:=floor(as.numeric(difftime("2016-01-01",HR03,units="days"))/365.25)]
   
   d[,ageCat:=as.character(NA)]
   d[age>=18 & age<=30,ageCat:="18-30"]
@@ -680,6 +730,97 @@ for(i in professionVarsBOTH){
   print(d)
   cat("\n\n")
 }
+```
+
+# PCBS REQUESTS
+
+## 1.   Distribution of health workers by Educational Speciality stratified by gender (ED03)
+
+- only include ED03A<=7 [removing both people and records]
+- only keep ED03A==max(ED03A) [highest level per person, removing just records]
+- we now have problems with people with multiple records at the same level
+- only keep ED03B==max(ED03B) [latest year per person, removing just records]
+- only keep people whose countries are the same [removing just people!!!]
+- keep records with the highest ED03C code [removing just records]
+- people who answer as both male and female are recoded to female
+
+```{r}
+d <- dWorkers[BOTH_isProf_Healthworker==1]
+d[,isFemale:=HR02-1]
+d <- d[,.(isFemale=max(isFemale)),by=.(HR01)]
+
+reducedED03 <- masterdED03[ED03A<=7 & !is.na(ED03C) & HR01 %in% d$HR01]
+reducedED03[,maxED03A:=max(ED03A,na.rm=T),by=HR01]
+reducedED03 <- reducedED03[maxED03A==ED03A]
+reducedED03[,maxYear:=max(ED03B,na.rm=T),by=HR01]
+reducedED03 <- reducedED03[maxYear==ED03B]
+reducedED03[,num_at_same_level:=.N,by=HR01]
+xtabs(~reducedED03$num_at_same_level)
+
+reducedED03[,maxCountry:=max(ED03D,na.rm=T),by=HR01]
+reducedED03 <- reducedED03[maxCountry==ED03D | is.na(maxCountry)]
+reducedED03[,num_at_same_level:=.N,by=HR01]
+xtabs(~reducedED03$num_at_same_level)
+
+reducedED03[,max_ED03C:=max(ED03C),by=HR01]
+reducedED03 <- reducedED03[max_ED03C==ED03C]
+reducedED03[,num_at_same_level:=.N,by=HR01]
+xtabs(~reducedED03$num_at_same_level)
+
+reducedED03[,IDH00:=NULL]
+reducedED03[,ED03E:=NULL]
+reducedED03[,ED03C_T:=NULL]
+reducedED03[,ED03D_T:=NULL]
+reducedED03 <- unique(reducedED03)
+reducedED03[,num_at_same_level:=.N,by=HR01]
+xtabs(~reducedED03$num_at_same_level)
+
+nrow(d)
+d <- merge(d,reducedED03,by="HR01",all.x=T)
+nrow(d)
+
+res <- d[,.(N=.N),by=.(isFemale,ED03C)]
+setorder(res,isFemale,-N)
+openxlsx::write.xlsx(res,file.path(RAWmisc::PROJ$SHARED_TODAY,"Distribution of health workers by Educational Speciality stratified by gender.xlsx"))
+
+nrow(d)
+d[,ED03D:=as.numeric(ED03D)]
+d <- merge(d,dCountryCodes,by="ED03D",all.x=T)
+nrow(d)
+
+res <- d[,.(N=.N),by=.(isFemale,ED03C,english)]
+setorder(res,isFemale,english,-N)
+openxlsx::write.xlsx(res,file.path(RAWmisc::PROJ$SHARED_TODAY,"Distribution of health workers by graduation country, educational specialty by gender.xlsx"))
+```
+
+## 3. Distribution of health workers by highest educational level and gender (ED01)
+```{r}
+d <- dWorkers[BOTH_isProf_Healthworker==1]
+d[,isFemale:=HR02-1]
+d <- d[,.(
+  ED01=max(ED01,na.rm=T),
+  isFemale=max(isFemale,na.rm=T)
+),by=.(
+  HR01
+)]
+d[is.infinite(ED01),ED01:=NA]
+xtabs(~d$ED01+d$isFemale,addNA=T)
+```
+
+
+## 4. Distribution of health workers by years of experience and gender (ED02)
+```{r}
+d <- dWorkers[BOTH_isProf_Healthworker==1]
+d[,isFemale:=HR02-1]
+d <- d[,.(
+  yearsExperience=max(ED02,na.rm=T),
+  isFemale=max(isFemale,na.rm=T)
+),by=.(
+  HR01
+)]
+d[,yearsExperience:=cut(yearsExperience,c(-5,9,30,500))]
+d[is.infinite(yearsExperience),yearsExperience:=NA]
+xtabs(~d$yearsExperience+d$isFemale,addNA=T)
 ```
 
 
@@ -2413,10 +2554,10 @@ for(i in specializations){
 dWorkers[,isJerusalem:=as.numeric(NA)]
 dWorkers[IDH03 %in% dLocation[district=="Jerusalem"]$localityCode, isJerusalem:=1]
 
-whereDoTheyWork <- dFacilities[,c("IDH00","RE01","RE02")]
+whereDoTheyWork <- dFacilities[,c("IDH00","isJordanValley","RE02")]
 whereDoTheyWork[RE02==1,worksInAreaC:=1]
-whereDoTheyWork[RE01==1,worksInJordanValley:=1]
-whereDoTheyWork[,RE01:=NULL]
+whereDoTheyWork[isJordanValley==1,worksInJordanValley:=1]
+whereDoTheyWork[,isJordanValley:=NULL]
 whereDoTheyWork[,RE02:=NULL]
 
 xtabs(~whereDoTheyWork$worksInAreaC)
@@ -2522,7 +2663,7 @@ dWorkers[,isWB:=as.numeric(NA)]
 dWorkers[,isPalestine:=1]
 dWorkers[IDH03 %in% dLocation[isGaza==1]$localityCode, isGaza:=1]
 dWorkers[IDH03 %in% dLocation[isGaza==0]$localityCode, isWB:=1]
-dWorkers[,age:=floor(as.numeric(difftime("2017-01-01",HR03,units="days"))/365.25)]
+dWorkers[,age:=floor(as.numeric(difftime("2016-01-01",HR03,units="days"))/365.25)]
 
 dWorkers[,ageCat:=as.character(NA)]
 dWorkers[age>=18 & age<=30,ageCat:="18-30"]
@@ -2580,7 +2721,7 @@ dWorkers[,isWB:=as.numeric(NA)]
 dWorkers[,isPalestine:=1]
 dWorkers[IDH03 %in% dLocation[isGaza==1]$localityCode, isGaza:=1]
 dWorkers[IDH03 %in% dLocation[isGaza==0]$localityCode, isWB:=1]
-dWorkers[,age:=floor(as.numeric(difftime("2017-01-01",HR03,units="days"))/365.25)]
+dWorkers[,age:=floor(as.numeric(difftime("2016-01-01",HR03,units="days"))/365.25)]
 
 dWorkers[,ageCat:=as.character(NA)]
 dWorkers[age>=18 & age<=30,ageCat:="18-30"]
@@ -3318,6 +3459,15 @@ dWorkers[,isWB:=0]
 dWorkers[IDH03 %in% dLocation[isGaza==1]$localityCode, isGaza:=1]
 dWorkers[IDH03 %in% dLocation[isGaza==0]$localityCode, isWB:=1]
 
+dWorkers[,campUrbanRural:=as.character(NA)]
+dWorkers[IDH03 %in% dLocation[urbanRural=="Urban"]$localityCode,
+         campUrbanRural:="Urban"]
+dWorkers[IDH03 %in% dLocation[urbanRural=="Rural"]$localityCode,
+         campUrbanRural:="Rural"]
+dWorkers[IDH03 %in% dLocation[urbanRural=="Camp"]$localityCode,
+         campUrbanRural:="Camp"]
+
+
 districtNames <- c("isPalestine","isGaza","isWB")
 
 dLocation[,IDH03:=localityCode]
@@ -3405,6 +3555,31 @@ for(i in c("isPalestine","isGaza","isWB")){
     d[,ratio:=nurses/doctors]
     
     cat(sprintf("***** DISTRICT: %s - %s *****\n",i,s))
+    print(d)
+    cat("\n\n")
+    
+    d <- dMaster[(isProf_Doctor==1 | isProf_Nurse==1) & get(i)==1]
+    if(s!="All sectors"){
+      d <- d[facilitySector==s]
+    }
+    
+    d[,numerator:=isProf_Nurse]
+    d[,denominator:=isProf_Doctor]
+    
+    d <- d[,.(
+      numerator=max(numerator,na.rm=T),
+      denominator=max(denominator,na.rm=T)
+    ),by=.(
+      HR01,campUrbanRural
+    )]
+    
+    d <- d[,.(
+      nurses=sum(numerator),
+      doctors=sum(denominator)
+    ),by=.(campUrbanRural)]
+    d[,ratio:=nurses/doctors]
+    
+    cat(sprintf("***** campUrbanRural: %s - %s *****\n",i,s))
     print(d)
     cat("\n\n")
   }
@@ -3500,6 +3675,31 @@ for(i in c("isPalestine","isGaza","isWB")){
     d[,ratio:=nurses/doctors]
     
     cat(sprintf("***** DISTRICT: %s - %s *****\n",i,s))
+    print(d)
+    cat("\n\n")
+    
+    d <- dMaster[(BOTH_isProf_Doctor==1 | BOTH_isProf_Nurse==1) & get(i)==1]
+    if(s!="All sectors"){
+      d <- d[facilitySector==s]
+    }
+    
+    d[,numerator:=BOTH_isProf_Nurse]
+    d[,denominator:=BOTH_isProf_Doctor]
+    
+    d <- d[,.(
+      numerator=max(numerator,na.rm=T),
+      denominator=max(denominator,na.rm=T)
+    ),by=.(
+      HR01,campUrbanRural
+    )]
+    
+    d <- d[,.(
+      nurses=sum(numerator),
+      doctors=sum(denominator)
+    ),by=.(campUrbanRural)]
+    d[,ratio:=nurses/doctors]
+    
+    cat(sprintf("***** campUrbanRural: %s - %s *****\n",i,s))
     print(d)
     cat("\n\n")
   }
