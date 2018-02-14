@@ -11,3 +11,4 @@ RAWmisc::InitialiseProject(
 rmarkdown::render(input = "hadeel_health_workforce.Rmd", output_file = sprintf("health_workforce_%s.pdf",lubridate::today()), 
                   output_dir = RAWmisc::PROJ$SHARED_TODAY, output_format = rmarkdown::pdf_document(toc=TRUE))
 
+

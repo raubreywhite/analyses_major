@@ -1,11 +1,15 @@
-RAWmisc::AllowFileManipulationFromInitialiseProject()
-RAWmisc::InitialiseProject(
-  HOME = "/git/code_major/2018/anneke_ethiopia_vax/",
-  RAW = "/analyses/data_raw/code_major/2018/anneke_ethiopia_vax/",
-  CLEAN = "/analyses/data_clean/code_major/2018/anneke_ethiopia_vax",
-  BAKED = "/analyses/results_baked/code_major/2018/anneke_ethiopia_vax/",
-  FINAL = "/analyses/results_final/code_major/2018/anneke_ethiopia_vax/",
-  SHARED = "/dropbox/results_shared/code_major/2018/anneke_ethiopia_vax/")
+if(.Platform$OS.type=="unix"){
+  RAWmisc::AllowFileManipulationFromInitialiseProject()
+  RAWmisc::InitialiseProject(
+    HOME = "/git/code_major/2018/anneke_ethiopia_vax/",
+    RAW = "/analyses/data_raw/code_major/2018/anneke_ethiopia_vax/",
+    CLEAN = "/analyses/data_clean/code_major/2018/anneke_ethiopia_vax",
+    BAKED = "/analyses/results_baked/code_major/2018/anneke_ethiopia_vax/",
+    FINAL = "/analyses/results_final/code_major/2018/anneke_ethiopia_vax/",
+    SHARED = "/dropbox/results_shared/code_major/2018/anneke_ethiopia_vax/")
+}
+
+#install.packages("RAWmisc", repos="https://raubreywhite.github.com/drat")
 
 library(data.table)
 library(foreach)
@@ -14,6 +18,90 @@ library(iterators)
 library(ggplot2)
 library(lme4)
 library(survey)
+
+
+# Randomly generate between 2-10 healthposts
+# rerun using the 3 pentavalance
+# baseline of 59%, increase to 68%
+# control goes goes from 59 to 62
+
+GenData <- function(nhouseholds=5,val_after_intervention=0.00,val_received_intervention=0.19,val_intercept = 0.38, sdVal=0.11, m=c(1,1.2,1.5)){
+  
+  data <- data.table(expand.grid(
+    districtid=1:10,
+    healthcenterid=1:6,
+    healthpostid=1:8,
+    householdid=1:nhouseholds,
+    after_intervention=0:1
+  ))
+   
+  data[,fpc_district:=10]
+  data[,fpc_healthcenter:=6]
+  data[,fpc_healthpost:=5]
+  data[,fpc_households:=500]
+  
+  data[,fpc_healthpost_above:=fpc_healthcenter*fpc_district*fpc_healthpost]
+  
+  data[,randomized_intervention:=0]
+  data[healthcenterid %in% 1:3, randomized_intervention:=1]
+  
+  data[, received_intervention:=0]
+  data[after_intervention==1 & healthcenterid %in% 1:3, received_intervention:=1]
+  
+  data[,person_randomized_intervention:=0]
+  data[householdid %in% 1:(nhouseholds/2), person_randomized_intervention:=1]
+  
+  data[, person_received_intervention:=0]
+  data[after_intervention==1 & person_randomized_intervention==1, person_received_intervention:=1]
+  
+  data[,healthpostid:=sprintf("%s_%s_%s",districtid,healthcenterid,healthpostid)]
+  data[,healthcenterid:=sprintf("%s_%s",districtid,healthcenterid)]
+  data[,districtid:=sprintf("%s",districtid)]
+  
+  
+  x <- unique(data[,c("healthcenterid"),with=F])
+  x[,keep:=sample(2:8,size=.N,replace=T)]
+  x2 <- unique(data[,c("healthcenterid","healthpostid"),with=F])
+  x <- merge(x,x2,by="healthcenterid")
+  setorder(x,healthcenterid,healthpostid)
+  x[,n:=1:.N,by=healthcenterid]
+  x <- x[n<=keep]
+  
+  data <- data[healthpostid %in% x$healthpostid]
+  
+  multiplier <- c("district"=m[1],"healthcenter"=m[2],"healthpost"=m[3])
+  for(i in c("district","healthcenter","healthpost")){
+    id <- sprintf("%sid",i)
+    intercept <- sprintf("intercept_%s",i)
+    x <- unique(data[,id,with=F])
+    x[,(intercept):=rnorm(.N,sd=sdVal*multiplier[i])]
+    data <- merge(data,x,by=id)
+  }
+  
+  data[,intercept:=val_intercept]
+  
+  data[,intercept_after_intervention:=0]
+  data[after_intervention==1,intercept_after_intervention:=val_after_intervention]
+  
+  data[,intercept_received_intervention:=0]
+  data[received_intervention==1,intercept_received_intervention:=val_received_intervention]
+  
+  data[,intercept_person_received_intervention:=0]
+  data[person_received_intervention==1,intercept_person_received_intervention:=val_received_intervention]
+  
+  data[,p:=intercept + intercept_district + intercept_healthcenter + intercept_healthpost + intercept_after_intervention + intercept_received_intervention]
+  data[,r:=runif(n=.N)]
+  data[,outcome:=0]
+  data[r<p,outcome:=1]
+  
+  data[,p:=intercept + intercept_district + intercept_healthcenter + intercept_healthpost + intercept_after_intervention + intercept_person_received_intervention]
+  data[,r:=runif(n=.N)]
+  data[,person_outcome:=0]
+  data[r<p,person_outcome:=1]
+  
+  return(data) 
+}
+
 
 StackIterator <- function(stack, progressFunction) {
   library(data.table)
@@ -34,26 +122,32 @@ PvalFromEstAndSE <- function(est,se){
   return(2*(1-pnorm(abs(est/se))))
 }
 
+# Randomly generate between 2-10 healthposts
+# rerun using the 3 pentavalance
+# baseline of 59%, increase to 68%
+# control goes goes from 59 to 62
 
-nSims <- 200
+# YOU CAN USE THIS DATASET TO PLAY WITH
+# THE DATA AND VERIFY THAT IT IS BEING
+# CREATED PROPERLY
+d <- GenData(nhouseholds=10,val_after_intervention=0.05,val_received_intervention=-0.06,val_intercept = 0.16, sdVal=0.04)
 
-stack <- data.table(expand.grid(outcome=c("fully_vax","no_vax"),
-                                ndistricts=c(5,10),
-                                nhealthposts=c(2,5),
-                                nhouseholds=c(4,10),
-                                sim=1:nSims))
-if(FALSE){
-  stack <- stack[
-    outcome=="no_vax" &
-      (
-        (nhealthposts==2 &
-           nhouseholds==5) |
-          (nhealthposts==5 &
-             nhouseholds==2)
-      )
-  ]
+CalculateICC <- function(fit){
+  res <- data.table(as.data.frame(summary(fit)$varcor))
+  res[,icc:=vcov/sum(vcov)]
+  res <- res[grp!="Residual",c("grp","icc")]
+  return(res)
 }
 
+
+nSims <- 1000
+
+stack <- data.table(expand.grid(outcome=c("no_vax"),
+                                nhouseholds=c(8,10:18,20,22,24,26,28,30),
+                                sim=1:nSims))
+
+
+# Setting up the progress bar
 pb <- RAWmisc::ProgressBarCreate(max=nrow(stack))
 assign("pb", pb, envir = .GlobalEnv)
 
@@ -63,228 +157,75 @@ assign("ProgressFunction", ProgressFunction, envir = .GlobalEnv)
 opts <- list(progress=ProgressFunction)
 assign("opts", opts, envir = .GlobalEnv)
 
+# Registering the cluster so we can run it 8x faster
 cl <- makeCluster(parallel::detectCores())
 registerDoSNOW(cl)
 
 res <- foreach(s=StackIterator(stack, ProgressFunction)) %dopar% {
   library(data.table)
   library(survey)
+
+  # generating the datta
+  d <- GenData(nhouseholds=s$nhouseholds,val_after_intervention=0.03,val_received_intervention=0.06,val_intercept = 0.59, sdVal=0.06,m=c(1.5,2,2.2))
   
-  if(s$outcome=="fully_vax"){
-    d <- GenData(ndistricts=s$ndistricts,nhealthposts=s$nhealthposts,nhouseholds=s$nhouseholds,val_after_intervention=0.05,val_received_intervention=0.19,val_intercept = 0.42, sdVal=0.075)
-  } else {
-    d <- GenData(ndistricts=s$ndistricts,nhealthposts=s$nhealthposts,nhouseholds=s$nhouseholds,val_after_intervention=0.05,val_received_intervention=-0.06,val_intercept = 0.16, sdVal=0.06)
-  }
+  fit_full <- lme4::lmer(outcome ~ received_intervention + 
+                           (1|districtid)+
+                           (1|healthcenterid)+
+                           (1|healthpostid),data=d[after_intervention==1])
+  fit_srs <- lm(person_outcome ~ person_received_intervention, d[after_intervention==1])
   
-  #using the survey package
+  icc <- CalculateICC(fit_full)
   
-  dclus <- svydesign(id=~districtid+healthcenterid+healthpostid+householdid, 
-                     fpc=~fpc_district+fpc_healthcenter+fpc_healthpost+fpc_households,
-                     data=d[after_intervention==0])
-  summary(dclus)
-  a <- svymean(~outcome, dclus, deff=T)
-  aDEFF <- data.frame(a)$deff
+  fit <- lme4::lmer(outcome ~ received_intervention + after_intervention +
+                      (1|districtid)+
+                      (1|healthcenterid)+
+                      (1|healthpostid),data=d)
+  fit <- as.data.frame(summary(fit)$coef)
+  fit$var <- row.names(fit)
+  fit$nhouseholds=s$nhouseholds
+  fit$npeoplepersurvey=nrow(d)/2
+  fit$var_full <- diag(vcov(fit_full))[2]
+  fit$var_srs <- diag(vcov(fit_srs))[2]
+  fit$icc_healthpost <- icc$icc[1]
+  fit$icc_healthcenterid <- icc$icc[2]
+  fit$icc_districtid <- icc$icc[3]
   
-  fit <- svyglm(outcome ~ 1, dclus)
-  fit0x <- as.data.frame(summary(fit)$coef)
-  fit0x$var <- row.names(fit0x)
-  fit0x$model <- "before_intervention_survey"
-  fit0x$deff <- aDEFF
-  fit0x$icc <- -99
-  
-  dclus <- svydesign(id=~districtid+healthcenterid+healthpostid+householdid, 
-                     fpc=~fpc_district+fpc_healthcenter+fpc_healthpost+fpc_households,
-                     data=d)
-  fit <- svyglm(outcome ~ after_intervention + received_intervention, dclus)
-  
-  fitx <- as.data.frame(summary(fit)$coef)
-  fitx$var <- row.names(fitx)
-  fitx$model <- "survey(baseline+after)"
-  fitx$deff <- -99
-  fitx$icc <- -99
-  
-  dclus <- svydesign(id=~districtid+healthcenterid+healthpostid+householdid, 
-                     fpc=~fpc_district+fpc_healthcenter+fpc_healthpost+fpc_households,
-                     data=d[after_intervention==1])
-  fit <- svyglm(outcome ~  received_intervention, dclus)
-  
-  fity <- as.data.frame(summary(fit)$coef)
-  fity$var <- row.names(fity)
-  fity$model <- "survey(after)"
-  fity$deff <- -99
-  fity$icc <- -99
-  
-  # using lme4
- 
-  formula <- "outcome ~ (1|districtid) + (1|healthcenterid)"
-  if(s$nhealthposts>1 & s$nhouseholds>1){
-    formula <- sprintf("%s + (1|healthpostid)",formula)
-  }
-  
-  fit <- lme4::lmer(as.formula(formula),data=d[after_intervention==0])
-  fit0a <- as.data.frame(summary(fit)$coef)
-  fit0a$var <- row.names(fit0a)
-  fit0a$model <- "before_intervention_linear"
-  
-  (fakeMean <- mean(d[after_intervention==0]$outcome))
-  fakeData <- sample(c(0,1),size=sum(d$after_intervention==0),replace=T,prob=c(1-fakeMean,fakeMean))
-  varNODEFF <- coef(summary(lm(fakeData~1)))[1,"Std. Error"]^2
-  varDEFF <- coef(summary(fit))[1,"Std. Error"]^2
-  
-  fit0a$deff <- varDEFF/varNODEFF
- 
-  v <- data.table(as.data.frame(lme4::VarCorr(fit)))[4:1]
-  v[2:4,vcovsum:=cumsum(vcov)]
-  v[,nested_icc:=vcovsum/sum(vcov,na.rm=T)]
-  fit0a$icc<- v$nested_icc[4]
-  
-  ###
-  
-  fit <- lme4::glmer(as.formula(formula),data=d[after_intervention==0],family=binomial())
-  fit0b <- as.data.frame(summary(fit)$coef)
-  fit0b$var <- row.names(fit0b)
-  fit0b$model <- "before_intervention_logistic"
-  fit0b <- fit0b[,-which(names(fit0b)=="Pr(>|z|)")]
-  fit0b$deff <- -99
-  fit0b$icc <- -99
-  names(fit0b) <- names(fit0a)
-  
-  formula <- sprintf("%s + received_intervention",formula)
-  
-  fit <- lme4::lmer(as.formula(formula),data=d[after_intervention==1])
-  fit1 <- as.data.frame(summary(fit)$coef)
-  fit1$var <- row.names(fit1)
-  fit1$model <- "after_intervention"
-  fit1$deff <- -99
-  fit1$icc <- -99
-  
-  formula <- sprintf("%s + after_intervention",formula)
-  
-  fit <- lme4::lmer(as.formula(formula),data=d)
-  fit2 <- as.data.frame(summary(fit)$coef)
-  fit2$var <- row.names(fit2)
-  fit2$model <- "baseline+after_intervention"
-  fit2$deff <- -99
-  fit2$icc <- -99
-  
-  retval <- rbind(fit1,fit2,fit0a,fit0b,fit0x[,names(fit0b)],fitx[,names(fit0b)],fity[,names(fit0b)])
-  retval$ndistricts <- s$ndistricts
-  retval$nhealthposts <- s$nhealthposts
-  retval$nhouseholds <- s$nhouseholds
-  retval$npeoplepersurvey <- nrow(d)/2
-  retval$outcome <- s$outcome
-  
-  return(retval)
+  return(fit)
 }
 
+# combining results
 res <- rbindlist(res)
+res <- res[var=="received_intervention"]
+# generating useful variables
 res[,pval:=PvalFromEstAndSE(Estimate,`Std. Error`)]
 res[,sig:=pval<0.05]
-res[,moe:=2*`Std. Error`]
-res[model=="before_intervention_logistic",moe:=(boot::inv.logit(Estimate+1.96*`Std. Error`)-boot::inv.logit(Estimate-1.96*`Std. Error`))/2]
-res <- res[,.(est=mean(Estimate),se=mean(`Std. Error`),power=mean(sig),moe=mean(moe),icc=mean(icc),deff=mean(deff)),by=.(var,model,ndistricts,nhealthposts,nhouseholds,npeoplepersurvey,outcome)]
-res[,effectEstimate:=RAWmisc::FormatEstCIFromEstSE(est,se, exp=F)]
-res[,moe:=sprintf("%spp",RAWmisc::Format(moe*100, 1))]
-res[,icc:=sprintf("%s%%",RAWmisc::Format(icc*100,1))]
-res[,deff:=sprintf("%s",RAWmisc::Format(deff, 1))]
-res[icc=="-9900.0%",icc:=""]
-res[deff=="-99.0",deff:=""]
-res[model=="before_intervention_logistic",effectEstimate:=sprintf("%s%% (%s%%, %s%%)",
-                                                                  RAWmisc::Format(boot::inv.logit(est)*100,digits=2),
-                                                                  RAWmisc::Format(boot::inv.logit(est-1.96*se)*100,digits=2),
-                                                                  RAWmisc::Format(boot::inv.logit(est+1.96*se)*100,digits=2))]
-res[model %in% c("before_intervention_linear", "before_intervention_survey"),effectEstimate:=sprintf("%s%% (%s%%, %s%%)",
-                                                                  RAWmisc::Format(est*100,digits=2),
-                                                                  RAWmisc::Format((est-1.96*se)*100,digits=2),
-                                                                  RAWmisc::Format((est+1.96*se)*100,digits=2))]
+res[,pval:=NULL]
 
+# calculating power
+res <- res[,lapply(.SD,mean),by=.(var,nhouseholds)]
+setnames(res,"sig","power")
+res[,deff:=var_full/var_srs]
 
+res[,icc_healthpost:=icc_healthpost+icc_healthcenterid+icc_districtid]
+res[,icc_healthcenterid:=icc_healthcenterid+icc_districtid]
 
-res[,est:=NULL]
-res[,se:=NULL]
-
-setcolorder(res,c("var","outcome","npeoplepersurvey","ndistricts","nhealthposts","nhouseholds","model","power","effectEstimate","moe","icc","deff"))
-setorder(res,-var,outcome,npeoplepersurvey,ndistricts,nhealthposts,nhouseholds,model)
 res
 
-res[model %in% c(
-  "before_intervention_linear",
-  "before_intervention_logistic",
-  "before_intervention_survey",
-  "survey")]
-
-res <- res[!(!model %in% c("before_intervention_logistic","before_intervention_linear", "before_intervention_survey") & var=="(Intercept)")]
 
 openxlsx::write.xlsx(res,file=file.path(RAWmisc::PROJ$SHARED_TODAY,"power.xlsx"))
 
-# Fully vaccinated 
-## Observing the data
 
-# grp  icc
-# 1:   healthpostid 0.11
-# 2: healthcenterid 0.06
-# 3:     districtid 0.04
-# 4:       Residual 0.79
+q <- ggplot(res, aes(x=nhouseholds, y=power*100,label=sprintf("DEFF\n%s",RAWmisc::Format(deff))))
+q <- q + geom_line()
+q <- q + geom_point()
+q <- q + geom_text(mapping=aes(y=100*power+0.5),hjust=1,vjust=0)
+q <- q + geom_hline(yintercept=80,colour="red")
+q <- q + labs(title="Sample size estimation to detect a 6 percentage point change in outcome")
+q <- q + labs(caption="\n\nDistrict ICC: 3%, Healthcenter ICC: 9%, Healthpost ICC: 16%")
+q <- q + scale_y_continuous("Estimated Power (1000 simulations)")
+q <- q + scale_x_continuous("Number of households per health post (with 100% participation)",breaks=seq(0,50,2))
+q <- q + theme_gray(base_size=16)
+#q <- q + theme(axis.text.x = element_text(angle = 90, hjust = 0.5, vjust=0.5))
+q
+RAWmisc::saveA4(q,file.path(RAWmisc::PROJ$SHARED_TODAY,"power.png"))
 
-deff <- c()
-for(i in 1:10){
-  d <- GenData(nhealthposts=5,nhouseholds=5,val_after_intervention=0.05,val_received_intervention=0.19,val_intercept = 0.42, sdVal=0.07)
-  (fakeMean <- mean(d[after_intervention==0]$outcome))
-  fakeData <- sample(c(0,1),size=sum(d$after_intervention==0),replace=T,prob=c(1-fakeMean,fakeMean))
-  varNODEFF <- coef(summary(lm(fakeData~1)))[1,"Std. Error"]^2
-  
-  fit <- lme4::lmer(outcome ~ (1|districtid) + (1|healthcenterid) + (1|healthpostid),data=d[after_intervention==0])
-  varDEFF <- coef(summary(fit))[1,"Std. Error"]^2
-
-  (deff <- c(deff,varDEFF/varNODEFF))
-}
-mean(deff)
-
-d[after_intervention==0,.(outcome=mean(outcome)),by=.(districtid)]
-d[after_intervention==1 & received_intervention==0,.(outcome=mean(outcome)),by=.(districtid)]
-d[after_intervention==1 & received_intervention==1,.(outcome=mean(outcome)),by=.(districtid)]
-
-fit <- lme4::lmer(outcome ~ received_intervention + after_intervention+(1|districtid) + (1|healthcenterid) + (1|healthpostid),data=d)
-v <- data.table(as.data.frame(lme4::VarCorr(fit)))[4:1]
-v[2:4,vcovsum:=cumsum(vcov)]
-v[,nested_icc:=vcovsum/sum(vcov,na.rm=T)]
-v[,nested_icc:=sprintf("%s%%",RAWmisc::Format(nested_icc*100,2))]
-print(v)
-
-
-# grp  icc
-# 1:   healthpostid 0.05
-# 2: healthcenterid 0.03
-# 3:     districtid 0.02
-# 4:       Residual 0.90
-
-res <- vector("list",100)
-pb <- RAWmisc::ProgressBarCreate(min=0,max=length(res))
-for(i in 1:length(res)){
-  RAWmisc::ProgressBarSet(pb,i)
-  d <- GenData(nhealthposts=5,nhouseholds=5,val_after_intervention=0.05,val_received_intervention=-0.06,val_intercept = 0.16, sdVal=0.06)
-  mean(d$fully_vaccinated)
-  
-  fit <- lme4::lmer(outcome ~ received_intervention + (1|districtid) + (1|healthcenterid) + (1|healthpostid),data=d)
-  fit
-  
-  v <- data.table(as.data.frame(lme4::VarCorr(fit)))
-  v[,icc:=vcov/sum(vcov)]
-  res[[i]] <- copy(v)
-}
-res <- rbindlist(res)
-res <- res[,.(icc=mean(icc)),by=.(grp)]
-res[,icc:=RAWmisc::Format(icc,2)]
-print(res)
-
-
-properRes
-
-with(d,xtabs(~districtid))
-with(d,xtabs(~districtid + received_intervention))
-with(d[after_intervention==0],xtabs(~districtid + received_intervention))
-with(d[after_intervention==1],xtabs(~districtid + received_intervention))
-
-with(d,xtabs(~healthcenterid + received_intervention))
-with(d[after_intervention==0],xtabs(~healthcenterid + received_intervention))
-with(d[after_intervention==1],xtabs(~healthcenterid + received_intervention))

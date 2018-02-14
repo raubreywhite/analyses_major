@@ -13,6 +13,7 @@ suppressMessages(library(ggplot2))
 suppressMessages(library(foreach))
 suppressMessages(library(pomp))
 
+
 d <- CleanData()
 
 stack <- data.table(expand.grid(c("Whole year",unique(d$season)),

@@ -417,6 +417,10 @@ PrintTableNPerc <- function(d){
   cat(sprintf("\nN=%s\n", nrow(d)))
   cat(sprintf("Percentage indicator: %s%%\n", RAWmisc::Format(mean(d$numerator*100,na.rm=T),1)))
 }
+
+# SAVING FILES
+openxlsx::write.xlsx(dFacilities,file.path(RAWmisc::PROJ$SHARED_TODAY,"dFacilities.xlsx"))
+openxlsx::write.xlsx(dWorkers,file.path(RAWmisc::PROJ$SHARED_TODAY,"dWorkers.xlsx"))
 ```
 
 ```{r}
@@ -553,6 +557,19 @@ d <- d[,.(N=.N),by=.(gazaWBEJ,facilitySector,IS06)]
 setorder(d,gazaWBEJ,facilitySector,IS06)
 print(d)
 ```
+
+## IS06 Hospitals, trying to find discrepancy between system and mine
+
+```{r}
+dLoc <- unique(dLocation[,c("localityCode","district","gazaWBEJ")])
+setnames(dLoc,"localityCode","IDH03")
+
+nrow(dFacilities)
+d <- merge(dFacilities[IS06==9 & facilitySector %in% c("NGO","Private")],dLoc,by="IDH03",all.x=T)
+
+openxlsx::write.xlsx(d,file.path(RAWmisc::PROJ$SHARED_TODAY,"hospital_discrepancies.xlsx"))
+```
+
 
 ### Taking a look at JERUSALEM DISTRICT
 
@@ -745,6 +762,14 @@ for(i in professionVarsBOTH){
 - people who answer as both male and female are recoded to female
 
 ```{r}
+workerLabels <- data.table(readxl::read_excel(file.path(RAWmisc::PROJ$RAW,
+                                             "Educational Specialty ED03 - C.xls")))
+setnames(workerLabels,c("arabic_names","ED03C"))
+workerLabels <- workerLabels[!is.na(ED03C)]
+workerLabels[,N:=.N,by=ED03C]
+workerLabels <- workerLabels[N==1]
+workerLabels[,N:=NULL]
+
 d <- dWorkers[BOTH_isProf_Healthworker==1]
 d[,isFemale:=HR02-1]
 d <- d[,.(isFemale=max(isFemale)),by=.(HR01)]
@@ -781,6 +806,9 @@ nrow(d)
 
 res <- d[,.(N=.N),by=.(isFemale,ED03C)]
 setorder(res,isFemale,-N)
+nrow(res)
+res <- merge(res,workerLabels,by=c("ED03C"),all.x=T)
+nrow(res)
 openxlsx::write.xlsx(res,file.path(RAWmisc::PROJ$SHARED_TODAY,"Distribution of health workers by Educational Speciality stratified by gender.xlsx"))
 
 nrow(d)
@@ -790,6 +818,9 @@ nrow(d)
 
 res <- d[,.(N=.N),by=.(isFemale,ED03C,english)]
 setorder(res,isFemale,english,-N)
+nrow(res)
+res <- merge(res,workerLabels,by=c("ED03C"),all.x=T)
+nrow(res)
 openxlsx::write.xlsx(res,file.path(RAWmisc::PROJ$SHARED_TODAY,"Distribution of health workers by graduation country, educational specialty by gender.xlsx"))
 ```
 
@@ -818,7 +849,7 @@ d <- d[,.(
 ),by=.(
   HR01
 )]
-d[,yearsExperience:=cut(yearsExperience,c(-5,9,30,500))]
+d[,yearsExperience:=cut(yearsExperience,c(-5,4,10,30,500),labels=c("0-4","5-10","11-30","31+"))]
 d[is.infinite(yearsExperience),yearsExperience:=NA]
 xtabs(~d$yearsExperience+d$isFemale,addNA=T)
 ```
@@ -871,6 +902,27 @@ for(i in professionVarsBOTH){
 ```
 
 
+### sector = Ministry of Health  + IS06 = 4
+
+```{r}
+keepIDH00 <- dFacilities[facilitySector=="Ministry of Health" & IS06==4]$IDH00
+
+xtabs(~dWorkers[IDH00 %in% keepIDH00]$livesInRural+dWorkers[IDH00 %in% keepIDH00]$worksInUrban, addNA=T)
+```
+
+### sector = Ministry of Health  + IS06 = 4 BY CW00 AND CW06
+
+```{r}
+for(i in professionVarsBOTH){
+  print("")
+  print("")
+  print("****")
+  print(i)
+  d <- dWorkers[get(i)==1]
+  print(xtabs(~d[IDH00 %in% keepIDH00]$livesInRural+d[IDH00 %in% keepIDH00]$worksInUrban, addNA=T))
+}
+```
+
 \newpage 
 
 # Pre-service training indicators
@@ -886,6 +938,81 @@ for(i in professionVarsBOTH){
 ```{r}
 xtabs(~dFacilities$TR01,addNA=TRUE)
 ```
+
+## 1x NEW. Distribution of each type of facility (IS06) that provide clinical trainings by sector and the professions they train in ( this can be obtained from TR02 )
+
+### Results
+
+```{r}
+dLoc <- unique(dLocation[,c("localityCode","district","gazaWBEJ")])
+setnames(dLoc,"localityCode","IDH03")
+
+nrow(dFacilities)
+d <- merge(dFacilities[TR01==1],dLoc,by="IDH03",all.x=T)
+d2 <- copy(d)
+d2[,gazaWBEJ:="Palestine"]
+d <- rbind(d,d2)
+nrow(d)
+d <- d[,.(N=.N),by=.(gazaWBEJ,facilitySector,IS06)]
+setorder(d,gazaWBEJ,facilitySector,IS06)
+openxlsx::write.xlsx(d,file.path(RAWmisc::PROJ$SHARED_TODAY,"clinical_training_facility_is06.xlsx"))
+```
+
+```{r}
+dLoc <- unique(dLocation[,c("localityCode","district","gazaWBEJ")])
+setnames(dLoc,"localityCode","IDH03")
+
+nrow(dFacilities)
+d <- merge(dFacilities[TR01==1],dLoc,by="IDH03",all.x=T)
+d2 <- copy(d)
+d2[,gazaWBEJ:="Palestine"]
+d <- rbind(d,d2)
+nrow(d)
+d <- melt.data.table(d[,c("IDH00","gazaWBEJ","facilitySector","IS06","TR02_A","TR02_B","TR02_C","TR02_D")],id.vars = c("IDH00","gazaWBEJ","facilitySector","IS06"))
+d <- d[!is.na(value)]
+setnames(d,"value","TR02")
+d <- d[,.(N=.N),by=.(gazaWBEJ,facilitySector,IS06,TR02)]
+setorder(d,gazaWBEJ,facilitySector,IS06,TR02)
+openxlsx::write.xlsx(d,file.path(RAWmisc::PROJ$SHARED_TODAY,"clinical_training_facility_is06_TR02.xlsx"))
+```
+
+## 1x NEW. Distribution of each type of facility (IS06) that provide internships by sector and the professions they train in ( this can be obtained from TR06)
+
+### Results
+
+```{r}
+dLoc <- unique(dLocation[,c("localityCode","district","gazaWBEJ")])
+setnames(dLoc,"localityCode","IDH03")
+
+nrow(dFacilities)
+d <- merge(dFacilities[TR05==1],dLoc,by="IDH03",all.x=T)
+d2 <- copy(d)
+d2[,gazaWBEJ:="Palestine"]
+d <- rbind(d,d2)
+nrow(d)
+d <- d[,.(N=.N),by=.(gazaWBEJ,facilitySector,IS06)]
+setorder(d,gazaWBEJ,facilitySector,IS06)
+openxlsx::write.xlsx(d,file.path(RAWmisc::PROJ$SHARED_TODAY,"clinical_internship_facility_is06.xlsx"))
+```
+
+```{r}
+dLoc <- unique(dLocation[,c("localityCode","district","gazaWBEJ")])
+setnames(dLoc,"localityCode","IDH03")
+
+nrow(dFacilities)
+d <- merge(dFacilities[TR05==1],dLoc,by="IDH03",all.x=T)
+d2 <- copy(d)
+d2[,gazaWBEJ:="Palestine"]
+d <- rbind(d,d2)
+nrow(d)
+d <- melt.data.table(d[,c("IDH00","gazaWBEJ","facilitySector","IS06","TR06_1_T","TR06_2_T","TR06_3_T")],id.vars = c("IDH00","gazaWBEJ","facilitySector","IS06"))
+d <- d[!is.na(value)]
+setnames(d,"value","TR06")
+d <- d[,.(N=.N),by=.(gazaWBEJ,facilitySector,IS06,TR06)]
+setorder(d,gazaWBEJ,facilitySector,IS06,TR06)
+openxlsx::write.xlsx(d,file.path(RAWmisc::PROJ$SHARED_TODAY,"clinical_internship_facility_is06_TR06.xlsx"))
+```
+
 
 \newpage 
 
@@ -2201,6 +2328,283 @@ for(i in specializations){
 }
 ```
 
+## 28/30. Percentage of health workers from the Ministry of Health who dual practice IN HOSPITALS
+
+- Source: Workforce and facility questionnaire
+- Calculation: ( Health workers at Ministry of Health (IS04) with IDs found in outside MoH sector / all MoH workers ) * 100
+- Indicator description: Percentage of health workers at the Ministry of Health of who dual practice
+
+### Results BY CW00 IN HOSPITALS
+
+```{r}
+dMaster <- merge(dWorkers, dFacilities[IS06==9,c("IDH00","facilitySector")], by="IDH00")
+nrow(dWorkers)
+nrow(dMaster)
+unique(dMaster$facilitySector)
+
+for(i in professionVars){
+  d <- dMaster[get(i)==1]
+  
+  d[,numerator:=0]
+  d[facilitySector!="Ministry of Health",numerator:=1]
+  d[,denominator:=0]
+  d[facilitySector=="Ministry of Health",denominator:=1]
+  
+  d <- d[,.(
+    numerator=max(numerator,na.rm=T),
+    denominator=max(denominator,na.rm=T)
+  ),by=.(
+    HR01
+  )]
+  d <- d[denominator==1]
+  
+  cat(sprintf("***** %s *****\n",i))
+  cat(sprintf("Numerator: %s\n",sum(d$numerator)))
+  cat(sprintf("Denominator: %s\n",sum(d$denominator)))
+  cat(sprintf("Percentage: %s%%\n",sum(d$numerator)/sum(d$denominator)*100))
+  cat("\n\n")
+}
+```
+
+### Results BY CW00 AND CW06 IN HOSPITALS
+
+```{r}
+dMaster <- merge(dWorkers, dFacilities[IS06==9,c("IDH00","facilitySector")], by="IDH00")
+nrow(dWorkers)
+nrow(dMaster)
+unique(dMaster$facilitySector)
+
+for(i in professionVarsBOTH){
+  d <- dMaster[get(i)==1]
+  
+  d[,numerator:=0]
+  d[facilitySector!="Ministry of Health",numerator:=1]
+  d[,denominator:=0]
+  d[facilitySector=="Ministry of Health",denominator:=1]
+  
+  d <- d[,.(
+    numerator=max(numerator,na.rm=T),
+    denominator=max(denominator,na.rm=T)
+  ),by=.(
+    HR01
+  )]
+  d <- d[denominator==1]
+  
+  cat(sprintf("***** %s *****\n",i))
+  cat(sprintf("Numerator: %s\n",sum(d$numerator)))
+  cat(sprintf("Denominator: %s\n",sum(d$denominator)))
+  cat(sprintf("Percentage: %s%%\n",sum(d$numerator)/sum(d$denominator)*100))
+  cat("\n\n")
+}
+```
+
+### BY SPECIALIZED DOCTOR BY CW00 IN HOSPITALS
+
+```{r}
+dMaster <- merge(dWorkers, dFacilities[IS06==9,c("IDH00","facilitySector")], by="IDH00")
+nrow(dWorkers)
+nrow(dMaster)
+unique(dMaster$facilitySector)
+
+specializations <- unique(dMaster$doctor_specialization)
+
+for(i in specializations){
+  d <- dMaster[doctor_specialization==i]
+  
+  d[,numerator:=0]
+  d[facilitySector!="Ministry of Health",numerator:=1]
+  d[,denominator:=0]
+  d[facilitySector=="Ministry of Health",denominator:=1]
+  
+  d <- d[,.(
+    numerator=max(numerator,na.rm=T),
+    denominator=max(denominator,na.rm=T)
+  ),by=.(
+    HR01
+  )]
+  d <- d[denominator==1]
+  
+  cat(sprintf("***** %s *****\n",i))
+  cat(sprintf("Numerator: %s\n",sum(d$numerator)))
+  cat(sprintf("Denominator: %s\n",sum(d$denominator)))
+  cat(sprintf("Percentage: %s%%\n",sum(d$numerator)/sum(d$denominator)*100))
+  cat("\n\n")
+}
+```
+
+### BY SPECIALIZED DOCTOR BY CW00 AND CW06 IN HOSPITALS
+
+```{r}
+dMaster <- merge(dWorkers, dFacilities[IS06==9,c("IDH00","facilitySector")], by="IDH00")
+nrow(dWorkers)
+nrow(dMaster)
+unique(dMaster$facilitySector)
+
+specializations <- unique(dMaster$BOTHdoctor_specialization)
+
+for(i in specializations){
+  d <- dMaster[BOTHdoctor_specialization==i]
+  
+  d[,numerator:=0]
+  d[facilitySector!="Ministry of Health",numerator:=1]
+  d[,denominator:=0]
+  d[facilitySector=="Ministry of Health",denominator:=1]
+  
+  d <- d[,.(
+    numerator=max(numerator,na.rm=T),
+    denominator=max(denominator,na.rm=T)
+  ),by=.(
+    HR01
+  )]
+  d <- d[denominator==1]
+  
+  cat(sprintf("***** %s *****\n",i))
+  cat(sprintf("Numerator: %s\n",sum(d$numerator)))
+  cat(sprintf("Denominator: %s\n",sum(d$denominator)))
+  cat(sprintf("Percentage: %s%%\n",sum(d$numerator)/sum(d$denominator)*100))
+  cat("\n\n")
+}
+```
+
+## 28/30. Percentage of health workers from the Ministry of Health who dual practice IN HEALTH CENTERS
+
+- Source: Workforce and facility questionnaire
+- Calculation: ( Health workers at Ministry of Health (IS04) with IDs found in outside MoH sector / all MoH workers ) * 100
+- Indicator description: Percentage of health workers at the Ministry of Health of who dual practice
+
+### Results BY CW00 IN HEALTH CENTERS
+
+```{r}
+dMaster <- merge(dWorkers, dFacilities[IS06==4,c("IDH00","facilitySector")], by="IDH00")
+nrow(dWorkers)
+nrow(dMaster)
+unique(dMaster$facilitySector)
+
+for(i in professionVars){
+  d <- dMaster[get(i)==1]
+  
+  d[,numerator:=0]
+  d[facilitySector!="Ministry of Health",numerator:=1]
+  d[,denominator:=0]
+  d[facilitySector=="Ministry of Health",denominator:=1]
+  
+  d <- d[,.(
+    numerator=max(numerator,na.rm=T),
+    denominator=max(denominator,na.rm=T)
+  ),by=.(
+    HR01
+  )]
+  d <- d[denominator==1]
+  
+  cat(sprintf("***** %s *****\n",i))
+  cat(sprintf("Numerator: %s\n",sum(d$numerator)))
+  cat(sprintf("Denominator: %s\n",sum(d$denominator)))
+  cat(sprintf("Percentage: %s%%\n",sum(d$numerator)/sum(d$denominator)*100))
+  cat("\n\n")
+}
+```
+
+### Results BY CW00 AND CW06 IN HEALTH CENTERS
+
+```{r}
+dMaster <- merge(dWorkers, dFacilities[IS06==4,c("IDH00","facilitySector")], by="IDH00")
+nrow(dWorkers)
+nrow(dMaster)
+unique(dMaster$facilitySector)
+
+for(i in professionVarsBOTH){
+  d <- dMaster[get(i)==1]
+  
+  d[,numerator:=0]
+  d[facilitySector!="Ministry of Health",numerator:=1]
+  d[,denominator:=0]
+  d[facilitySector=="Ministry of Health",denominator:=1]
+  
+  d <- d[,.(
+    numerator=max(numerator,na.rm=T),
+    denominator=max(denominator,na.rm=T)
+  ),by=.(
+    HR01
+  )]
+  d <- d[denominator==1]
+  
+  cat(sprintf("***** %s *****\n",i))
+  cat(sprintf("Numerator: %s\n",sum(d$numerator)))
+  cat(sprintf("Denominator: %s\n",sum(d$denominator)))
+  cat(sprintf("Percentage: %s%%\n",sum(d$numerator)/sum(d$denominator)*100))
+  cat("\n\n")
+}
+```
+
+### BY SPECIALIZED DOCTOR BY CW00 IN HEALTH CENTERS
+
+```{r}
+dMaster <- merge(dWorkers, dFacilities[IS06==4,c("IDH00","facilitySector")], by="IDH00")
+nrow(dWorkers)
+nrow(dMaster)
+unique(dMaster$facilitySector)
+
+specializations <- unique(dMaster$doctor_specialization)
+
+for(i in specializations){
+  d <- dMaster[doctor_specialization==i]
+  
+  d[,numerator:=0]
+  d[facilitySector!="Ministry of Health",numerator:=1]
+  d[,denominator:=0]
+  d[facilitySector=="Ministry of Health",denominator:=1]
+  
+  d <- d[,.(
+    numerator=max(numerator,na.rm=T),
+    denominator=max(denominator,na.rm=T)
+  ),by=.(
+    HR01
+  )]
+  d <- d[denominator==1]
+  
+  cat(sprintf("***** %s *****\n",i))
+  cat(sprintf("Numerator: %s\n",sum(d$numerator)))
+  cat(sprintf("Denominator: %s\n",sum(d$denominator)))
+  cat(sprintf("Percentage: %s%%\n",sum(d$numerator)/sum(d$denominator)*100))
+  cat("\n\n")
+}
+```
+
+### BY SPECIALIZED DOCTOR BY CW00 AND CW06 IN HEALTH CENTERS
+
+```{r}
+dMaster <- merge(dWorkers, dFacilities[IS06==4,c("IDH00","facilitySector")], by="IDH00")
+nrow(dWorkers)
+nrow(dMaster)
+unique(dMaster$facilitySector)
+
+specializations <- unique(dMaster$BOTHdoctor_specialization)
+
+for(i in specializations){
+  d <- dMaster[BOTHdoctor_specialization==i]
+  
+  d[,numerator:=0]
+  d[facilitySector!="Ministry of Health",numerator:=1]
+  d[,denominator:=0]
+  d[facilitySector=="Ministry of Health",denominator:=1]
+  
+  d <- d[,.(
+    numerator=max(numerator,na.rm=T),
+    denominator=max(denominator,na.rm=T)
+  ),by=.(
+    HR01
+  )]
+  d <- d[denominator==1]
+  
+  cat(sprintf("***** %s *****\n",i))
+  cat(sprintf("Numerator: %s\n",sum(d$numerator)))
+  cat(sprintf("Denominator: %s\n",sum(d$denominator)))
+  cat(sprintf("Percentage: %s%%\n",sum(d$numerator)/sum(d$denominator)*100))
+  cat("\n\n")
+}
+```
+
+
 ## 31. Percentage of doctors working in hospitals in Palestine
 
 - Source: Workforce and facility questionnaire
@@ -2857,6 +3261,434 @@ for(prof in specializations) for(area in c(
 
 ```
 
+# Age Indicators FOR MINISTRY OF HEALTH AND IS06==9
+
+- Age -> should sum up to 100%
+- Stratified by professionVars
+- Stratified by Palestine/Gaza/WB
+- Doctors, Dentists, Pharmacists, Nurses, Midwives, Doctors+Nurses+Midwives
+- Area C, Jordan Valley, Jerusalem District
+
+## BY CW00 FOR MINISTRY OF HEALTH AND IS06==9
+
+```{r message=FALSE, warning=FALSE}
+
+keepIDH00 <- dFacilities[facilitySector=="Ministry of Health" & IS06==9]$IDH00
+
+dWorkers[,isGaza:=as.numeric(NA)]
+dWorkers[,isWB:=as.numeric(NA)]
+
+dWorkers[,isPalestine:=1]
+dWorkers[IDH03 %in% dLocation[isGaza==1]$localityCode, isGaza:=1]
+dWorkers[IDH03 %in% dLocation[isGaza==0]$localityCode, isWB:=1]
+dWorkers[,age:=floor(as.numeric(difftime("2016-01-01",HR03,units="days"))/365.25)]
+
+dWorkers[,ageCat:=as.character(NA)]
+dWorkers[age>=18 & age<=30,ageCat:="18-30"]
+dWorkers[age>=31 & age<=45,ageCat:="31-45"]
+dWorkers[age>=46 & age<=54,ageCat:="46-54"]
+dWorkers[age>=55 & age<=59,ageCat:="55-59"]
+dWorkers[age>=60,ageCat:="60+"]
+
+for(prof in professionVars) for(area in c(
+    "isPalestine",
+    "isGaza",
+    "isWB"
+  )){
+    d <- dWorkers[get(prof)==1 & get(area)==1 & IDH00 %in% keepIDH00]
+    d[,numerator:=1]
+  
+    d <- d[,.(
+     numerator=max(numerator,na.rm=T)
+    ),by=.(
+     HR01,
+     ageCat
+    )]
+    
+    d <- d[,.(numerator=sum(numerator)),by=ageCat]
+    d[!is.na(ageCat),denominator_excl_miss:=sum(numerator)]
+    d[,perc:=RAWmisc::Format(numerator/denominator_excl_miss*100,1)]
+    d[,ageCat:=factor(ageCat,levels=c(
+      "18-30",
+      "31-45",
+      "46-54",
+      "55-59",
+      "60+"
+      ))]
+    setorder(d,ageCat)
+
+    cat("*******\n")
+    cat(sprintf("%s %s\n",prof,area))
+    if(nrow(d)==0){
+      print("THERE ARE NO PEOPLE HERE")
+    } else {
+      print(d)
+    }
+    cat("\n\n")
+  }
+
+```
+
+## BY CW00 AND CW06 FOR MINISTRY OF HEALTH AND IS06==9
+
+```{r message=FALSE, warning=FALSE}
+
+dWorkers[,isGaza:=as.numeric(NA)]
+dWorkers[,isWB:=as.numeric(NA)]
+
+dWorkers[,isPalestine:=1]
+dWorkers[IDH03 %in% dLocation[isGaza==1]$localityCode, isGaza:=1]
+dWorkers[IDH03 %in% dLocation[isGaza==0]$localityCode, isWB:=1]
+dWorkers[,age:=floor(as.numeric(difftime("2016-01-01",HR03,units="days"))/365.25)]
+
+dWorkers[,ageCat:=as.character(NA)]
+dWorkers[age>=18 & age<=30,ageCat:="18-30"]
+dWorkers[age>=31 & age<=45,ageCat:="31-45"]
+dWorkers[age>=46 & age<=54,ageCat:="46-54"]
+dWorkers[age>=55 & age<=59,ageCat:="55-59"]
+dWorkers[age>=60,ageCat:="60+"]
+
+for(prof in professionVarsBOTH) for(area in c(
+    "isPalestine",
+    "isGaza",
+    "isWB"
+  )){
+    d <- dWorkers[get(prof)==1 & get(area)==1 & IDH00 %in% keepIDH00]
+    d[,numerator:=1]
+  
+    d <- d[,.(
+     numerator=max(numerator,na.rm=T)
+    ),by=.(
+     HR01,
+     ageCat
+    )]
+    
+    d <- d[,.(numerator=sum(numerator)),by=ageCat]
+    d[!is.na(ageCat),denominator_excl_miss:=sum(numerator)]
+    d[,perc:=RAWmisc::Format(numerator/denominator_excl_miss*100,1)]
+    d[,ageCat:=factor(ageCat,levels=c(
+      "18-30",
+      "31-45",
+      "46-54",
+      "55-59",
+      "60+"
+      ))]
+    setorder(d,ageCat)
+
+    cat("*******\n")
+    cat(sprintf("%s %s\n",prof,area))
+    if(nrow(d)==0){
+      print("THERE ARE NO PEOPLE HERE")
+    } else {
+      print(d)
+    }
+    cat("\n\n")
+  }
+
+```
+
+### STRATIFIED BY SPECIALIZED DOCTOR BY CW00 FOR MINISTRY OF HEALTH AND IS06==9
+
+```{r message=FALSE, warning=FALSE}
+specializations <- unique(dWorkers$doctor_specialization)
+
+for(prof in specializations) for(area in c(
+    "isPalestine",
+    "isGaza",
+    "isWB"
+  )){
+    d <- dWorkers[doctor_specialization==prof & get(area)==1 & IDH00 %in% keepIDH00]
+    d[,numerator:=1]
+  
+    d <- d[,.(
+     numerator=max(numerator,na.rm=T)
+    ),by=.(
+     HR01,
+     ageCat
+    )]
+    
+    d <- d[,.(numerator=sum(numerator)),by=ageCat]
+    d[!is.na(ageCat),denominator_excl_miss:=sum(numerator)]
+    d[,perc:=RAWmisc::Format(numerator/denominator_excl_miss*100,1)]
+    d[,ageCat:=factor(ageCat,levels=c(
+      "18-30",
+      "31-45",
+      "46-54",
+      "55-59",
+      "60+"
+      ))]
+    setorder(d,ageCat)
+
+    cat("*******\n")
+    cat(sprintf("%s %s\n",prof,area))
+    if(nrow(d)==0){
+      print("THERE ARE NO PEOPLE HERE")
+    } else {
+      print(d)
+    }
+    cat("\n\n")
+  }
+
+```
+
+### STRATIFIED BY SPECIALIZED DOCTOR BY CW00 AND CW06 FOR MINISTRY OF HEALTH AND IS06==9
+
+```{r message=FALSE, warning=FALSE}
+specializations <- unique(dWorkers$BOTHdoctor_specialization)
+
+for(prof in specializations) for(area in c(
+    "isPalestine",
+    "isGaza",
+    "isWB"
+  )){
+    d <- dWorkers[BOTHdoctor_specialization==prof & get(area)==1 & IDH00 %in% keepIDH00]
+    d[,numerator:=1]
+  
+    d <- d[,.(
+     numerator=max(numerator,na.rm=T)
+    ),by=.(
+     HR01,
+     ageCat
+    )]
+    
+    d <- d[,.(numerator=sum(numerator)),by=ageCat]
+    d[!is.na(ageCat),denominator_excl_miss:=sum(numerator)]
+    d[,perc:=RAWmisc::Format(numerator/denominator_excl_miss*100,1)]
+    d[,ageCat:=factor(ageCat,levels=c(
+      "18-30",
+      "31-45",
+      "46-54",
+      "55-59",
+      "60+"
+      ))]
+    setorder(d,ageCat)
+
+    cat("*******\n")
+    cat(sprintf("%s %s\n",prof,area))
+    if(nrow(d)==0){
+      print("THERE ARE NO PEOPLE HERE")
+    } else {
+      print(d)
+    }
+    cat("\n\n")
+  }
+
+```
+
+# Age Indicators FOR MINISTRY OF HEALTH AND IS06==4
+
+- Age -> should sum up to 100%
+- Stratified by professionVars
+- Stratified by Palestine/Gaza/WB
+- Doctors, Dentists, Pharmacists, Nurses, Midwives, Doctors+Nurses+Midwives
+- Area C, Jordan Valley, Jerusalem District
+
+## BY CW00 FOR MINISTRY OF HEALTH AND IS06==4
+
+```{r message=FALSE, warning=FALSE}
+
+keepIDH00 <- dFacilities[facilitySector=="Ministry of Health" & IS06==4]$IDH00
+
+dWorkers[,isGaza:=as.numeric(NA)]
+dWorkers[,isWB:=as.numeric(NA)]
+
+dWorkers[,isPalestine:=1]
+dWorkers[IDH03 %in% dLocation[isGaza==1]$localityCode, isGaza:=1]
+dWorkers[IDH03 %in% dLocation[isGaza==0]$localityCode, isWB:=1]
+dWorkers[,age:=floor(as.numeric(difftime("2016-01-01",HR03,units="days"))/365.25)]
+
+dWorkers[,ageCat:=as.character(NA)]
+dWorkers[age>=18 & age<=30,ageCat:="18-30"]
+dWorkers[age>=31 & age<=45,ageCat:="31-45"]
+dWorkers[age>=46 & age<=54,ageCat:="46-54"]
+dWorkers[age>=55 & age<=59,ageCat:="55-59"]
+dWorkers[age>=60,ageCat:="60+"]
+
+for(prof in professionVars) for(area in c(
+    "isPalestine",
+    "isGaza",
+    "isWB"
+  )){
+    d <- dWorkers[get(prof)==1 & get(area)==1 & IDH00 %in% keepIDH00]
+    d[,numerator:=1]
+  
+    d <- d[,.(
+     numerator=max(numerator,na.rm=T)
+    ),by=.(
+     HR01,
+     ageCat
+    )]
+    
+    d <- d[,.(numerator=sum(numerator)),by=ageCat]
+    d[!is.na(ageCat),denominator_excl_miss:=sum(numerator)]
+    d[,perc:=RAWmisc::Format(numerator/denominator_excl_miss*100,1)]
+    d[,ageCat:=factor(ageCat,levels=c(
+      "18-30",
+      "31-45",
+      "46-54",
+      "55-59",
+      "60+"
+      ))]
+    setorder(d,ageCat)
+
+    cat("*******\n")
+    cat(sprintf("%s %s\n",prof,area))
+    if(nrow(d)==0){
+      print("THERE ARE NO PEOPLE HERE")
+    } else {
+      print(d)
+    }
+    cat("\n\n")
+  }
+
+```
+
+## BY CW00 AND CW06 FOR MINISTRY OF HEALTH AND IS06==4
+
+```{r message=FALSE, warning=FALSE}
+
+dWorkers[,isGaza:=as.numeric(NA)]
+dWorkers[,isWB:=as.numeric(NA)]
+
+dWorkers[,isPalestine:=1]
+dWorkers[IDH03 %in% dLocation[isGaza==1]$localityCode, isGaza:=1]
+dWorkers[IDH03 %in% dLocation[isGaza==0]$localityCode, isWB:=1]
+dWorkers[,age:=floor(as.numeric(difftime("2016-01-01",HR03,units="days"))/365.25)]
+
+dWorkers[,ageCat:=as.character(NA)]
+dWorkers[age>=18 & age<=30,ageCat:="18-30"]
+dWorkers[age>=31 & age<=45,ageCat:="31-45"]
+dWorkers[age>=46 & age<=54,ageCat:="46-54"]
+dWorkers[age>=55 & age<=59,ageCat:="55-59"]
+dWorkers[age>=60,ageCat:="60+"]
+
+for(prof in professionVarsBOTH) for(area in c(
+    "isPalestine",
+    "isGaza",
+    "isWB"
+  )){
+    d <- dWorkers[get(prof)==1 & get(area)==1 & IDH00 %in% keepIDH00]
+    d[,numerator:=1]
+  
+    d <- d[,.(
+     numerator=max(numerator,na.rm=T)
+    ),by=.(
+     HR01,
+     ageCat
+    )]
+    
+    d <- d[,.(numerator=sum(numerator)),by=ageCat]
+    d[!is.na(ageCat),denominator_excl_miss:=sum(numerator)]
+    d[,perc:=RAWmisc::Format(numerator/denominator_excl_miss*100,1)]
+    d[,ageCat:=factor(ageCat,levels=c(
+      "18-30",
+      "31-45",
+      "46-54",
+      "55-59",
+      "60+"
+      ))]
+    setorder(d,ageCat)
+
+    cat("*******\n")
+    cat(sprintf("%s %s\n",prof,area))
+    if(nrow(d)==0){
+      print("THERE ARE NO PEOPLE HERE")
+    } else {
+      print(d)
+    }
+    cat("\n\n")
+  }
+
+```
+
+### STRATIFIED BY SPECIALIZED DOCTOR BY CW00 FOR MINISTRY OF HEALTH AND IS06==4
+
+```{r message=FALSE, warning=FALSE}
+specializations <- unique(dWorkers$doctor_specialization)
+
+for(prof in specializations) for(area in c(
+    "isPalestine",
+    "isGaza",
+    "isWB"
+  )){
+    d <- dWorkers[doctor_specialization==prof & get(area)==1 & IDH00 %in% keepIDH00]
+    d[,numerator:=1]
+  
+    d <- d[,.(
+     numerator=max(numerator,na.rm=T)
+    ),by=.(
+     HR01,
+     ageCat
+    )]
+    
+    d <- d[,.(numerator=sum(numerator)),by=ageCat]
+    d[!is.na(ageCat),denominator_excl_miss:=sum(numerator)]
+    d[,perc:=RAWmisc::Format(numerator/denominator_excl_miss*100,1)]
+    d[,ageCat:=factor(ageCat,levels=c(
+      "18-30",
+      "31-45",
+      "46-54",
+      "55-59",
+      "60+"
+      ))]
+    setorder(d,ageCat)
+
+    cat("*******\n")
+    cat(sprintf("%s %s\n",prof,area))
+    if(nrow(d)==0){
+      print("THERE ARE NO PEOPLE HERE")
+    } else {
+      print(d)
+    }
+    cat("\n\n")
+  }
+
+```
+
+### STRATIFIED BY SPECIALIZED DOCTOR BY CW00 AND CW06 FOR MINISTRY OF HEALTH AND IS06==4
+
+```{r message=FALSE, warning=FALSE}
+specializations <- unique(dWorkers$BOTHdoctor_specialization)
+
+for(prof in specializations) for(area in c(
+    "isPalestine",
+    "isGaza",
+    "isWB"
+  )){
+    d <- dWorkers[BOTHdoctor_specialization==prof & get(area)==1 & IDH00 %in% keepIDH00]
+    d[,numerator:=1]
+  
+    d <- d[,.(
+     numerator=max(numerator,na.rm=T)
+    ),by=.(
+     HR01,
+     ageCat
+    )]
+    
+    d <- d[,.(numerator=sum(numerator)),by=ageCat]
+    d[!is.na(ageCat),denominator_excl_miss:=sum(numerator)]
+    d[,perc:=RAWmisc::Format(numerator/denominator_excl_miss*100,1)]
+    d[,ageCat:=factor(ageCat,levels=c(
+      "18-30",
+      "31-45",
+      "46-54",
+      "55-59",
+      "60+"
+      ))]
+    setorder(d,ageCat)
+
+    cat("*******\n")
+    cat(sprintf("%s %s\n",prof,area))
+    if(nrow(d)==0){
+      print("THERE ARE NO PEOPLE HERE")
+    } else {
+      print(d)
+    }
+    cat("\n\n")
+  }
+
+```
+
 # Gender Indicators
 
 - Sex -> should sum up to 100% (numbers and percentages)
@@ -2955,6 +3787,71 @@ for(i in 1:nrow(stack)){
 
 ```
 
+### IS06==9 & MINISTRY OF HEALTH
+
+```{r}
+keepIDH00 <- dFacilities[facilitySector=="Ministry of Health" & IS06==9]$IDH00
+for(i in 1:nrow(stack)){
+  s <- stack[i]
+  d <- dWorkers[get(s$prof)==1 & get(s$dist)==1 & IDH00 %in% keepIDH00]
+  d[,numerator:=1]
+
+  d <- d[,.(
+   numerator=max(numerator,na.rm=T)
+  ),by=.(
+   HR01,
+   isFemale
+  )]
+  
+  d <- d[,.(numerator=sum(numerator)),by=isFemale]
+  d[!is.na(isFemale),denominator_excl_miss:=sum(numerator)]
+  d[,perc:=RAWmisc::Format(numerator/denominator_excl_miss*100,1)]
+  d[,ratio:=RAWmisc::Format(numerator/(denominator_excl_miss-numerator),2)]
+  setorder(d,isFemale)
+  cat("*******\n")
+  cat(sprintf("%s %s\n",s$prof,s$dist))
+  if(nrow(d)==0){
+    print("THERE ARE NO PEOPLE HERE")
+  } else {
+    print(d)
+  }
+  cat("\n\n")
+}
+```
+
+### IS06==4 & MINISTRY OF HEALTH
+
+```{r}
+keepIDH00 <- dFacilities[facilitySector=="Ministry of Health" & IS06==4]$IDH00
+for(i in 1:nrow(stack)){
+  s <- stack[i]
+  d <- dWorkers[get(s$prof)==1 & get(s$dist)==1 & IDH00 %in% keepIDH00]
+  d[,numerator:=1]
+
+  d <- d[,.(
+   numerator=max(numerator,na.rm=T)
+  ),by=.(
+   HR01,
+   isFemale
+  )]
+  
+  d <- d[,.(numerator=sum(numerator)),by=isFemale]
+  d[!is.na(isFemale),denominator_excl_miss:=sum(numerator)]
+  d[,perc:=RAWmisc::Format(numerator/denominator_excl_miss*100,1)]
+  d[,ratio:=RAWmisc::Format(numerator/(denominator_excl_miss-numerator),2)]
+  setorder(d,isFemale)
+  cat("*******\n")
+  cat(sprintf("%s %s\n",s$prof,s$dist))
+  if(nrow(d)==0){
+    print("THERE ARE NO PEOPLE HERE")
+  } else {
+    print(d)
+  }
+  cat("\n\n")
+}
+```
+
+
 ### STRATIFIED BY SPECIALIZED DOCTORS BY CW00
 
 ```{r}
@@ -3047,6 +3944,70 @@ for(i in 1:nrow(stack)){
   cat("\n\n")
 }
 
+```
+
+### IS06==9 & MINISTRY OF HEALTH BY CW00 AND CW06
+
+```{r}
+keepIDH00 <- dFacilities[facilitySector=="Ministry of Health" & IS06==9]$IDH00
+for(i in 1:nrow(stack)){
+  s <- stack[i]
+  d <- dWorkers[get(s$prof)==1 & get(s$dist)==1 & IDH00 %in% keepIDH00]
+  d[,numerator:=1]
+
+  d <- d[,.(
+   numerator=max(numerator,na.rm=T)
+  ),by=.(
+   HR01,
+   isFemale
+  )]
+  
+  d <- d[,.(numerator=sum(numerator)),by=isFemale]
+  d[!is.na(isFemale),denominator_excl_miss:=sum(numerator)]
+  d[,perc:=RAWmisc::Format(numerator/denominator_excl_miss*100,1)]
+  d[,ratio:=RAWmisc::Format(numerator/(denominator_excl_miss-numerator),2)]
+  setorder(d,isFemale)
+  cat("*******\n")
+  cat(sprintf("%s %s\n",s$prof,s$dist))
+  if(nrow(d)==0){
+    print("THERE ARE NO PEOPLE HERE")
+  } else {
+    print(d)
+  }
+  cat("\n\n")
+}
+```
+
+### IS06==4 & MINISTRY OF HEALTH BY CW00 AND CW06
+
+```{r}
+keepIDH00 <- dFacilities[facilitySector=="Ministry of Health" & IS06==4]$IDH00
+for(i in 1:nrow(stack)){
+  s <- stack[i]
+  d <- dWorkers[get(s$prof)==1 & get(s$dist)==1 & IDH00 %in% keepIDH00]
+  d[,numerator:=1]
+
+  d <- d[,.(
+   numerator=max(numerator,na.rm=T)
+  ),by=.(
+   HR01,
+   isFemale
+  )]
+  
+  d <- d[,.(numerator=sum(numerator)),by=isFemale]
+  d[!is.na(isFemale),denominator_excl_miss:=sum(numerator)]
+  d[,perc:=RAWmisc::Format(numerator/denominator_excl_miss*100,1)]
+  d[,ratio:=RAWmisc::Format(numerator/(denominator_excl_miss-numerator),2)]
+  setorder(d,isFemale)
+  cat("*******\n")
+  cat(sprintf("%s %s\n",s$prof,s$dist))
+  if(nrow(d)==0){
+    print("THERE ARE NO PEOPLE HERE")
+  } else {
+    print(d)
+  }
+  cat("\n\n")
+}
 ```
 
 ### STRATIFIED BY SPECIALIZED DOCTORS BY CW00 AND CW06
@@ -3197,14 +4158,7 @@ dWorkers[IDH03 %in% dLocation[urbanRural=="Camp"]$localityCode,
 
 districtNames <- c("isPalestine","isGaza","isWB")
 
-stack <- data.table(expand.grid(prof=c(
-  "isProf_Doctor",
-  "isProf_Dentist",
-  "isProf_Nurse",
-  "isProf_Midwife",
-  "isProf_Psychiatrist",
-  "isProf_Pharmacist"
-  ),dist=districtNames,
+stack <- data.table(expand.grid(prof=professionVars,dist=districtNames,
   sector=c("All sectors",unique(dFacilities$facilitySector)),stringsAsFactors = F))
 
 dLocation[,IDH03:=localityCode]
@@ -3324,14 +4278,7 @@ for(i in 1:nrow(stack)){
 ### BY CW00 AND CW06
 
 ```{r}
-stack <- data.table(expand.grid(prof=c(
-  "BOTH_isProf_Doctor",
-  "BOTH_isProf_Dentist",
-  "BOTH_isProf_Nurse",
-  "BOTH_isProf_Midwife",
-  "BOTH_isProf_Psychiatrist",
-  "BOTH_isProf_Pharmacist"
-  ),dist=districtNames,
+stack <- data.table(expand.grid(prof=professionVarsBOTH,dist=districtNames,
   sector=c("All sectors",unique(dFacilities$facilitySector)),stringsAsFactors = F))
 
 dLocation[,IDH03:=localityCode]
@@ -3784,7 +4731,7 @@ for(i in 1:nrow(stack)){
   } else if(s$location=="isGaza"){
     usePop <- pop[districtName=="Gaza Population"]$pop
   } else if(s$location=="isWB"){
-    usePop <- pop[districtName=="West Bank population"]$pop
+    usePop <- pop[districtName=="West Bank Population"]$pop
   } else if(s$location=="isEJerusalem"){
     usePop <- 0
   }

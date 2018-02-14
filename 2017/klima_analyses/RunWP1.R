@@ -24,6 +24,103 @@ for(i in importantDirs) if(!dir.exists(i)) dir.create(i,recursive=TRUE)
 
 WP2Data()
 
+
+
+
+mCOORDS <- fread(file.path(RAWmisc::PROJ$RAW,"FutureScenariosAndControlRuns","CoordsUTM.csv"))
+setnames(mCOORDS,"WW.NO","met")
+mNames <- data.table(readxl::read_excel(file.path(
+  RAWmisc::PROJ$RAW,
+  "names.xlsx"
+)))
+mNames[,met:=as.numeric(met)]
+mNames <- mNames[!is.na(met)]
+
+nrow(mNames)
+mCOORDS <- merge(mCOORDS,mNames,by="met",all.y=T)
+nrow(mCOORDS)
+setorder(mCOORDS,nve)
+
+mCOORDS <- unique(mCOORDS[,c("met","nve","waterwork")])
+mCOORDS[,n:=1:.N,by=.(nve)]
+mCOORDS <- mCOORDS[n==1]
+nrow(mCOORDS)
+length(unique(mCOORDS$met))
+length(unique(mCOORDS$nve))
+
+setnames(mCOORDS,"met","WW.NO")
+
+temp <- list()
+for(i in c(
+  "CNRM-CM5_CCLM_prec_temp_rain_1971-2000.csv",
+  "CNRM-CM5_CCLM_prec_temp_rain_2071-2100.csv",
+  "CNRM-CM5_SMHI-RCA4_prec_temp_rain_1971-2000.csv",
+  "CNRM-CM5_SMHI-RCA4_prec_temp_rain_2071-2100.csv",
+  "EC-EARTH_CCLM_prec_temp_rain_1971-2000.csv",
+  "EC-EARTH_CCLM_prec_temp_rain_2071-2100.csv",
+  "EC-EARTH_DMI-HIRHAM5_prec_temp_rain_1971-2000.csv",
+  "EC-EARTH_DMI-HIRHAM5_prec_temp_rain_2071-2100.csv",
+  "EC-EARTH_KNMI-RACMO_prec_temp_rain_1971-2000.csv",
+  "EC-EARTH_KNMI-RACMO_prec_temp_rain_2071-2100.csv",
+  "EC-EARTH_SMHI-RCA4_prec_temp_rain_1971-2000.csv",
+  "EC-EARTH_SMHI-RCA4_prec_temp_rain_2071-2100.csv",
+  "HADGEM2_SMHI-RCA4_prec_temp_rain_1971-2000.csv",
+  "HADGEM2_SMHI-RCA4_prec_temp_rain_2071-2100.csv",
+  "IPSL-CM5A_SMHI-RCA4_prec_temp_rain_1971-2000.csv",
+  "IPSL-CM5A_SMHI-RCA4_prec_temp_rain_2071-2100.csv",
+  "MPI_CCLM_prec_temp_rain_1971-2000.csv",
+  "MPI_CCLM_prec_temp_rain_2071-2100.csv")){
+  print(i)
+  md <- fread(file.path(RAWmisc::PROJ$RAW,"FutureScenariosAndControlRuns",i))
+  
+  xtabs(~md$WW.NO)
+  nrow(md)
+  md <- merge(md,mCOORDS,by="WW.NO")
+  nrow(md)
+  xtabs(~md$nve+md$WW.NO)
+  
+  md[,year := format.Date(sprintf("%s-%s-%s",YEAR,MONTH,DAY),"%G")] #Week-based year, instead of normal year (%Y)
+  md[,week := as.numeric(format.Date(sprintf("%s-%s-%s",YEAR,MONTH,DAY),"%V"))]
+  
+  md <- md[,.(temperature=mean(TEMP,na.rm=T),
+              gridRain=mean(RAIN,na.rm=T),
+              month=min(MONTH)),by=.(year,week,nve,waterwork)]
+  md[,season:=1]
+  md[month %in% 3:5,season:=2]
+  md[month %in% 6:8,season:=3]
+  md[month %in% 9:11,season:=4]
+  
+  md[,seasonchar:=as.character(season)]
+  RAWmisc::RecodeDT(md,c(
+    "1"="Winter",
+    "2"="Spring",
+    "3"="Summer",
+    "4"="Autumn"
+  ),"seasonchar")
+  md[,season:=NULL]
+  md[,season:=seasonchar]
+  
+  md[,type:="Accredited"]
+  
+  md[,c_temperature0_3:=
+       (shift(temperature,n=0L)+
+          shift(temperature,n=1L)+
+          shift(temperature,n=2L)+
+          shift(temperature,n=3L))/4,by=waterwork]
+  
+  md[,c_gridRain0_3:=
+       (shift(gridRain,n=0L)+
+          shift(gridRain,n=1L)+
+          shift(gridRain,n=2L)+
+          shift(gridRain,n=3L))/4,by=waterwork]
+  
+  md[,id:=waterwork]
+  md[,simulation:=i]
+  temp[[i]] <- copy(md)
+}
+
+md <- rbindlist(temp)
+
 for(type in c("raw","clean","raw_outbreaks","clean_outbreaks")){
   if(type=="raw"){
     d <- WP1DataRaw()
@@ -94,7 +191,8 @@ for(type in c("raw","clean","raw_outbreaks","clean_outbreaks")){
   
   # Your code starts here
   #stackIter <- stack[35]
-  #stackIterX <- 36
+  #stackIterX <- 38
+  predResults <- vector("list",length=nrow(stack))
   num <- 1
   res <- vector("list",length=nrow(stack))
   pb <- RAWmisc::ProgressBarCreate(min=0,max=length(res))
@@ -133,11 +231,64 @@ for(type in c("raw","clean","raw_outbreaks","clean_outbreaks")){
     
     fitBase <- lme4::lmer(as.formula(paste0(formulaBase,"+(1|id)")), data=fitData) 
     fit <- lme4::lmer(as.formula(paste0(formula,"+(1|id)")), data=fitData) 
+    
     x <- data.frame(var="",est=NA,se=NA,pval=NA)
     try({
       x <- ExtractValues(fit,stackIter$exposure,removeLead=T,format=F)
     },TRUE)
     if(nrow(x)==0) next
+    
+    # FUTURE PREDICTIONS
+    if(type=="raw" & stackIter$exposure %in% c("c_temperature0_3","c_gridRain0_3")){
+      predData <- copy(md[id %in% unique(fitData$id) & year %in% c(2000,2100)])
+      if(stackIter$season!="Whole year") predData <- predData[season==stackIter$season]
+      predData[,watersource:=NULL]
+      ws <- unique(fitData[,c("id","watersource")])
+      predData <- merge(predData,ws,by="id")
+      #p <- merTools::predictInterval(merMod=fit, newdata = predData, n.sims=100, returnSims = T)
+      #p <- data.table(attr(p,"sim.results"))
+      #predData <- cbind(predData,p)
+      predData[,p:=predict(fit,predData)]
+      setnames(predData,stackIter$exposure,"exposure")
+      predData <- predData[,.(p=mean(p),exposure=mean(exposure)),by=.(
+        id,year,simulation
+      )]
+      predData[,simulation:=gsub("1971-2000","",simulation)]
+      predData[,simulation:=gsub("2071-2100","",simulation)]
+      
+      predData <- dcast.data.table(predData,id+simulation~year,value.var=c("p","exposure"))
+      predData[,expectedExpP1OutcomeIncreasePerc:=exp(x$est)^(exposure_2100-exposure_2000)]
+      predData[,p_2000:=NULL]
+      predData[,p_2100:=NULL]
+      predData[,exposure_2000:=NULL]
+      predData[,exposure_2100:=NULL]
+     
+      percs <- fitData[,.(p50=quantile(value,prob=0.5),
+                 p75=quantile(value,prob=0.75),
+                 p95=quantile(value,prob=0.95),
+                 p100=quantile(value,prob=1)),
+              by=.(
+                id
+              )]
+      
+      predData <- merge(predData,percs,by="id")
+      for(i in c(50,75,95,100)){
+        outcome <- sprintf("y2000_p%s",i)
+        exposure <- sprintf("p%s",i)
+        predData[,(outcome):=RAWmisc::Format(exp(get(exposure))-1,1)]
+        
+        outcome <- sprintf("y2100_p%s",i)
+        exposure <- sprintf("p%s",i)
+        predData[,(outcome):=RAWmisc::Format(exp(get(exposure))*expectedExpP1OutcomeIncreasePerc-1,1)]
+      }
+      
+       
+      predData$exposure <- stackIter$exposure
+      predData$outcome <- stackIter$watervariable
+      predData$seasonStratified <- stackIter$season
+      predData$pval <- x$pval
+      predResults[[stackIterX]] <- predData
+    }
     
     if(type %in% c("raw","clean")){
       x$exposure <- stackIter$exposure
@@ -173,6 +324,9 @@ for(type in c("raw","clean","raw_outbreaks","clean_outbreaks")){
         formula0 <- sprintf("%s ~ %s*factor(season) %s %s +(1|id)",outcomeVar,stackIter$exposure,formulaType,formulaWatersource)
         fit0 <- lme4::lmer(as.formula(formula0),data=fitData)
         x$interactionPvalSeason <- lmtest::lrtest(fit0,fit1)$`Pr(>Chisq)`[2]
+        if(type=="raw" & stackIter$exposure %in% c("c_temperature0_3","c_gridRain0_3")){
+          predResults[[stackIterX]][,interactionPvalSeason := lmtest::lrtest(fit0,fit1)$`Pr(>Chisq)`[2]] 
+        }
       }
     } else {
       x$age <- stackIter$age
@@ -194,6 +348,59 @@ for(type in c("raw","clean","raw_outbreaks","clean_outbreaks")){
   }
   
   res <- rbindlist(res)
+  if(type=="raw"){
+    predResults <- rbindlist(predResults,fill=T)
+    predResults[,p50:=NULL]
+    predResults[,p75:=NULL]
+    predResults[,p95:=NULL]
+    predResults[,p100:=NULL]
+    
+    predResults[,seasonStratified:=factor(seasonStratified,levels=c(
+      "Whole year",
+      "Spring",
+      "Summer",
+      "Autumn",
+      "Winter"
+    ))]
+    
+    setcolorder(predResults,
+                c("simulation",
+                  "id",
+                  "outcome",
+                  "exposure",
+                  "seasonStratified",
+                  "pval",
+                  "interactionPvalSeason",
+                  "expectedExpP1OutcomeIncreasePerc",
+                  "y2000_p50",
+                  "y2100_p50",
+                  "y2000_p75",
+                  "y2100_p75",
+                  "y2000_p95",
+                  "y2100_p95",
+                  "y2000_p100",
+                  "y2100_p100"
+                  ))
+    
+    setorder(predResults,
+                simulation,
+                  id,
+                  outcome,
+                  exposure,
+                  seasonStratified
+                  )
+    
+    predResults[,pval:=RAWmisc::Format(pval,3)]
+    predResults[,interactionPvalSeason:=RAWmisc::Format(interactionPvalSeason,3)]
+    predResults[,expectedExpP1OutcomeIncreasePerc:=RAWmisc::Format(expectedExpP1OutcomeIncreasePerc,3)]
+    
+    
+    for(i in unique(predResults$id)){
+      openxlsx::write.xlsx(predResults[id==i],file = file.path(
+        RAWmisc::PROJ$SHARED_TODAY,sprintf("future_predictions_%s.xlsx",i)
+      ))
+    }
+  }
  
   if(type %in% c("raw","clean")){ 
     # graph
