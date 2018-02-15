@@ -1,4 +1,5 @@
 if(.Platform$OS.type=="unix"){
+  if(file.exists("/home/rstudio/.config/rclone/rclone.conf")) RAWmisc::UseRClone()
   RAWmisc::AllowFileManipulationFromInitialiseProject()
   RAWmisc::InitialiseProject(
     HOME = "/git/code_major/2018/nlp/",
@@ -6,7 +7,10 @@ if(.Platform$OS.type=="unix"){
     CLEAN = "/analyses/data_clean/code_major/2018/nlp",
     BAKED = "/analyses/results_baked/code_major/2018/nlp/",
     FINAL = "/analyses/results_final/code_major/2018/nlp/",
-    SHARED = "/dropbox/results_shared/code_major/2018/nlp/")
+    SHARED = "/dropbox/results_shared/code_major/2018/nlp/",
+    RCLONE_RAW = "data:/analyses/data_raw/code_major/2018/nlp/",
+    RCLONE_SHARED = "data:/analyses/results_shared/code_major/2018/nlp/"
+    )
 }
 
 library(data.table)
@@ -14,7 +18,11 @@ library(magrittr)
 library(text2vec)
 library(ggplot2)
 
+
+RAWmisc::SaveProject()
+
 data <- readxl::read_excel(file.path(RAWmisc::PROJ$RAW,"vocab.xlsx"))
+saveRDS(data,file=file.path(RAWmisc::PROJ$SHARED_TODAY,"tedst.rds"))
 setDT(data)
 data[,id:=1:.N]
 setkey(data,id)
