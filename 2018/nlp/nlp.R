@@ -1,16 +1,25 @@
 if(.Platform$OS.type=="unix"){
-  if(file.exists("/home/rstudio/.config/rclone/rclone.conf")) RAWmisc::UseRClone()
+  RAWmisc::UseRClone()
   RAWmisc::AllowFileManipulationFromInitialiseProject()
+  
+  if(dir.exists("/dropbox")){
+    SHARED <- "/dropbox/analyses/results_shared/code_major/2018/nlp"
+    RCLONE_SHARED <- NULL
+  } else {
+    SHARED <- "/tmp/results_shared/code_major/2018/nlp/"
+    RCLONE_SHARED <- "data:/analyses/results_shared/code_major/2018/nlp/"
+  }
+  
   RAWmisc::InitialiseProject(
     HOME = "/git/code_major/2018/nlp/",
-    RAW = "/analyses/data_raw/code_major/2018/nlp/",
-    CLEAN = "/analyses/data_clean/code_major/2018/nlp",
-    BAKED = "/analyses/results_baked/code_major/2018/nlp/",
-    FINAL = "/analyses/results_final/code_major/2018/nlp/",
-    SHARED = "/dropbox/results_shared/code_major/2018/nlp/",
-    RCLONE_RAW = "data:/analyses/data_raw/code_major/2018/nlp/",
-    RCLONE_SHARED = "data:/analyses/results_shared/code_major/2018/nlp/"
-    )
+    RAW = "/tmp/data_raw/code_major/2018/nlp/",
+    CLEAN = "/tmp/data_clean/code_major/2018/nlp",
+    BAKED = "/tmp/results_baked/code_major/2018/nlp/",
+    FINAL = "/tmp/results_final/code_major/2018/nlp/",
+    SHARED = SHARED,
+    RCLONE_RAW = "crypt:/data_raw/code_major/2018/nlp/",
+    RCLONE_SHARED = RCLONE_SHARED
+  )
 }
 
 library(data.table)
