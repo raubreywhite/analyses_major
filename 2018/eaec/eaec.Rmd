@@ -1,0 +1,112 @@
+---
+title: "EAEC STUDY"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+if(.Platform$OS.type=="unix"){
+  RAWmisc::UseRClone()
+  RAWmisc::AllowFileManipulationFromInitialiseProject()
+  
+  if(dir.exists("/dropbox")){
+    SHARED <- "/dropbox/analyses/results_shared/code_major/2018/eaec"
+    RCLONE_SHARED <- NULL
+  } else {
+    SHARED <- "/tmp/results_shared/code_major/2018/eaec/"
+    RCLONE_SHARED <- "data:/analyses/results_shared/code_major/2018/eaec/"
+  }
+  
+  RAWmisc::InitialiseProject(
+    HOME = "/git/code_major/2018/eaec/",
+    RAW = "/tmp/data_raw/code_major/2018/eaec/",
+    CLEAN = "/tmp/data_clean/code_major/2018/eaec",
+    BAKED = "/tmp/results_baked/code_major/2018/eaec/",
+    FINAL = "/tmp/results_final/code_major/2018/eaec/",
+    SHARED = SHARED,
+    RCLONE_RAW = "crypt:/data_raw/code_major/2018/eaec/",
+    RCLONE_SHARED = RCLONE_SHARED
+  )
+}
+
+library(data.table)
+
+
+data <- data.table(readxl::read_excel(file.path(RAWmisc::PROJ$RAW,"enrollment_2018_02.xlsx")))
+data[group=="study",denomStudy:=sum(number),by=type]
+data[,denomStudy:=mean(denomStudy,na.rm=T),by=type]
+data[group=="ssb",denomSSB:=sum(number),by=type]
+data[,denomSSB:=mean(denomSSB,na.rm=T),by=type]
+data[group=="ssb",number:=number/denomSSB*denomStudy]
+
+xtabs(~data$value)
+RAWmisc::RecodeDT(data,switch=c(
+  "0-9"="0-19",
+  "10-19"="0-19",
+  "20-29"="20-39",
+  "30-39"="20-39",
+  "40-49"="40-59",
+  "50-59"="40-59",
+  "60-69"="60+",
+  "70-79"="60+",
+  "80-89"="60+",
+  "90"="60+"
+  ),var="value")
+data <- data[,.(number=round(sum(number))),by=.(type,value,group)]
+```
+
+# Comparing sexes
+```{r}
+d <- dcast.data.table(value~group,value.var="number",data=data[type=="sex"])
+print(d)
+d[,value:=NULL]
+chisq.test(d)
+```
+
+# Comparing ages
+```{r}
+d <- dcast.data.table(value~group,value.var="number",data=data[type=="age"])
+print(d)
+d[,value:=NULL]
+chisq.test(d)
+```
+
+# Comparing trondheim vs not-trondheim
+```{r}
+d <- dcast.data.table(value~group,value.var="number",data=data[type=="trondheim_vs_not"])
+print(d)
+d[,value:=NULL]
+chisq.test(d)
+```
+
+# Comparing ages within men
+```{r}
+d <- dcast.data.table(value~group,value.var="number",data=data[type=="Age-men"])
+print(d)
+d[,value:=NULL]
+chisq.test(d)
+```
+
+# Comparing ages within women
+```{r}
+d <- dcast.data.table(value~group,value.var="number",data=data[type=="Age-women"])
+print(d)
+d[,value:=NULL]
+chisq.test(d)
+```
+
+# Comparing ages within trondheim
+```{r}
+d <- dcast.data.table(value~group,value.var="number",data=data[type=="Age-trondheim"])
+print(d)
+d[,value:=NULL]
+chisq.test(d)
+```
+
+# Comparing ages within not-trondheim
+```{r}
+d <- dcast.data.table(value~group,value.var="number",data=data[type=="Age-not-trondheim"])
+print(d)
+d[,value:=NULL]
+chisq.test(d)
+```
+

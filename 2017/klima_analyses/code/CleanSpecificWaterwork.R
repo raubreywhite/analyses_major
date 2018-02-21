@@ -158,7 +158,7 @@ d <- data.table(readxl::read_excel(fileIn,
   print(d[c(1,10)])
 }
 
-CleanWP1SpecificWaterWorkLongOppegard <- function(fileIn=file.path(RAWmisc::PROJ$RAW,"WP1_waterworks/Oppegård/Rådata/aggregated.xlsx"),
+CleanWP1SpecificWaterWorkLongOppegard <- function(fileIn=file.path(RAWmisc::PROJ$RAW,"WP1_waterworks/Oppegård/Rådata/aggregated.xlsx"),
                                                   fileOut="oppegard.RDS",
                                       sheet=1,
                                       type="Accredited",
