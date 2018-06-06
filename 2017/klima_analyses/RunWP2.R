@@ -1,20 +1,36 @@
 suppressMessages(library(ggplot2))
-RAWmisc::AllowFileManipulationFromInitialiseProject()
-RAWmisc::InitialiseProject(
-  HOME = "/git/code_major/2017/klima_analyses/",
-  RAW = "/analyses/data_raw/code_major/2017/klima_analyses/",
-  CLEAN = "/analyses/data_clean/code_major/2017/klima_analyses",
-  BAKED = "/analyses/results_baked/code_major/2017/klima_analyses/",
-  FINAL = "/analyses/results_final/code_major/2017/klima_analyses/",
-  SHARED = "/dropbox/results_shared/code_major/2017/klima_analyses/")
+if(.Platform$OS.type=="unix"){
+  RAWmisc::UseRClone()
+  RAWmisc::AllowFileManipulationFromInitialiseProject()
+  
+  if(dir.exists("/dropbox")){
+    SHARED <- "/dropbox/analyses/results_shared/code_major/2017/klima_analyses/"
+    RCLONE_SHARED <- NULL
+  } else {
+    SHARED <- "/tmp/results_shared/code_major/2017/klima_analyses/"
+    RCLONE_SHARED <- "data:/analyses/results_shared/code_major/2017/klima_analyses/"
+  }
+  
+  RAWmisc::InitialiseProject(
+    HOME = "/git/code_major/2017/klima_analyses/",
+    RAW = "/tmp/data_raw/code_major/2017/klima_analyses/",
+    CLEAN = "/tmp/data_clean/code_major/2017/klima_analyses",
+    BAKED = "/tmp/results_baked/code_major/2017/klima_analyses/",
+    FINAL = "/tmp/results_final/code_major/2017/klima_analyses/",
+    SHARED = SHARED,
+    RCLONE_RAW = "crypt:/data_raw/code_major/2017/klima_analyses/",
+    RCLONE_SHARED = RCLONE_SHARED
+  )
+}
 
 suppressMessages(library(data.table))
 suppressMessages(library(ggplot2))
 suppressMessages(library(foreach))
 suppressMessages(library(pomp))
 
+assign("RUN_ALL", TRUE, envir=globalenv())
 
-d <- CleanData()
+d <- WP2Data()
 
 stack <- data.table(expand.grid(c("Whole year",unique(d$season)),
                                 rev(unique(d$age)),

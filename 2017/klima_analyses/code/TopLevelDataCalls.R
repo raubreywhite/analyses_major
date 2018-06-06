@@ -23,7 +23,7 @@ WP1DataRaw <- function(){
     d[,c_temperature0_3:=(c_temperature0_0+c_temperature1_1+c_temperature2_2+c_temperature3_3)/4]
     
     }) -> d
-  return(d)
+  return(d[year %in% c(2006:2014)])
 }
 
 WP1DataClean <- function(){
@@ -49,7 +49,7 @@ WP1DataClean <- function(){
     d[,c_temperature0_3:=(c_temperature0_0+c_temperature1_1+c_temperature2_2+c_temperature3_3)/4]
     
   }) -> d
-  return(d)
+  return(d[year %in% c(2006:2014)])
 }
 
 WP2Data <- function(initialDataCall=FALSE){
@@ -57,7 +57,7 @@ WP2Data <- function(initialDataCall=FALSE){
   bake(file.path(RAWmisc::PROJ$CLEAN,"WP2.RDS"),{
     CleanData()
   }) -> d
-  return(d)
+  return(d[year %in% c(2006:2014)])
 }
 
 
@@ -95,7 +95,7 @@ WP2WaterworkRawData <- function(){
   d[,value4:=shift(value,n=4L),by=.(variable,age,municip)]
   d[,s_pop:=round(s_pop)]
   d[,id:=municip]
-  return(d)
+  return(d[year %in% c(2006:2014)])
 }
 
 
@@ -133,6 +133,6 @@ WP2WaterworkCleanData <- function(){
   d[,value4:=shift(value,n=4L),by=.(variable,age,municip)]
   d[,s_pop:=round(s_pop)]
   d[,id:=municip]
-  return(d)
+  return(d[year %in% c(2006:2014)])
 }
 

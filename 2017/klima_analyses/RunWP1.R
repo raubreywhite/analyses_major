@@ -23,11 +23,49 @@ if(.Platform$OS.type=="unix"){
   )
 }
 
+dir.create(file.path(RAWmisc::PROJ$SHARED_TODAY,"waterwork_specific_predictions"))
+
+RepeatDataTable <- function(d, n) {
+  if ("data.table" %in% class(d)) return(d[rep(seq_len(nrow(d)), n)])
+  return(d[rep(seq_len(nrow(d)), n), ])
+}
+
+grid_arrange_shared_legend <- function(..., ncol = length(list(...)), nrow = 1, position = c("bottom", "right")) {
+  
+  plots <- list(...)
+  position <- match.arg(position)
+  g <- ggplotGrob(plots[[1]] + theme(legend.position = position))$grobs
+  legend <- g[[which(sapply(g, function(x) x$name) == "guide-box")]]
+  lheight <- sum(legend$height)
+  lwidth <- sum(legend$width)
+  gl <- lapply(plots, function(x) x + theme(legend.position="none"))
+  gl <- c(gl, ncol = ncol, nrow = nrow)
+  
+  combined <- switch(position,
+                     "bottom" = arrangeGrob(do.call(arrangeGrob, gl),
+                                            legend,
+                                            ncol = 1,
+                                            heights = unit.c(unit(1, "npc") - lheight, lheight)),
+                     "right" = arrangeGrob(do.call(arrangeGrob, gl),
+                                           legend,
+                                           ncol = 2,
+                                           widths = unit.c(unit(1, "npc") - lwidth, lwidth)))
+  
+  grid.newpage()
+  grid.draw(combined)
+  
+  # return gtable invisibly
+  invisible(combined)
+  
+}
+
 suppressWarnings(suppressMessages(library(data.table)))
 suppressWarnings(suppressMessages(library(ggplot2)))
 suppressWarnings(suppressMessages(library(foreach)))
 suppressWarnings(suppressMessages(library(pomp)))
 suppressMessages(library(doParallel))
+library(gridExtra)
+library(grid)
 registerDoParallel()
 assign("RUN_ALL", TRUE, envir=globalenv())
 
@@ -56,7 +94,7 @@ mCOORDS <- merge(mCOORDS,mNames,by="met",all.y=T)
 nrow(mCOORDS)
 setorder(mCOORDS,nve)
 
-mCOORDS <- unique(mCOORDS[,c("met","nve","waterwork")])
+mCOORDS <- unique(mCOORDS[,c("met","nve","waterwork","region")])
 mCOORDS[,n:=1:.N,by=.(nve)]
 mCOORDS <- mCOORDS[n==1]
 nrow(mCOORDS)
@@ -64,29 +102,32 @@ length(unique(mCOORDS$met))
 length(unique(mCOORDS$nve))
 
 setnames(mCOORDS,"met","WW.NO")
+RAWmisc::RecodeDT(mCOORDS,c("weat"="west"),"region")
 
 temp <- list()
 for(i in c(
-  "CNRM-CM5_CCLM_prec_temp_rain_1971-2000.csv",
+  "CNRM-CM5_CCLM_prec_temp_rain_2006-2015.csv",
   "CNRM-CM5_CCLM_prec_temp_rain_2071-2100.csv",
-  "CNRM-CM5_SMHI-RCA4_prec_temp_rain_1971-2000.csv",
+  "CNRM-CM5_SMHI-RCA4_prec_temp_rain_2006-2015.csv",
   "CNRM-CM5_SMHI-RCA4_prec_temp_rain_2071-2100.csv",
-  "EC-EARTH_CCLM_prec_temp_rain_1971-2000.csv",
+  "EC-EARTH_CCLM_prec_temp_rain_2006-2015.csv",
   "EC-EARTH_CCLM_prec_temp_rain_2071-2100.csv",
-  "EC-EARTH_DMI-HIRHAM5_prec_temp_rain_1971-2000.csv",
+  "EC-EARTH_DMI-HIRHAM5_prec_temp_rain_2006-2015.csv",
   "EC-EARTH_DMI-HIRHAM5_prec_temp_rain_2071-2100.csv",
-  "EC-EARTH_KNMI-RACMO_prec_temp_rain_1971-2000.csv",
+  "EC-EARTH_KNMI-RACMO_prec_temp_rain_2006-2015.csv",
   "EC-EARTH_KNMI-RACMO_prec_temp_rain_2071-2100.csv",
-  "EC-EARTH_SMHI-RCA4_prec_temp_rain_1971-2000.csv",
+  "EC-EARTH_SMHI-RCA4_prec_temp_rain_2006-2015.csv",
   "EC-EARTH_SMHI-RCA4_prec_temp_rain_2071-2100.csv",
-  "HADGEM2_SMHI-RCA4_prec_temp_rain_1971-2000.csv",
+  "HADGEM2_SMHI-RCA4_prec_temp_rain_2006-2015.csv",
   "HADGEM2_SMHI-RCA4_prec_temp_rain_2071-2100.csv",
-  "IPSL-CM5A_SMHI-RCA4_prec_temp_rain_1971-2000.csv",
+  "IPSL-CM5A_SMHI-RCA4_prec_temp_rain_2006-2015.csv",
   "IPSL-CM5A_SMHI-RCA4_prec_temp_rain_2071-2100.csv",
-  "MPI_CCLM_prec_temp_rain_1971-2000.csv",
+  "MPI_CCLM_prec_temp_rain_2006-2015.csv",
   "MPI_CCLM_prec_temp_rain_2071-2100.csv")){
   print(i)
   md <- fread(file.path(RAWmisc::PROJ$RAW,"FutureScenariosAndControlRuns",i))
+  
+  
   
   xtabs(~md$WW.NO)
   nrow(md)
@@ -94,12 +135,30 @@ for(i in c(
   nrow(md)
   xtabs(~md$nve+md$WW.NO)
   
+  runoffdata <- list()
+  for(j in list.files(file.path(RAWmisc::PROJ$RAW,"Runoff_Proj",md$MODEL[1]))){
+    tmp <- fread(file.path(RAWmisc::PROJ$RAW,"Runoff_Proj",md$MODEL[1],j))
+    if(stringr::str_detect(j,"rcp45")){
+      tmp[,SCENARIO:="rcp45"]
+    } else {
+      tmp[,SCENARIO:="rcp85"]
+    }
+    setnames(tmp,c("YEAR","MONTH","DAY","runoff","xxx","SCENARIO"))
+    tmp[,nve:=stringr::str_extract(j,"^[a-zA-Z]*")]
+    runoffdata[[j]] <- tmp
+  }
+  runoffdata <- rbindlist(runoffdata)
+  nrow(md)
+  md <- merge(md,runoffdata,by=c("SCENARIO","nve","YEAR","MONTH","DAY"))
+  nrow(md)
+  
   md[,year := format.Date(sprintf("%s-%s-%s",YEAR,MONTH,DAY),"%G")] #Week-based year, instead of normal year (%Y)
   md[,week := as.numeric(format.Date(sprintf("%s-%s-%s",YEAR,MONTH,DAY),"%V"))]
   
   md <- md[,.(temperature=mean(TEMP,na.rm=T),
               gridRain=mean(RAIN,na.rm=T),
-              month=min(MONTH)),by=.(year,week,nve,waterwork)]
+              runoff=mean(runoff,na.rm=T),
+              month=min(MONTH)),by=.(year,week,nve,waterwork,SCENARIO,region)]
   md[,season:=1]
   md[month %in% 3:5,season:=2]
   md[month %in% 6:8,season:=3]
@@ -129,12 +188,22 @@ for(i in c(
           shift(gridRain,n=2L)+
           shift(gridRain,n=3L))/4,by=waterwork]
   
+  md[,c_gridRunoffStandardised0_3:=
+       (shift(runoff,n=0L)+
+          shift(runoff,n=1L)+
+          shift(runoff,n=2L)+
+          shift(runoff,n=3L))/4,by=waterwork]
+  
   md[,id:=waterwork]
   md[,simulation:=i]
   temp[[i]] <- copy(md)
 }
 
 md <- rbindlist(temp)
+md <- md[year %in% c(2006:2014,2071:2100)]
+md[,simulation:=gsub("2006-2015","",simulation)]
+md[,simulation:=gsub("2071-2100","",simulation)]
+md[,simulation:=paste0(SCENARIO,"-",simulation)]
 
 for(type in c("raw","clean","raw_outbreaks","clean_outbreaks")){
   if(type=="raw"){
@@ -254,8 +323,8 @@ for(type in c("raw","clean","raw_outbreaks","clean_outbreaks")){
     if(nrow(x)==0) next
     
     # FUTURE PREDICTIONS
-    if(type=="raw" & stackIter$exposure %in% c("c_temperature0_3","c_gridRain0_3")){
-      predData <- copy(md[id %in% unique(fitData$id) & year %in% c(2000,2100)])
+    if(type=="raw" & stackIter$exposure %in% c("c_temperature0_3","c_gridRain0_3","c_gridRunoffStandardised0_3")){
+      predData <- copy(md[id %in% unique(fitData$id)])
       if(stackIter$season!="Whole year") predData <- predData[season==stackIter$season]
       predData[,watersource:=NULL]
       ws <- unique(fitData[,c("id","watersource")])
@@ -264,45 +333,79 @@ for(type in c("raw","clean","raw_outbreaks","clean_outbreaks")){
       #p <- data.table(attr(p,"sim.results"))
       #predData <- cbind(predData,p)
       predData[,p:=predict(fit,predData)]
+      if(stackIter$watervariable!="pH") predData[,p:=exp(p)-1]
       setnames(predData,stackIter$exposure,"exposure")
-      predData <- predData[,.(p=mean(p),exposure=mean(exposure)),by=.(
-        id,year,simulation
+      multiplier <- predData[,.(p=mean(p,na.rm=T),exposure=mean(exposure)),by=.(
+        id,year,simulation,SCENARIO,region
       )]
-      predData[,simulation:=gsub("1971-2000","",simulation)]
-      predData[,simulation:=gsub("2071-2100","",simulation)]
-      
-      predData <- dcast.data.table(predData,id+simulation~year,value.var=c("p","exposure"))
-      predData[,expectedExpP1OutcomeIncreasePerc:=exp(x$est)^(exposure_2100-exposure_2000)]
-      predData[,p_2000:=NULL]
-      predData[,p_2100:=NULL]
-      predData[,exposure_2000:=NULL]
-      predData[,exposure_2100:=NULL]
-     
-      percs <- fitData[,.(p50=quantile(value,prob=0.5),
-                 p75=quantile(value,prob=0.75),
-                 p95=quantile(value,prob=0.95),
-                 p100=quantile(value,prob=1)),
+
+      percs <- fitData[,.(m=mean(origValue,na.rm=T)),
               by=.(
                 id
               )]
+      all_data_original_mean <- mean(fitData$origValue,na.rm=T)
       
-      predData <- merge(predData,percs,by="id")
-      for(i in c(50,75,95,100)){
-        outcome <- sprintf("y2000_p%s",i)
-        exposure <- sprintf("p%s",i)
-        predData[,(outcome):=RAWmisc::Format(exp(get(exposure))-1,1)]
-        
-        outcome <- sprintf("y2100_p%s",i)
-        exposure <- sprintf("p%s",i)
-        predData[,(outcome):=RAWmisc::Format(exp(get(exposure))*expectedExpP1OutcomeIncreasePerc-1,1)]
+      #multiplier[p<0,p:=0]
+      multiplier[year%in%c(2006:2014),predicted_mean_2006_2014:=mean(p,na.rm=T),by=.(id,simulation)]
+      multiplier[,predicted_mean_2006_2014:=mean(predicted_mean_2006_2014,na.rm=T),by=.(id,simulation)]
+      
+      multiplier[year%in%c(2006:2014),all_data_predicted_mean_2006_2014:=mean(p,na.rm=T),by=.(simulation)]
+      multiplier[,all_data_predicted_mean_2006_2014:=mean(all_data_predicted_mean_2006_2014,na.rm=T),by=.(simulation)]
+
+      pred <- merge(multiplier,percs,by="id")
+      pred[,yearly_adjustment_factor:=(p-predicted_mean_2006_2014+m)/m]
+      pred[m==0,yearly_adjustment_factor:=(p-all_data_predicted_mean_2006_2014+all_data_original_mean)/all_data_original_mean]
+      
+      pred[,modelled_exposure:=exposure]
+      
+      simulations <- RepeatDataTable(pred[,c("id","year","simulation","SCENARIO","region","yearly_adjustment_factor","m","modelled_exposure")],1000)
+      simulations[,adjusted_sampled_value:=0.0]
+      for(i in unique(simulations$id)){
+        simulations[id==i,adjusted_sampled_value:=sample(fitData[id==i]$origValue,.N,replace=T)*yearly_adjustment_factor]
       }
       
+      simulations[,yearCat:="2006-2014"]
+      simulations[year>2070,yearCat:="2071-2100"]
+      simulations[id=="Bodo||0101 Heggmoen VBA Råvann" & 
+                    SCENARIO=="rcp85",.(adjusted_sampled_value=mean(adjusted_sampled_value,na.rm=T),
+                     m=mean(m),
+                     modelled_exposure=mean(modelled_exposure,na.rm=T)),by=.(yearCat,region)]
+      
+      waterwork_simulations <- simulations[,.(
+        p50=quantile(adjusted_sampled_value,probs = 0.5),
+        p75=quantile(adjusted_sampled_value,probs = 0.75),
+        p95=quantile(adjusted_sampled_value,probs = 0.95),
+        p99=quantile(adjusted_sampled_value,probs = 0.99),
+        p100=max(adjusted_sampled_value)
+      ),by=.(id,simulation,yearCat,SCENARIO,region)]
+      
+      waterwork_mixedsimulations <- waterwork_simulations[,.(
+        p50=median(p50),
+        p75=median(p75),
+        p95=median(p95),
+        p99=median(p99),
+        p100=median(p99)
+      ),by=.(id,yearCat,SCENARIO,region)]
+      waterwork_mixedsimulations[,simulation:="ALL_MIXED"]
+      
+      region_mixedsimulations <- waterwork_simulations[,.(
+        p50=median(p50),
+        p75=median(p75),
+        p95=median(p95),
+        p99=median(p99),
+        p100=median(p99)
+      ),by=.(yearCat,SCENARIO,region)]
+      region_mixedsimulations[,id:="REGION"]
+      region_mixedsimulations[,simulation:="ALL_MIXED"]
+      
+      simulations <- rbind(waterwork_simulations,waterwork_mixedsimulations,region_mixedsimulations)
+      setorder(simulations,id,simulation,yearCat)
        
-      predData$exposure <- stackIter$exposure
-      predData$outcome <- stackIter$watervariable
-      predData$seasonStratified <- stackIter$season
-      predData$pval <- x$pval
-      predResults[[stackIterX]] <- predData
+      simulations$exposure <- stackIter$exposure
+      simulations$outcome <- stackIter$watervariable
+      simulations$seasonStratified <- stackIter$season
+      simulations$pval <- x$pval
+      predResults[[stackIterX]] <- simulations
     }
     
     if(type %in% c("raw","clean")){
@@ -320,6 +423,7 @@ for(type in c("raw","clean","raw_outbreaks","clean_outbreaks")){
     x$outcome75 <- quantile(fitData$origValue,na.rm=T,prob=0.75)
     x$outcome90 <- quantile(fitData$origValue,na.rm=T,prob=0.9)
     x$outcome95 <- quantile(fitData$origValue,na.rm=T,prob=0.95)
+    x$outcome99 <- quantile(fitData$origValue,na.rm=T,prob=0.99)
     
     x$exposureMean <- mean(fitData[[stackIter$exposure]],na.rm=T)
     x$exposureSD <- sd(fitData[[stackIter$exposure]],na.rm=T)
@@ -327,6 +431,7 @@ for(type in c("raw","clean","raw_outbreaks","clean_outbreaks")){
     x$exposure75 <- quantile(fitData[[stackIter$exposure]],na.rm=T,prob=0.75)
     x$exposure90 <- quantile(fitData[[stackIter$exposure]],na.rm=T,prob=0.9)
     x$exposure95 <- quantile(fitData[[stackIter$exposure]],na.rm=T,prob=0.95)
+    x$exposure99 <- quantile(fitData[[stackIter$exposure]],na.rm=T,prob=0.99)
     
     x$season <- stackIter$season
     x$interactionPvalSeason <- NA
@@ -339,7 +444,7 @@ for(type in c("raw","clean","raw_outbreaks","clean_outbreaks")){
         formula0 <- sprintf("%s ~ %s*factor(season) %s %s +(1|id)",outcomeVar,stackIter$exposure,formulaType,formulaWatersource)
         fit0 <- lme4::lmer(as.formula(formula0),data=fitData)
         x$interactionPvalSeason <- lmtest::lrtest(fit0,fit1)$`Pr(>Chisq)`[2]
-        if(type=="raw" & stackIter$exposure %in% c("c_temperature0_3","c_gridRain0_3")){
+        if(type=="raw" & stackIter$exposure %in% c("c_temperature0_3","c_gridRain0_3","c_gridRunoffStandardised0_3")){
           predResults[[stackIterX]][,interactionPvalSeason := lmtest::lrtest(fit0,fit1)$`Pr(>Chisq)`[2]] 
         }
       }
@@ -365,10 +470,6 @@ for(type in c("raw","clean","raw_outbreaks","clean_outbreaks")){
   res <- rbindlist(res)
   if(type=="raw"){
     predResults <- rbindlist(predResults,fill=T)
-    predResults[,p50:=NULL]
-    predResults[,p75:=NULL]
-    predResults[,p95:=NULL]
-    predResults[,p100:=NULL]
     
     predResults[,seasonStratified:=factor(seasonStratified,levels=c(
       "Whole year",
@@ -378,43 +479,33 @@ for(type in c("raw","clean","raw_outbreaks","clean_outbreaks")){
       "Winter"
     ))]
     
-    setcolorder(predResults,
-                c("simulation",
-                  "id",
-                  "outcome",
-                  "exposure",
-                  "seasonStratified",
-                  "pval",
-                  "interactionPvalSeason",
-                  "expectedExpP1OutcomeIncreasePerc",
-                  "y2000_p50",
-                  "y2100_p50",
-                  "y2000_p75",
-                  "y2100_p75",
-                  "y2000_p95",
-                  "y2100_p95",
-                  "y2000_p100",
-                  "y2100_p100"
-                  ))
-    
-    setorder(predResults,
-                simulation,
-                  id,
-                  outcome,
-                  exposure,
-                  seasonStratified
-                  )
-    
-    predResults[,pval:=RAWmisc::Format(pval,3)]
-    predResults[,interactionPvalSeason:=RAWmisc::Format(interactionPvalSeason,3)]
-    predResults[,expectedExpP1OutcomeIncreasePerc:=RAWmisc::Format(expectedExpP1OutcomeIncreasePerc,3)]
-    
-    
     for(i in unique(predResults$id)){
       openxlsx::write.xlsx(predResults[id==i],file = file.path(
-        RAWmisc::PROJ$SHARED_TODAY,sprintf("future_predictions_%s.xlsx",i)
+        RAWmisc::PROJ$SHARED_TODAY,"waterwork_specific_predictions",sprintf("future_predictions_%s.xlsx",i)
       ))
     }
+    
+    regionResults <- predResults[id=="REGION" & SCENARIO=="rcp85"]
+    regionResults[,sigEffect:=pval<0.05]
+    regionResults[,sigInteraction:=interactionPvalSeason<0.05]
+    regionResults[,isSigInteraction:=as.numeric(max(sigInteraction,na.rm=T)),by=.(exposure,outcome)]
+    regionResults[,showResults:=FALSE]
+    regionResults[sigEffect==TRUE & seasonStratified=="Whole year",showResults:=TRUE]
+    regionResults[sigEffect==TRUE & seasonStratified!="Whole year" & isSigInteraction==1,showResults:=TRUE]
+    
+    #regionResults[,clean95:=ifelse(showResults | yearCat=="2006-2014",p95,-9)]
+    regionResults[,clean99:=ifelse(showResults | yearCat=="2006-2014",RAWmisc::Format(p99,1),"-")]
+    #regionResults[,clean100:=ifelse(showResults | yearCat=="2006-2014",p100,-9)]
+    
+    tab <- dcast.data.table(regionResults,region+outcome+seasonStratified~yearCat+exposure,value.var = c("clean99"))
+    toDrop <- expand.grid("2006-2014",c("c_temperature0_3","c_gridRain0_3","c_gridRunoffStandardised0_3"))[-1,]
+    toDrop <- sprintf("%s_%s",toDrop$Var1,toDrop$Var2)
+    tab[,(toDrop):=NULL]
+    
+    setnames(tab,c("region","outcome","season","p99_2006_2014","rain_p99_2071_2100","runoff_p99_2071_2100","temp_p99_2071_2100"))
+    openxlsx::write.xlsx(tab,file.path(RAWmisc::PROJ$SHARED_TODAY,"future_predictions_rcp85.xlsx"))
+    
+    
   }
  
   if(type %in% c("raw","clean")){ 
@@ -425,6 +516,10 @@ for(type in c("raw","clean","raw_outbreaks","clean_outbreaks")){
     graphing[,effect:="None"]
     graphing[pval<0.05/.N & est<0,effect:="Decreases"]
     graphing[pval<0.05/.N & est>0,effect:="Increases"]
+    graphing[,significantIteraction:=0]
+    graphing[interactionPvalSeason<0.05,significantIteraction:=1]
+    graphing[,significantIteraction:=max(significantIteraction),by=.(exposure,outcome)]
+    
     graphing[,effect:=factor(effect,levels=c("Increases","None","Decreases"))]
     RAWmisc::RecodeDT(graphing,c(
       "c_temperature"="Temperature",
@@ -444,10 +539,12 @@ for(type in c("raw","clean","raw_outbreaks","clean_outbreaks")){
     q <- ggplot(graphing,aes(x=week,y=exposureName,fill=effect))
     q <- q + geom_tile(data=graphing3,alpha=0.0)
     q <- q + geom_tile(alpha=0.6,colour="black")
+    q <- q + geom_text(data=graphing[significantIteraction==0 & season!="Whole year"],label="X")
     q <- q + facet_grid(outcome~season,scales="free")
     q <- q + scale_fill_manual("",values=c("red","gray","blue"))
     q <- q + scale_x_discrete("Weeks lag")
     q <- q + scale_y_discrete("Exposure (continuous)")
+    q <- q + labs(caption="X denotes a non-significant interaction term with season")
     RAWmisc::saveA4(q,filename=file.path(RAWmisc::PROJ$SHARED_TODAY,
                     sprintf("WP10_%s.png",type)))
     
@@ -462,10 +559,11 @@ for(type in c("raw","clean","raw_outbreaks","clean_outbreaks")){
                                      RAWmisc::Format(est-1.96*se),
                                      RAWmisc::Format(est+1.96*se))]
     
-    res[,outcomeSummary:=sprintf("50p=%s, 75p=%s, 95p=%s",
+    res[,outcomeSummary:=sprintf("50p=%s, 75p=%s, 95p=%s, 99p=%s",
                                  RAWmisc::Format(outcome50),
                                  RAWmisc::Format(outcome75),
-                                 RAWmisc::Format(outcome95)
+                                 RAWmisc::Format(outcome95),
+                                 RAWmisc::Format(outcome99)
                                  )]
     
     res[,exposureSummary:=sprintf("%s (%s)",
