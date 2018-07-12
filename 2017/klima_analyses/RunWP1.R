@@ -126,7 +126,7 @@ for(i in c(
   "MPI_CCLM_prec_temp_rain_2071-2100.csv")){
   print(i)
   md <- fread(file.path(RAWmisc::PROJ$RAW,"FutureScenariosAndControlRuns",i))
-  
+  md[,TEMP:=NULL]
   
   
   xtabs(~md$WW.NO)
@@ -135,6 +135,7 @@ for(i in c(
   nrow(md)
   xtabs(~md$nve+md$WW.NO)
   
+  # RUNOFF
   runoffdata <- list()
   for(j in list.files(file.path(RAWmisc::PROJ$RAW,"Runoff_Proj",md$MODEL[1]))){
     tmp <- fread(file.path(RAWmisc::PROJ$RAW,"Runoff_Proj",md$MODEL[1],j))
@@ -150,6 +151,24 @@ for(i in c(
   runoffdata <- rbindlist(runoffdata)
   nrow(md)
   md <- merge(md,runoffdata,by=c("SCENARIO","nve","YEAR","MONTH","DAY"))
+  nrow(md)
+  
+  # TEMP
+  tempdata <- list()
+  for(j in list.files(file.path(RAWmisc::PROJ$RAW,"Tmax_Proj",md$MODEL[1]))){
+    tmp <- fread(file.path(RAWmisc::PROJ$RAW,"Tmax_Proj",md$MODEL[1],j))
+    if(stringr::str_detect(j,"rcp45")){
+      tmp[,SCENARIO:="rcp45"]
+    } else {
+      tmp[,SCENARIO:="rcp85"]
+    }
+    setnames(tmp,c("YEAR","MONTH","DAY","TEMP","SCENARIO"))
+    tmp[,nve:=stringr::str_extract(j,"^[a-zA-Z]*")]
+    tempdata[[j]] <- tmp
+  }
+  tempdata <- rbindlist(tempdata)
+  nrow(md)
+  md <- merge(md,tempdata,by=c("SCENARIO","nve","YEAR","MONTH","DAY"))
   nrow(md)
   
   md[,year := format.Date(sprintf("%s-%s-%s",YEAR,MONTH,DAY),"%G")] #Week-based year, instead of normal year (%Y)
@@ -270,7 +289,8 @@ for(type in c("raw","clean","raw_outbreaks","clean_outbreaks")){
     "Coliform bacteria",
     "E. Coli",
     "Intestinal Enterococci",
-    "Turbidity"
+    "Turbidity",
+    "Colour"
   )]
   
   # Your code starts here
@@ -353,8 +373,9 @@ for(type in c("raw","clean","raw_outbreaks","clean_outbreaks")){
       multiplier[,all_data_predicted_mean_2006_2014:=mean(all_data_predicted_mean_2006_2014,na.rm=T),by=.(simulation)]
 
       pred <- merge(multiplier,percs,by="id")
-      pred[,yearly_adjustment_factor:=(p-predicted_mean_2006_2014+m)/m]
-      pred[m==0,yearly_adjustment_factor:=(p-all_data_predicted_mean_2006_2014+all_data_original_mean)/all_data_original_mean]
+      #pred[,yearly_adjustment_factor:=(p-predicted_mean_2006_2014+m)/m]
+      #pred[m==0,yearly_adjustment_factor:=(p-all_data_predicted_mean_2006_2014+all_data_original_mean)/all_data_original_mean]
+      pred[,yearly_adjustment_factor:=p/predicted_mean_2006_2014]
       
       pred[,modelled_exposure:=exposure]
       
