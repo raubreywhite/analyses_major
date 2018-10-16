@@ -25,6 +25,15 @@ if(.Platform$OS.type=="unix"){
 
 dir.create(file.path(RAWmisc::PROJ$SHARED_TODAY,"waterwork_specific_predictions"))
 
+Bin.int <- function(var,breaks){
+  b1 <- findInterval(var,breaks)
+  b2 <- breaks[b1+1]
+  b1 <- breaks[b1]
+  
+  return((b1+b2)/2)
+}
+Bin <- Vectorize(Bin.int, vectorize.args = "var")
+
 RepeatDataTable <- function(d, n) {
   if ("data.table" %in% class(d)) return(d[rep(seq_len(nrow(d)), n)])
   return(d[rep(seq_len(nrow(d)), n), ])
@@ -224,6 +233,8 @@ md[,simulation:=gsub("2006-2015","",simulation)]
 md[,simulation:=gsub("2071-2100","",simulation)]
 md[,simulation:=paste0(SCENARIO,"-",simulation)]
 
+WP1RES <- list()
+
 for(type in c("raw","clean","raw_outbreaks","clean_outbreaks")){
   if(type=="raw"){
     d <- WP1DataRaw()
@@ -244,7 +255,24 @@ for(type in c("raw","clean","raw_outbreaks","clean_outbreaks")){
   
   
   if(type %in% c("raw","clean")){
-    d <- d[type %in% c("Accredited","Internal")]
+    d <- d[type %in% c("Accredited","Internal") & variable!="Conductivity at 25 degrees"]
+    toPlot <- copy(d[variable %in% c("Coliform bacteria",
+                     "E. Coli",
+                     "Intestinal Enterococci",
+                     "Turbidity",
+                     "Colour")])
+    toPlot[variable!="pH",value:=log(1+value)]
+    toPlot[variable!="pH",variable:=sprintf("log(1+%s)",variable)]
+    
+    toPlot[,cat:=Bin(value,seq(min(value),max(value),length.out=30)),by=variable]
+    toPlot[,num:=.N,by=variable]
+    q <- ggplot(toPlot,aes(x=cat))
+    q <- q + geom_bar(aes(y=..prop..))
+    q <- q + facet_wrap(~variable,scales="free_x")
+    q <- q + scale_x_continuous("Value")
+    q <- q + scale_y_continuous("Proportion",lim=c(0,1))
+    q <- q + theme_gray(16)
+    RAWmisc::saveA4(q,filename=file.path(RAWmisc::PROJ$SHARED_TODAY,sprintf("descriptives_%s.png",type)),landscape=T)
     
     d[,seasonchar:=as.character(season)]
     RAWmisc::RecodeDT(d,c(
@@ -257,12 +285,7 @@ for(type in c("raw","clean","raw_outbreaks","clean_outbreaks")){
     d[,season:=seasonchar]
   
     stack <- data.table(expand.grid(
-      c("temperature0_3","gridRain0_3","gridRunoffStandardised0_3",
-        "temperature0_0","gridRain0_0","gridRunoffStandardised0_0",
-        "temperature1_1","gridRain1_1","gridRunoffStandardised1_1",
-        "temperature2_2","gridRain2_2","gridRunoffStandardised2_2",
-        "temperature3_3","gridRain3_3","gridRunoffStandardised3_3",
-        "temperature4_4","gridRain4_4","gridRunoffStandardised4_4"
+      c("temperature0_3","gridRain0_3","gridRunoffStandardised0_3"
         ),
       c("c"),
       unique(d$variable),
@@ -285,13 +308,20 @@ for(type in c("raw","clean","raw_outbreaks","clean_outbreaks")){
     setnames(stack,c("exposure","watervariable","season","age"))
   }
   
-  stack <- stack[watervariable%in% c(
-    "Coliform bacteria",
-    "E. Coli",
-    "Intestinal Enterococci",
-    "Turbidity",
-    "Colour"
-  )]
+  if(type %in% c("raw","raw_outbreaks")){
+    stack <- stack[watervariable%in% c(
+      "Coliform bacteria",
+      "E. Coli",
+      "Intestinal Enterococci",
+      "Turbidity",
+      "Colour"
+    )]
+  } else {
+    stack <- stack[watervariable%in% c(
+      "Turbidity",
+      "Colour"
+    )]
+  }
   
   # Your code starts here
   #stackIter <- stack[35]
@@ -529,46 +559,48 @@ for(type in c("raw","clean","raw_outbreaks","clean_outbreaks")){
     
   }
  
+  WP1RES[[type]] <- copy(res)
+  WP1RES[[type]][,typex:=type]
   if(type %in% c("raw","clean")){ 
     # graph
-    graphing <- res[!stringr::str_detect(exposure,"0_3")]
-    graphing[,week:=stringr::str_extract(exposure,"[0-9]$")]
-    graphing[,exposureName:=stringr::str_extract(exposure,"[a-zA-Z_]*")]
-    graphing[,effect:="None"]
-    graphing[pval<0.05/.N & est<0,effect:="Decreases"]
-    graphing[pval<0.05/.N & est>0,effect:="Increases"]
-    graphing[,significantIteraction:=0]
-    graphing[interactionPvalSeason<0.05,significantIteraction:=1]
-    graphing[,significantIteraction:=max(significantIteraction),by=.(exposure,outcome)]
-    
-    graphing[,effect:=factor(effect,levels=c("Increases","None","Decreases"))]
-    RAWmisc::RecodeDT(graphing,c(
-      "c_temperature"="Temperature",
-      "c_gridRunoffStandardised"="Runoff",
-      "c_gridRain"="Rain"
-    ),"exposureName")
-    graphing[,season:=factor(season,levels=c(
-      "Whole year","Winter","Spring","Summer","Autumn"
-    ))]
-    RAWmisc::RecodeDT(graphing,c(
-      "Intestinal Enterococci"="Intestinal\nEnterococci"
-    ),"outcome")
-    graphing3 <- graphing[1:3]
-    graphing3[1,effect:="Increases"]
-    graphing3[2,effect:="None"]
-    graphing3[3,effect:="Decreases"]
-    q <- ggplot(graphing,aes(x=week,y=exposureName,fill=effect))
-    q <- q + geom_tile(data=graphing3,alpha=0.0)
-    q <- q + geom_tile(alpha=0.6,colour="black")
-    q <- q + geom_text(data=graphing[significantIteraction==0 & season!="Whole year"],label="X")
-    q <- q + facet_grid(outcome~season,scales="free")
-    q <- q + scale_fill_manual("",values=c("red","gray","blue"))
-    q <- q + scale_x_discrete("Weeks lag")
-    q <- q + scale_y_discrete("Exposure (continuous)")
-    q <- q + labs(caption="X denotes a non-significant interaction term with season")
-    RAWmisc::saveA4(q,filename=file.path(RAWmisc::PROJ$SHARED_TODAY,
-                    sprintf("WP10_%s.png",type)))
-    
+    # graphing <- res[!stringr::str_detect(exposure,"0_3")]
+    # graphing[,week:=stringr::str_extract(exposure,"[0-9]$")]
+    # graphing[,exposureName:=stringr::str_extract(exposure,"[a-zA-Z_]*")]
+    # graphing[,effect:="None"]
+    # graphing[pval<0.05/.N & est<0,effect:="Decreases"]
+    # graphing[pval<0.05/.N & est>0,effect:="Increases"]
+    # graphing[,significantIteraction:=0]
+    # graphing[interactionPvalSeason<0.05,significantIteraction:=1]
+    # graphing[,significantIteraction:=max(significantIteraction),by=.(exposure,outcome)]
+    # 
+    # graphing[,effect:=factor(effect,levels=c("Increases","None","Decreases"))]
+    # RAWmisc::RecodeDT(graphing,c(
+    #   "c_temperature"="Temperature",
+    #   "c_gridRunoffStandardised"="Runoff",
+    #   "c_gridRain"="Rain"
+    # ),"exposureName")
+    # graphing[,season:=factor(season,levels=c(
+    #   "Whole year","Winter","Spring","Summer","Autumn"
+    # ))]
+    # RAWmisc::RecodeDT(graphing,c(
+    #   "Intestinal Enterococci"="Intestinal\nEnterococci"
+    # ),"outcome")
+    # graphing3 <- graphing[1:3]
+    # graphing3[1,effect:="Increases"]
+    # graphing3[2,effect:="None"]
+    # graphing3[3,effect:="Decreases"]
+    # q <- ggplot(graphing,aes(x=week,y=exposureName,fill=effect))
+    # q <- q + geom_tile(data=graphing3,alpha=0.0)
+    # q <- q + geom_tile(alpha=0.6,colour="black")
+    # q <- q + geom_text(data=graphing[significantIteraction==0 & season!="Whole year"],label="X")
+    # q <- q + facet_grid(outcome~season,scales="free")
+    # q <- q + scale_fill_manual("",values=c("red","gray","blue"))
+    # q <- q + scale_x_discrete("Weeks lag")
+    # q <- q + scale_y_discrete("Exposure (continuous)")
+    # q <- q + labs(caption="X denotes a non-significant interaction term with season")
+    # RAWmisc::saveA4(q,filename=file.path(RAWmisc::PROJ$SHARED_TODAY,
+    #                 sprintf("WP10_%s.png",type)))
+    # 
     # table
     res <- res[stringr::str_detect(exposure,"0_3")]
     res[,effect:=sprintf("%s%% (%s%%, %s%%)",
@@ -667,6 +699,80 @@ for(type in c("raw","clean","raw_outbreaks","clean_outbreaks")){
   }
   
 }
+
+r <- rbindlist(WP1RES,fill=T)
+r[,pvalBonf:=pval*.N,by=typex]
+r[,category:="Not significant"]
+r[pvalBonf<0.05 & est>0,category:="Increases"]
+r[pvalBonf<0.05 & est<0,category:="Decreases"]
+r[,category:=factor(category,levels=c("Decreases","Not significant","Increases"))]
+
+#r <- r[is.na(age) | age=="Totalt"]
+#r <- r[season=="Whole year"]
+r[,canAnalyseSeason:=ifelse(interactionPvalSeason<0.05,1,0)]
+r[,canAnalyseAge:=ifelse(interactionPvalAge<0.05,1,0)]
+
+r[,canAnalyseSeason:=max(canAnalyseSeason,na.rm=T),by=.(typex,exposure,outcome)]
+r[,canAnalyseAge:=max(canAnalyseAge,na.rm=T),by=.(typex,exposure,outcome)]
+
+r[season=="Whole year" & age=="Totalt",canAnalyseSeason:=1]
+r[season=="Whole year" & age=="Totalt",canAnalyseAge:=1]
+
+r[season=="Whole year" & is.na(age),canAnalyseSeason:=1]
+r[season=="Whole year" & is.na(age),canAnalyseAge:=1]
+
+r[season=="Whole year" & canAnalyseAge==1,canAnalyseSeason:=1]
+r[canAnalyseSeason==1 & age=="Totalt",canAnalyseAge:=1]
+
+r[is.na(age),canAnalyseAge:=1]
+
+r[typex=="raw"]
+
+
+RAWmisc::RecodeDT(r,switch=c(
+  "clean"="Climate predicting\nclean water quality",
+  "clean_outbreaks"="Clean water quality\npredicting outbreaks",
+  "raw"="Climate predicting\nraw water quality",
+  "raw_outbreaks"="Raw water quality\npredicting outbreaks"
+),"typex")
+
+r[,typex:=factor(typex,levels=c(
+  "Climate predicting\nraw water quality",
+  "Climate predicting\nclean water quality",
+  "Raw water quality\npredicting outbreaks",
+  "Clean water quality\npredicting outbreaks"
+))]
+
+RAWmisc::RecodeDT(r,switch=c(
+  "c_gridRain0_3"="Rain",
+  "c_gridRunoffStandardised0_3"="Runoff",
+  "c_temperature0_3"="Temperature"
+),"exposure")
+
+r[,season:=factor(season,levels=c("Whole year","Winter","Spring","Summer","Autumn"))]
+r[,age:=factor(age,levels=c("Totalt","0-4","5-14","15-64","65+"))]
+setattr(r$age,"levels",c("Total","0-4","5-14","15-64","65+"))
+setorder(r,outcome,season,age)
+
+r[,newOutcome:=as.character(NA)]
+r[!is.na(age) & !is.na(season) & is.na(newOutcome),newOutcome:=sprintf("%s - %s - %s",outcome,season,age)]
+r[!is.na(season) & is.na(newOutcome),newOutcome:=sprintf("%s - %s",outcome,season)]
+r[is.na(newOutcome),newOutcome:=sprintf("%s",outcome)]
+
+r[,newOutcome:=factor(newOutcome,levels=rev(unique(r$newOutcome)))]
+
+q <- ggplot(r[canAnalyseSeason==1 & canAnalyseAge==1],aes(x=exposure,y=newOutcome,fill=category))
+q <- q + geom_tile(alpha=0.7,colour="black")
+q <- q + facet_wrap(~typex,scales="free")
+q <- q + scale_fill_brewer("",drop=F,palette="Set1")
+q <- q + scale_x_discrete("")
+q <- q + scale_y_discrete("")
+q <- q + guides(fill = guide_legend(reverse=T))
+q <- q + theme_gray(12)
+q <- q + theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust=0.5))
+q <- q + theme(legend.position="bottom")
+q <- q + labs(caption="Exposure on x-axis, outcome on y-axis")
+RAWmisc::saveA4(q,filename=file.path(RAWmisc::PROJ$SHARED_TODAY,"WP1.png"),landscape=F)
 
 RAWmisc::SaveProject()
 

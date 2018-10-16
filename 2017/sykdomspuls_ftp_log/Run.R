@@ -1,27 +1,5 @@
-if(.Platform$OS.type=="unix"){
-  RAWmisc::UseRClone()
-  RAWmisc::AllowFileManipulationFromInitialiseProject()
-  
-  if(dir.exists("/dropbox")){
-    SHARED <- "/dropbox/analyses/results_shared/code_major/2017/sykdomspuls_ftp_log"
-    RCLONE_SHARED <- NULL
-  } else {
-    SHARED <- "/tmp/results_shared/code_major/2017/sykdomspuls_ftp_log/"
-    RCLONE_SHARED <- "data:/analyses/results_shared/code_major/2017/sykdomspuls_ftp_log/"
-  }
-  
-  RAWmisc::InitialiseProject(
-    HOME = "/git/code_major/2017/sykdomspuls_ftp_log/",
-    RAW = "/tmp/data_raw/code_major/2017/sykdomspuls_ftp_log/",
-    CLEAN = "/tmp/data_clean/code_major/2017/sykdomspuls_ftp_log",
-    BAKED = "/tmp/results_baked/code_major/2017/sykdomspuls_ftp_log/",
-    FINAL = "/tmp/results_final/code_major/2017/sykdomspuls_ftp_log/",
-    SHARED = SHARED,
-    RCLONE_RAW = "crypt:/data_raw/code_major/2017/sykdomspuls_ftp_log/",
-    RCLONE_SHARED = RCLONE_SHARED
-  )
-}
 
+RAWmisc::InitialiseOpinionatedUnix("code_major/2017/sykdomspuls_ftp_log")
 
 
 

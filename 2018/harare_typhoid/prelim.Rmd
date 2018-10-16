@@ -1,0 +1,85 @@
+---
+title: "Borehole usage in Harare"
+author: "Richard White"
+output:
+  pdf_document:
+    fig_width: 6
+    fig_height: 5
+header-includes:
+  - \usepackage{caption}
+  - \captionsetup[figure]{labelformat=empty}
+  - \usepackage{floatrow}
+  - \floatsetup[figure]{capposition=top}
+  - \makeatletter\renewcommand*{\fps@figure}{H}\makeatother
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE, message=FALSE, warning=FALSE}
+RAWmisc::InitialiseOpinionatedUnix("code_major/2018/harare_typhoid")
+library(data.table)
+library(ggplot2)
+library(captioner)
+
+BASE_SIZE <- 10
+
+fig_nums <- captioner()
+
+d <- data.table(readxl::read_excel(file.path(RAWmisc::PROJ$RAW,"zwe_budiriro_glenview_mbare_kuwadzana_typhoid_PHS_DB_v2_MG.xlsx")))
+
+setnames(d,"birds_eye distance","birds_eye")
+
+d[,used_borehole_distance:=cut(birds_eye,
+                               breaks = c(0,250,500,750,1000,9999),
+                               labels = c("0-250m","251-500m","501-750m","751-1000m","1001m+"))]
+d[,used_closest_borehole:=ifelse(birds_eye==distance_to_closest,"Used closest borehole", "Used other borehole")]
+```
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+toPlot <- d[!is.na(used_closest_borehole),.(n=.N),keyby=.(used_closest_borehole)]
+toPlot[,denom:=sum(n)]
+toPlot[,perc:=RAWmisc::Format(n/denom*100,digits=0)]
+```
+
+We observe that `r toPlot[used_closest_borehole=="Used closest borehole"]$perc`% people use the borehole that is closest to them (`r fig_nums("used_closest_borehole", display="cite")`). This leads us to conclude that assigning people to the borehole closest to their home is most likely not appropriate.
+
+```{r echo=FALSE, fig.cap=fig_nums("used_closest_borehole", "Proportion of people using the borehole that is closest to their home."), message=FALSE, warning=FALSE}
+
+toPlot <- d[!is.na(used_closest_borehole),.(n=.N),keyby=.(used_closest_borehole)]
+toPlot[,denom:=sum(n)]
+
+q <- ggplot(toPlot,aes(x=used_closest_borehole,y=n/denom))
+q <- q + geom_bar(stat="identity",alpha=0.7)
+q <- q + scale_x_discrete("Used closest borehole")
+q <- q + scale_y_continuous("Proportion")
+q <- q + expand_limits(y=1)
+q <- q + theme_gray(base_size=BASE_SIZE)
+q
+```
+
+\newpage
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+toPlot <- d[!is.na(used_borehole_distance),.(n=.N),keyby=.(used_borehole_distance)]
+toPlot[,denom:=sum(n)]
+toPlot[,csum:=cumsum(n)]
+toPlot[,previous_data:=csum-n]
+toPlot[,perc:=RAWmisc::Format(csum/denom*100,digits=0)]
+```
+
+We then observe that `r toPlot[used_borehole_distance=="251-500m"]$perc`% people use a borehole within 500m of their home (`r fig_nums("used_borehole_distance", display = "cite")`). We can therefore conclude that people tend to use boreholes relatively close to their homes. It might therefore be possible to group people in neighborhoods and observe if some neighborhoods have higher or lower typhoid than expected.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.cap=fig_nums("used_borehole_distance", "Proportion of people using a borehole within a certain distance of their home.")}
+
+toPlot <- melt.data.table(toPlot,id.vars=c("used_borehole_distance","denom"), measure.vars=c("n","previous_data"))
+levels(toPlot$variable) <- c("Current category","Previous categories")
+
+q <- ggplot(toPlot,aes(x=used_borehole_distance,y=value/denom,fill=variable))
+q <- q + geom_bar(stat="identity",alpha=0.7)
+q <- q + scale_x_discrete("Distance from home to used borehole")
+q <- q + scale_y_continuous("Cumulative proportion")
+q <- q + scale_fill_brewer("",palette="Set2", direction=-1)
+q <- q + theme_gray(base_size=BASE_SIZE)
+q
+```

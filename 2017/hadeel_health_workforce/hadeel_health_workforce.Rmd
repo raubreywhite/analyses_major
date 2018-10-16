@@ -7,6 +7,7 @@ output:
 params:
   EXTRA_8000: TRUE
   REMOVE_1000: TRUE
+  CW00_AND_CW06: TRUE
 editor_options: 
   chunk_output_type: console
 ---
@@ -31,10 +32,34 @@ library(ggplot2)
 if(!exists("params")){
   EXTRA_8000 <<- TRUE
   REMOVE_1000 <<- TRUE
+  CW00_AND_CW06 <<- TRUE
 } else {
   EXTRA_8000 <<- params$EXTRA_8000
   REMOVE_1000 <<- params$REMOVE_1000
+  CW00_AND_CW06 <<- params$CW00_AND_CW06
 }
+
+if(!EXTRA_8000 & !REMOVE_1000){
+  extraDir <- "without8000_NOTremoving1000"
+} else if(!EXTRA_8000 & REMOVE_1000){
+  extraDir <- "without8000_removing1000"
+} else if(EXTRA_8000 & !REMOVE_1000){
+  extraDir <- "with8000_NOTremoving1000"
+} else if(EXTRA_8000 & REMOVE_1000){
+  extraDir <- "with8000_removing1000"
+}
+
+if(CW00_AND_CW06){
+  extraDir <- file.path(extraDir,"CW00_AND_CW06")
+} else {
+  extraDir <- file.path(extraDir,"CW00")
+}
+
+SHARED_TODAY <- file.path(RAWmisc::PROJ$SHARED_TODAY,extraDir)
+
+dCountryCodes <- readxl::read_excel(file.path(
+    RAWmisc::PROJ$RAW,"county_codes.xlsx"))
+  setnames(dCountryCodes,c("english","x","ED03D","x2"))
 
 jordanValley <- readxl::read_excel(file.path(RAWmisc::PROJ$RAW,
                                              "Jordan valley villages (OCHA).xlsx"))
@@ -62,7 +87,35 @@ updatedCW00x <- updatedCW00x[!duplicated(updatedCW00x$HR01)]
 nrow(updatedCW00x)
 setnames(updatedCW00x,"CW00","updated_CW00")
 
-updatedCW00 <- unique(rbind(updatedCW00,updatedCW00x))
+updatedCW00xx <- data.table(readxl::read_excel(file.path(RAWmisc::PROJ$RAW,
+                                    "data_richard",
+                                    "2018-08-23_missing_CW00.xlsx")))
+updatedCW00xx <- na.omit(updatedCW00xx[,c("HR01","CW00")])
+nrow(updatedCW00xx)
+updatedCW00xx <- updatedCW00xx[!duplicated(updatedCW00xx$HR01)]
+nrow(updatedCW00xx)
+setnames(updatedCW00xx,"CW00","updated_CW00")
+
+updatedCW00xxx <- data.table(readxl::read_excel(file.path(RAWmisc::PROJ$RAW,
+                                    "data_richard",
+                                    "2018-09-11_missing_CW00_updated.xlsx")))
+updatedCW00xxx <- na.omit(updatedCW00xxx[,c("HR01","CW00")])
+nrow(updatedCW00xxx)
+updatedCW00xxx <- updatedCW00xxx[!duplicated(updatedCW00xxx$HR01)]
+nrow(updatedCW00xxx)
+setnames(updatedCW00xxx,"CW00","updated_CW00")
+
+updatedCW00 <- rbind(updatedCW00,updatedCW00x,updatedCW00xx,updatedCW00xxx)
+nrow(updatedCW00)
+updatedCW00 <- updatedCW00[updated_CW00!=""]
+nrow(updatedCW00)
+updatedCW00 <- unique(updatedCW00)
+nrow(updatedCW00)
+updatedCW00[,n:=1:.N,by=HR01]
+updatedCW00 <- updatedCW00[n==1]
+nrow(updatedCW00)
+updatedCW00[,n:=NULL]
+#updatedCW00$HR01 <- as.character(updatedCW00$HR01)
 
 # adding a list of GPs
 listOfGPs <- data.table(readxl::read_excel(file.path(RAWmisc::PROJ$RAW,
@@ -111,10 +164,11 @@ d4 <- readxl::read_excel(file.path(
   "Data collected by PNIPH - WB 2nd phase",
   "FACILITY_MAIN_WB-second phase-final-Richard.xlsx"))
 
-d5 <- haven::read_spss(file.path(
+d5 <- readxl::read_excel(file.path(
   RAWmisc::PROJ$RAW,
   "New 8,000 records for data importing-received from Fayez",
-  "facility_main (12).sav"))
+  "Copy of facility_main.xlsx"))
+d5$IDH00 <- as.numeric(d5$IDH00)
 
 dUNRWA <- readxl::read_excel(file.path(
   RAWmisc::PROJ$RAW,
@@ -146,7 +200,7 @@ setorder(dFacilities,IDH00)
 duplicateFacilities <- dFacilities[NUMDUP>1,
                                    c("IDH00","IDH01","IDH03","IS04","IDH02")]
 openxlsx::write.xlsx(duplicateFacilities,
-                     file.path(RAWmisc::PROJ$SHARED_TODAY,"dupliated_facilities.xlsx"))
+                     file.path(SHARED_TODAY,"dupliated_facilities.xlsx"))
 
 
 # Remove duplicated facilities
@@ -223,6 +277,9 @@ d4 <- readxl::read_excel(file.path(RAWmisc::PROJ$RAW,
 dxxx2 <- d5 <- haven::read_spss(file.path(RAWmisc::PROJ$RAW,
                                     "New 8,000 records for data importing-received from Fayez",
                                     "worker_main (6).sav"))
+d6 <- readxl::read_excel(file.path(RAWmisc::PROJ$RAW,
+                                   "data_richard",
+                                   "MoH West Bank records  - missing from system.xlsx"))
 
 dUNRWA <- readxl::read_excel(file.path(
   RAWmisc::PROJ$RAW,
@@ -234,14 +291,17 @@ d2 <- d2[,names(d1)]
 d3 <- d3[,names(d1)]
 d4 <- d4[,names(d1)]
 d5 <- d5[,names(d1)]
+n <- names(d6)[names(d6) %in% names(d1)]
+d6 <- d6[,n]
+d6$HR01 <- as.numeric(d6$HR01)
 dUNRWA <- dUNRWA[,names(d1)]
 
 NAMES_OF_WORKERS_FILE <- names(d1)
 
 if(EXTRA_8000){
-  dWorkers <- data.table(rbind(d1,d2,d3,d4,d5,dUNRWA))
+  dWorkers <- rbindlist(list(d1,d2,d3,d4,d5,d6,dUNRWA),fill=T)
 } else {
-  dWorkers <- data.table(rbind(d1,d2,d3,d4,dUNRWA))
+  dWorkers <- rbindlist(list(d1,d2,d3,d4,d6,dUNRWA),fill=T)
 }
 dWorkers[,IDH03:=as.numeric(IDH03)]
 dWorkers[IDH03==100750,IDH03:=100570]
@@ -254,6 +314,9 @@ if(REMOVE_1000){
   dWorkers <- dWorkers[!HR01 %in% TO_REMOVE]
   nrow(dWorkers)
 }
+
+dWorkers[CW00=="",CW00:=NA]
+dWorkers[CW06=="",CW06:=NA]
 
 # workers from system
 workersFromSystem <- data.table(readxl::read_excel(file.path(RAWmisc::PROJ$RAW,
@@ -268,14 +331,18 @@ setnames(x2,c("HR01","n_system"))
 x <- merge(x1,x2,by="HR01",all=T)
 x[is.na(n_system),n_system:=0]
 x[is.na(n_richard),n_richard:=0]
-openxlsx::write.xlsx(x[n_richard!=n_system],file.path(RAWmisc::PROJ$SHARED_TODAY,"HR01_discrepancies.xlsx"))
+openxlsx::write.xlsx(x[n_richard!=n_system],file.path(SHARED_TODAY,"HR01_discrepancies.xlsx"))
 
 # updating CW00 when available, from hadeel
 nrow(dWorkers)
 dWorkers <- merge(dWorkers,updatedCW00,by="HR01",all.x=T)
 nrow(dWorkers)
-dWorkers[is.na(CW00) & !is.na(updated_CW00),CW00:=updated_CW00]
+sum(is.na(dWorkers$CW00))
+dWorkers[is.na(CW00) & !is.na(updated_CW00) & updated_CW00!="",CW00:=updated_CW00]
+sum(is.na(dWorkers$CW00))
 dWorkers[,updated_CW00:=NULL]
+
+#xtabs(~dWorkers[HR01 %in% updatedCW00$HR01]$CW00,addNA=T)
 
 # if workers have CW00 for one of their jobs, and are missing another, then assign that
 updatedCW00 <- unique(na.omit(dWorkers[,c("HR01","CW00")]))
@@ -327,6 +394,16 @@ nrow(dWorkers)
 dWorkers[!is.na(new_HR03),HR03:=new_HR03]
 dWorkers[,new_HR03:=NULL]
 
+# correcting ages that were wrong over two documents (round 2)
+changeHR03 <- data.table(readxl::read_excel(file.path(RAWmisc::PROJ$RAW,"data_richard","2018-09-12_conflicing_ages_overwrite.xlsx")))
+
+setnames(changeHR03,"HR03","new_HR03")
+nrow(dWorkers)
+dWorkers <- merge(dWorkers,changeHR03,by=c("HR01"),all.x=T)
+nrow(dWorkers)
+dWorkers[!is.na(new_HR03),HR03:=new_HR03]
+dWorkers[,new_HR03:=NULL]
+
 # fixing some missing ages, and identifying ages that aren't consistent
 dWorkers[,numAgesNotMissing:=length(na.omit(unique(HR03))),by=HR01]
 xtabs(~dWorkers$numAgesNotMissing)
@@ -334,7 +411,7 @@ dWorkers[numAgesNotMissing==1,HR03:=mean(HR03,na.rm=T),by=HR01]
 dWorkers[,numAgesNotMissing:=length(na.omit(unique(HR03))),by=HR01]
 xtabs(~dWorkers$numAgesNotMissing)
 
-openxlsx::write.xlsx(dWorkers[numAgesNotMissing>1,c("HR01","HR03")],file.path(RAWmisc::PROJ$SHARED_TODAY,"conflicing_ages.xlsx"))
+openxlsx::write.xlsx(dWorkers[numAgesNotMissing>1,c("HR01","HR03")],file.path(SHARED_TODAY,"conflicing_ages.xlsx"))
 
 # updating genders by their names
 dGender <- data.table(readxl::read_excel(file.path(RAWmisc::PROJ$RAW,
@@ -428,7 +505,7 @@ sum(is.na(dWorkers$HR02)) #26
 
 namesIDGender <- unique(dWorkers[,c("HR00","HR01","HR02")])
 namesIDGender <- namesIDGender[,.(N=.N),by=.(HR00,HR01)]
-openxlsx::write.xlsx(namesIDGender[N>1],file.path(RAWmisc::PROJ$SHARED_TODAY,"two_genders_same_name.xlsx"))
+openxlsx::write.xlsx(namesIDGender[N>1],file.path(SHARED_TODAY,"two_genders_same_name.xlsx"))
 
 # update old workers facilities data with new facilities data
 xtabs(~updatedFacilitiesList$IDH01)
@@ -626,6 +703,16 @@ sum(is.na(dWorkers$CW00) & !is.na(dWorkers$CW06))
 
 professionVarsBOTH <- paste0("BOTH_",professionVars)
 
+# if CW00_AND_CW06==TRUE then copy professionVarsBOTH values into professionVars
+if(CW00_AND_CW06){
+  for(i in 1:length(professionVars)){
+    dWorkers[,(professionVars[i]):=get(professionVarsBOTH[i])]
+  }
+}
+
+#### all midwifes must be female
+dWorkers[BOTH_isProf_Midwife==1,HR02:=2]
+
 # Remove east jerusalem non-hospitals
 #badFacilities <- dFacilities[
 #  IDH03 %in% c(dLocation[district=="East Jerusalem (J1)"]$localityCode) &
@@ -651,17 +738,67 @@ PrintTableNPerc <- function(d){
   cat(sprintf("Percentage indicator: %s%%\n", RAWmisc::Format(mean(d$numerator*100,na.rm=T),1)))
 }
 
-cat(dFacilities$IDH00[duplicated(dFacilities$IDH00)],file=file.path(RAWmisc::PROJ$SHARED_TODAY,"DUPLICATED_FACILITY_IDH00_NUMBERS.txt"))
+cat(dFacilities$IDH00[duplicated(dFacilities$IDH00)],file=file.path(SHARED_TODAY,"DUPLICATED_FACILITY_IDH00_NUMBERS.txt"))
 
 # SAVING FILES
-openxlsx::write.xlsx(dFacilities,file.path(RAWmisc::PROJ$SHARED_TODAY,"dFacilities.xlsx"))
-openxlsx::write.xlsx(dWorkers,file.path(RAWmisc::PROJ$SHARED_TODAY,"dWorkers.xlsx"))
+openxlsx::write.xlsx(dFacilities,file.path(SHARED_TODAY,"dFacilities.xlsx"))
+openxlsx::write.xlsx(dWorkers,file.path(SHARED_TODAY,"dWorkers.xlsx"))
+
+
+# 
+d1 <- readxl::read_excel(file.path(RAWmisc::PROJ$RAW,
+                                    "Data collected by PCBS - Gaza 1st phase",
+                                    "Gaza Phase I - After auditing by Fayez",
+                                    "WORKERS_ED03 (1).xlsx"))
+
+d2 <- readxl::read_excel(file.path(RAWmisc::PROJ$RAW,
+                                    "Data collected by PCBS - WB 1st phase",
+                                    "WB - Phase I",
+                                    "WORKERS_ED03 WB.xlsx"))
+
+d3 <- readxl::read_excel(file.path(
+  RAWmisc::PROJ$RAW,
+  "Data collected by PNIPH - Gaza 2nd phase",
+  "WORKERS_ED03_GAZA-2nd phase-final.xlsx"))
+
+d4 <- readxl::read_excel(file.path(
+  RAWmisc::PROJ$RAW,
+  "Data collected by PNIPH - WB 2nd phase",
+  "WORKERS_ED03_WB-final-2nd phase.xlsx"))
+
+d5 <- haven::read_spss(file.path(
+  RAWmisc::PROJ$RAW,
+  "New 8,000 records for data importing-received from Fayez",
+  "worker_ed03 (4).sav"))
+
+dUNRWA <- readxl::read_excel(file.path(
+  RAWmisc::PROJ$RAW,
+  "New UNRWA West Bank employees",
+  "WORKER_ED03.xlsx"))
+
+if(EXTRA_8000){
+  masterdED03 <- dED03 <- data.table(rbind(d1,d2,d3[names(d1)],d4[names(d1)],d5[names(d1)],dUNRWA[names(d1)]))
+} else {
+  masterdED03 <- dED03 <- data.table(rbind(d1,d2,d3[names(d1)],d4[names(d1)],dUNRWA[names(d1)]))
+}
 ```
 
 ```{r, warning=FALSE}
 nrow(dFacilities)
 nrow(dWorkers)
 ```
+
+## MISSING FACILITIES
+
+```{r, warning=FALSE}
+openxlsx::write.xlsx(unique(dFacilities[!IDH00 %in% unique(dWorkers$IDH00),c("IDH00","IDH02")]),
+                     file.path(SHARED_TODAY,"not_connected_IDH00_from_facilities.xlsx"))
+
+openxlsx::write.xlsx(unique(dWorkers[!IDH00 %in% unique(dFacilities$IDH00),c("IDH00")]),
+                     file.path(SHARED_TODAY,"not_connected_IDH00_from_workers.xlsx"))
+
+```
+
 
 ## FINDING HR01==999999999
 
@@ -675,7 +812,7 @@ nrow(missingHR01)
 missingHR01 <- merge(missingHR01,dLoc,by="IDH03",all.x=T)
 nrow(missingHR01)
 
-openxlsx::write.xlsx(missingHR01,file.path(RAWmisc::PROJ$SHARED_TODAY,"missing_HR01.xlsx"))
+openxlsx::write.xlsx(missingHR01,file.path(SHARED_TODAY,"missing_HR01.xlsx"))
 ```
 
 ## Multiple names, same ID number
@@ -693,7 +830,7 @@ missingHR01 <- merge(missingHR01,dLoc,by="IDH03",all.x=T)
 nrow(missingHR01)
 setorder(missingHR01,HR01, HR00)
 
-openxlsx::write.xlsx(missingHR01,file.path(RAWmisc::PROJ$SHARED_TODAY,"multiple_names_same_hr01.xlsx"))
+openxlsx::write.xlsx(missingHR01,file.path(SHARED_TODAY,"multiple_names_same_hr01.xlsx"))
 ```
 
 ## MISSING CW00 OR CW06
@@ -710,7 +847,7 @@ nrow(missingCW)
 missingCW <- merge(missingCW,dLoc,by="IDH03",all.x=T)
 nrow(missingCW)
 
-openxlsx::write.xlsx(missingCW,file.path(RAWmisc::PROJ$SHARED_TODAY,"missing_CW00.xlsx"))
+openxlsx::write.xlsx(missingCW,file.path(SHARED_TODAY,"missing_CW00.xlsx"))
 ```
 
 
@@ -719,7 +856,7 @@ openxlsx::write.xlsx(missingCW,file.path(RAWmisc::PROJ$SHARED_TODAY,"missing_CW0
 ```{r, warning=FALSE}
 missingGender <- dWorkers[is.na(HR02),
                           c("HR00","HR01")]
-openxlsx::write.xlsx(missingGender,file.path(RAWmisc::PROJ$SHARED_TODAY,"missing_gender.xlsx"))
+openxlsx::write.xlsx(missingGender,file.path(SHARED_TODAY,"missing_gender.xlsx"))
 ```
 
 
@@ -729,12 +866,12 @@ openxlsx::write.xlsx(missingGender,file.path(RAWmisc::PROJ$SHARED_TODAY,"missing
 areaC <- dFacilities[RE02==1,
                            c("IDH00","IDH01","IDH02","IDH03","IS06","IS04","facilitySector","RE01","RE02")]
 
-openxlsx::write.xlsx(areaC,file.path(RAWmisc::PROJ$SHARED_TODAY,"facilities_areaC.xlsx"))
+openxlsx::write.xlsx(areaC,file.path(SHARED_TODAY,"facilities_areaC.xlsx"))
 
 jordanvalley <- dFacilities[isJordanValley==1,
                            c("IDH00","IDH01","IDH02","IDH03","IS06","IS04","facilitySector","RE01","RE02")]
 
-openxlsx::write.xlsx(jordanvalley,file.path(RAWmisc::PROJ$SHARED_TODAY,"facilities_jordan_valley.xlsx"))
+openxlsx::write.xlsx(jordanvalley,file.path(SHARED_TODAY,"facilities_jordan_valley.xlsx"))
 ```
 
 ## VALIDATING IDHs in WORKERS TO IDHs in FACILITIES
@@ -759,7 +896,7 @@ xtabs(~d$localityMatch, addNA = T)
 sum(is.na(dW$IDH02_W_dist))
 sum(is.na(dF$IDH01_F_dist))
 
-openxlsx::write.xlsx(d[,c("IDH00","IDH02_W_dist","IDH03_W_loc","IDH01_F_dist","IDH03_F_loc","districtMatch","localityMatch")],file.path(RAWmisc::PROJ$SHARED_TODAY,"VALIDATING IDHs in WORKERS TO IDHs in FACILITIES.xlsx"))
+openxlsx::write.xlsx(d[,c("IDH00","IDH02_W_dist","IDH03_W_loc","IDH01_F_dist","IDH03_F_loc","districtMatch","localityMatch")],file.path(SHARED_TODAY,"VALIDATING IDHs in WORKERS TO IDHs in FACILITIES.xlsx"))
 ```
 
 \newpage
@@ -798,11 +935,11 @@ final[,num:=NULL]
 
 #final[MOH_ONLY=="910435585"]
 
-openxlsx::write.xlsx(final,file.path(RAWmisc::PROJ$SHARED_TODAY,"VALIDATING MoH West Bank official list.xlsx"))
+openxlsx::write.xlsx(final,file.path(SHARED_TODAY,"VALIDATING MoH West Bank official list.xlsx"))
 
-openxlsx::write.xlsx(dWorkers[HR01 %in% final$SYSTEM_ONLY,NAMES_OF_WORKERS_FILE,with=F],file.path(RAWmisc::PROJ$SHARED_TODAY,"VALIDATING MoH West Bank official list_DATASET_THAT_EXISTS_IN_SYSTEM_BUT_NOT_MOH_LIST.xlsx"))
+openxlsx::write.xlsx(dWorkers[HR01 %in% final$SYSTEM_ONLY,NAMES_OF_WORKERS_FILE,with=F],file.path(SHARED_TODAY,"VALIDATING MoH West Bank official list_DATASET_THAT_EXISTS_IN_SYSTEM_BUT_NOT_MOH_LIST.xlsx"))
 
-openxlsx::write.xlsx(dMOHMaster[ID %in% final$MOH_ONLY],file.path(RAWmisc::PROJ$SHARED_TODAY,"VALIDATING MoH West Bank official list_DATASET_THAT_EXISTS_IN_MOH_LIST_BUT_NOT_SYSTEM.xlsx"))
+openxlsx::write.xlsx(dMOHMaster[ID %in% final$MOH_ONLY],file.path(SHARED_TODAY,"VALIDATING MoH West Bank official list_DATASET_THAT_EXISTS_IN_MOH_LIST_BUT_NOT_SYSTEM.xlsx"))
 
 sum(dMOHMaster$ID %in% final$BOTH)
 sum(dMOHMaster$ID %in% final$MOH_ONLY)
@@ -818,7 +955,39 @@ xtabs(~problematic$facilitySector,addNA=T)
 xtabs(~problematic[is.na(facilitySector)]$IDH00,addNA=T)
 #problematic <- dWorkers[HR01 %in% final$MOH_ONLY]
 
+#dMaster[HR01 == 901077099]
 
+```
+
+# Sept 12 2018 Requests
+
+## Possible duplications in two facilities
+
+```{r, warning=FALSE}
+temp <- unique(dWorkers[IDH00 %in% c(1913028, 4500006),c("IDH00","HR01")])
+temp[,exists:="YES"]
+temp <- dcast.data.table(temp,HR01~IDH00)
+
+openxlsx::write.xlsx(temp, file.path(SHARED_TODAY,"workers_IDH00_1913028_4500006.xlsx"))
+```
+
+## Workers in both gaza and wb
+
+```{r, warning=FALSE}
+tempG <- dWorkers[IDH03 %in% dLocation[isGaza==1]$localityCode]
+tempWB <- dWorkers[IDH03 %in% dLocation[isGaza==0]$localityCode]
+
+temp <- tempG[IDH00 %in% tempWB$IDH00,c("IDH00")]
+
+openxlsx::write.xlsx(temp, file.path(SHARED_TODAY,"workers_in_both_gaza_and_wb.xlsx"))
+```
+
+## Facilities missing IDH01 and/or IDH03
+
+```{r, warning=FALSE}
+temp <- dFacilities[is.na(IDH01) | is.na(IDH03)]
+
+openxlsx::write.xlsx(temp, file.path(SHARED_TODAY,"Facilities_missing_IDH01_and_or_IDH03.xlsx"))
 ```
 
 \newpage
@@ -835,7 +1004,7 @@ nrow(dMaster)
 ```
 
 
-### Results BY CW00
+### Results
 
 ```{r message=FALSE, warning=FALSE}
 for(i in unique(dMaster$facilitySector)){
@@ -861,36 +1030,9 @@ for(i in unique(dMaster$facilitySector)){
 }
 ```
 
-### Results BY CW00 AND CW06
-
-```{r message=FALSE, warning=FALSE}
-for(i in unique(dMaster$facilitySector)){
-  if(is.na(i)){
-    d <- dMaster[is.na(facilitySector) & BOTH_isProf_Doctor==1]
-  } else {
-    d <- dMaster[facilitySector==i & BOTH_isProf_Doctor==1]
-  }
-  d[,numerator:=as.numeric(NA)]
-  d[!is.na(SK02),numerator:=0]
-  d[SK02==1,numerator:=1]
-  
-  d <- d[,.(
-    numerator=max(numerator,na.rm=T)
-  ),by=.(
-    HR01
-  )]
-  
-  d[is.infinite(numerator),numerator:=NA]
-  cat(sprintf("***** %s *****\n",i))
-  PrintTableNPerc(d)
-  cat("\n\n")
-}
-```
-
-
 ## Total number of General Practitioners in Palestine, West Bank, Gaza
 
-### Results BY CW00
+### Results
 
 ```{r}
 dWorkers[,isGaza:=as.numeric(NA)]
@@ -915,32 +1057,6 @@ for(i in c("isPalestine","isWB","isGaza")){
 
 ```
 
-### Results BY CW00 AND CW06
-
-```{r}
-dWorkers[,isGaza:=as.numeric(NA)]
-dWorkers[,isWB:=as.numeric(NA)]
-
-dWorkers[,isPalestine:=1]
-dWorkers[IDH03 %in% dLocation[isGaza==1]$localityCode, isGaza:=1]
-dWorkers[IDH03 %in% dLocation[isGaza==0]$localityCode, isWB:=1]
-
-for(i in c("isPalestine","isWB","isGaza")){
-  d <- dWorkers[get(i)==1 & BOTH_isProf_GP==1,.(
-    numerator=1
-  ),by=.(
-    HR01
-  )]
-  
-  d[is.infinite(numerator),numerator:=NA]
-  cat(sprintf("***** %s *****\n",i))
-  PrintTableNPerc(d)
-  cat("\n\n")
-}
-
-```
-
-
 ## Distribution of GPs by sector
 
 ```{r, warning=FALSE}
@@ -951,7 +1067,7 @@ nrow(dMaster)
 ```
 
 
-### Results BY CW00
+### Results
 
 ```{r message=FALSE, warning=FALSE}
 for(i in unique(dMaster$facilitySector)){
@@ -959,29 +1075,6 @@ for(i in unique(dMaster$facilitySector)){
     d <- dMaster[is.na(facilitySector) & isProf_GP==1]
   } else {
     d <- dMaster[facilitySector==i & isProf_GP==1]
-  }
-  
-  d <- d[,.(
-    numerator=1
-  ),by=.(
-    HR01
-  )]
-  
-  d[is.infinite(numerator),numerator:=NA]
-  cat(sprintf("***** %s *****\n",i))
-  PrintTableNPerc(d)
-  cat("\n\n")
-}
-```
-
-### Results BY CW00 AND CW06
-
-```{r message=FALSE, warning=FALSE}
-for(i in unique(dMaster$facilitySector)){
-  if(is.na(i)){
-    d <- dMaster[is.na(facilitySector) & BOTH_isProf_GP==1]
-  } else {
-    d <- dMaster[facilitySector==i & BOTH_isProf_GP==1]
   }
   
   d <- d[,.(
@@ -1011,7 +1104,7 @@ dMaster[!is.na(isHospital) & IS06==9,isHospital:=1]
 ```
 
 
-### Results BY CW00
+### Results
 
 ```{r message=FALSE, warning=FALSE}
 for(j in c("isPalestine","isWB","isGaza")) for(i in unique(dMaster$facilitySector)) {
@@ -1019,34 +1112,6 @@ for(j in c("isPalestine","isWB","isGaza")) for(i in unique(dMaster$facilitySecto
     d <- dMaster[is.na(facilitySector) & isProf_GP==1 & get(j)==1]
   } else {
     d <- dMaster[facilitySector==i & isProf_GP==1 & get(j)==1]
-  }
-  
-  d <- d[,.(
-    numGPsInPHC=max(isPHC,na.rm=T),
-    numGPsInHospitals=max(isHospital,na.rm=T)
-  ),by=.(
-    HR01
-  )]
-  
-  d <- d[,.(
-    numGPsInPHC=sum(numGPsInPHC,na.rm=T),
-    numGPsInHospitals=sum(numGPsInHospitals,na.rm=T)
-  )]
-  
-  cat(sprintf("***** %s %s *****\n",j,i))
-  print(d)
-  cat("\n\n")
-}
-```
-
-### Results BY CW00 AND CW06
-
-```{r message=FALSE, warning=FALSE}
-for(j in c("isPalestine","isWB","isGaza")) for(i in unique(dMaster$facilitySector)) {
-  if(is.na(i)){
-    d <- dMaster[is.na(facilitySector) & BOTH_isProf_GP==1 & get(j)==1]
-  } else {
-    d <- dMaster[facilitySector==i & BOTH_isProf_GP==1 & get(j)==1]
   }
   
   d <- d[,.(
@@ -1076,7 +1141,7 @@ nrow(dMaster)
 ```
 
 
-### Results BY CW00
+### Results
 
 GO TO: "CW00_Total number of specialized doctors by specialty by sector in Palestine, West Bank, Gaza.xlsx"
 
@@ -1099,40 +1164,11 @@ for(i in c("isPalestine","isWB","isGaza")){
          ]
   setorder(d,facilitySector,doctor_specialization)
   openxlsx::write.xlsx(d,
-                       file.path(RAWmisc::PROJ$SHARED_TODAY,sprintf("CW00_%s_Total number of specialized doctors by specialty by sector in Palestine, West Bank, Gaza.xlsx",i)))
-}
-```
-
-### Results BY CW00 AND CW06
-
-GO TO: "CW00_AND_CW06_Total number of specialized doctors by specialty by sector in Palestine, West Bank, Gaza.xlsx"
-
-```{r message=FALSE, warning=FALSE}
-for(i in c("isPalestine","isWB","isGaza")){
-  d <- dMaster[get(i)==1]
-  d <- d[!is.na(BOTHdoctor_specialization),.(
-    numerator=1
-  ),by=.(
-    HR01,
-    facilitySector,
-    doctor_specialization
-  )]
-  d <- d[,
-         .(num=sum(numerator)),
-         by=.(
-           facilitySector,
-           doctor_specialization
-         )
-         ]
-  setorder(d,facilitySector,doctor_specialization)
-  openxlsx::write.xlsx(d,
-                       file.path(RAWmisc::PROJ$SHARED_TODAY,sprintf("CW00_AND_CW06_%s_Total number of specialized doctors by specialty by sector in Palestine, West Bank, Gaza.xlsx",i)))
+                       file.path(SHARED_TODAY,sprintf("%s_Total number of specialized doctors by specialty by sector in Palestine, West Bank, Gaza.xlsx",i)))
 }
 ```
 
 ## Age distribution of General Practitioners in Palestine, West Bank, Gaza
-
-### BY CW00/ BY CW00 and CW06 ("BOTH")
 
 ```{r message=FALSE, warning=FALSE}
 
@@ -1151,7 +1187,7 @@ dWorkers[age>=46 & age<=54,ageCat:="46-54"]
 dWorkers[age>=55 & age<=59,ageCat:="55-59"]
 dWorkers[age>=60,ageCat:="60+"]
 
-for(prof in c("isProf_GP","BOTH_isProf_GP")) for(area in c(
+for(prof in c("isProf_GP")) for(area in c(
     "isPalestine",
     "isGaza",
     "isWB"
@@ -1192,8 +1228,6 @@ for(prof in c("isProf_GP","BOTH_isProf_GP")) for(area in c(
 
 ## Age distribution of General Practitioners by sector in West Bank, Gaza
 
-### BY CW00/ BY CW00 and CW06 ("BOTH")
-
 ```{r, warning=FALSE}
 dMaster <- merge(dWorkers, dFacilities[,c("IDH00","facilitySector")], by="IDH00",all.x=T)
 nrow(dWorkers)
@@ -1202,7 +1236,7 @@ nrow(dMaster)
 
 ```{r message=FALSE, warning=FALSE}
 
-for(prof in c("isProf_GP","BOTH_isProf_GP")) for(sector in unique(dMaster$facilitySector)) for(area in c(
+for(prof in c("isProf_GP")) for(sector in unique(dMaster$facilitySector)) for(area in c(
     "isPalestine",
     "isGaza",
     "isWB"
@@ -1245,8 +1279,6 @@ for(prof in c("isProf_GP","BOTH_isProf_GP")) for(sector in unique(dMaster$facili
 
 ## Gender distribution of GPs in Palestine, West Bank, Gaza
 
-### BY CW00/ BY CW00 and CW06 ("BOTH")
-
 ```{r message=FALSE, warning=FALSE}
 
 dWorkers[,isGaza:=as.numeric(NA)]
@@ -1258,7 +1290,7 @@ dWorkers[IDH03 %in% dLocation[isGaza==0]$localityCode, isWB:=1]
 
 dWorkers[,isFemale:=HR02-1]
 
-for(prof in c("isProf_GP","BOTH_isProf_GP")) for(area in c(
+for(prof in c("isProf_GP")) for(area in c(
     "isPalestine",
     "isGaza",
     "isWB"
@@ -1292,8 +1324,6 @@ for(prof in c("isProf_GP","BOTH_isProf_GP")) for(area in c(
 
 ## Gender distribution of GPs by sector in West Bank, Gaza
 
-### BY CW00/ BY CW00 and CW06 ("BOTH")
-
 ```{r, warning=FALSE}
 dMaster <- merge(dWorkers, dFacilities[,c("IDH00","facilitySector")], by="IDH00",all.x=T)
 nrow(dWorkers)
@@ -1302,7 +1332,7 @@ nrow(dMaster)
 
 ```{r message=FALSE, warning=FALSE}
 
-for(prof in c("isProf_GP","BOTH_isProf_GP")) for(sector in unique(dMaster$facilitySector)) for(area in c(
+for(prof in c("isProf_GP")) for(sector in unique(dMaster$facilitySector)) for(area in c(
     "isPalestine",
     "isGaza",
     "isWB"
@@ -1342,8 +1372,6 @@ SEARCH BELOW FOR "WHAT COUNTRY DO GPs GRADUATE FROM CW00 AND CW06"
 
 ## Total number of Family physicians in Palestine, West Bank, Gaza
 
-### Results BY CW00
-
 ```{r}
 dWorkers[,isGaza:=as.numeric(NA)]
 dWorkers[,isWB:=as.numeric(NA)]
@@ -1354,31 +1382,6 @@ dWorkers[IDH03 %in% dLocation[isGaza==0]$localityCode, isWB:=1]
 
 for(i in c("isPalestine","isWB","isGaza")){
   d <- dWorkers[get(i)==1 & isProf_FamilyPhysician==1,.(
-    numerator=1
-  ),by=.(
-    HR01
-  )]
-  
-  d[is.infinite(numerator),numerator:=NA]
-  cat(sprintf("***** %s *****\n",i))
-  PrintTableNPerc(d)
-  cat("\n\n")
-}
-
-```
-
-### Results BY CW00 AND CW06
-
-```{r}
-dWorkers[,isGaza:=as.numeric(NA)]
-dWorkers[,isWB:=as.numeric(NA)]
-
-dWorkers[,isPalestine:=1]
-dWorkers[IDH03 %in% dLocation[isGaza==1]$localityCode, isGaza:=1]
-dWorkers[IDH03 %in% dLocation[isGaza==0]$localityCode, isWB:=1]
-
-for(i in c("isPalestine","isWB","isGaza")){
-  d <- dWorkers[get(i)==1 & BOTH_isProf_FamilyPhysician==1,.(
     numerator=1
   ),by=.(
     HR01
@@ -1401,7 +1404,7 @@ nrow(dMaster)
 
 ```
 
-### Results BY CW00
+### Results
 
 ```{r message=FALSE, warning=FALSE}
 for(i in c("isPalestine","isWB","isGaza")) for(j in unique(dMaster$facilitySector)){
@@ -1419,27 +1422,9 @@ for(i in c("isPalestine","isWB","isGaza")) for(j in unique(dMaster$facilitySecto
 }
 ```
 
-### Results BY CW00 AND CW06
-
-```{r message=FALSE, warning=FALSE}
-for(i in c("isPalestine","isWB","isGaza")) for(j in unique(dMaster$facilitySector)){
-  if(is.na(j)) next
-  d <- dMaster[get(i)==1 & facilitySector==j & BOTH_isProf_FamilyPhysician==1,.(
-    numerator=1
-  ),by=.(
-    HR01
-  )]
-  
-  d[is.infinite(numerator),numerator:=NA]
-  cat(sprintf("***** %s %s *****\n",i,j))
-  print(sum(d$numerator))
-  cat("\n\n")
-}
-```
-
 ## Density of Family physicians to Palestine population, West Bank, Gaza
 
-### Results BY CW00
+### Results
 
 ```{r}
 dWorkers[,isGaza:=as.numeric(NA)]
@@ -1473,42 +1458,9 @@ for(i in c("isPalestine","isWB","isGaza")){
 
 ```
 
-### Results BY CW00 AND CW06
-
-```{r}
-dWorkers[,isGaza:=as.numeric(NA)]
-dWorkers[,isWB:=as.numeric(NA)]
-
-dWorkers[,isPalestine:=1]
-dWorkers[IDH03 %in% dLocation[isGaza==1]$localityCode, isGaza:=1]
-dWorkers[IDH03 %in% dLocation[isGaza==0]$localityCode, isWB:=1]
-
-for(i in c("isPalestine","isWB","isGaza")){
-  d <- dWorkers[get(i)==1 & BOTH_isProf_FamilyPhysician==1,.(
-    numerator=1
-  ),by=.(
-    HR01
-  )]
-  
-  if(i=="isPalestine"){
-    p <- pop[districtName=="Palestine population"]$pop
-  } else if(i=="isWB"){
-    p <- pop[districtName=="West Bank Population"]$pop
-  } else if(i=="isGaza"){
-    p <- pop[districtName=="Gaza Population"]$pop
-  }
-  
-  d[is.infinite(numerator),numerator:=NA]
-  res <- sum(d$numerator,na.rm=T)
-  cat(sprintf("***** %s *****\n",i))
-  cat(sprintf("Num: %s, Pop: %s, Num/1000: %s\n",res,round(p),res/p*1000))
-  cat("\n\n")
-}
-```
-
 ## Distribution of GPs by geographic area
 
-### Results BY CW00
+### Results
 
 ```{r}
 dLocation[,IDH03:=localityCode]
@@ -1534,32 +1486,6 @@ for(i in unique(dMaster$region)){
 }
 ```
 
-### Results BY CW00 AND CW06
-
-```{r}
-dLocation[,IDH03:=localityCode]
-dMaster <- merge(dWorkers, dLocation[,c("IDH03","region","district")], by="IDH03",all.x=T)
-nrow(dWorkers)
-```
-
-```{r}
-for(i in unique(dMaster$region)){
-  if(is.na(i)) next
-  d <- dMaster[region==i & BOTH_isProf_GP==1,.(
-    numerator=1
-  ),by=.(
-    HR01
-  )]
-  
-  
-  d[is.infinite(numerator),numerator:=NA]
-  res <- sum(d$numerator,na.rm=T)
-  cat(sprintf("***** %s *****\n",i))
-  cat(sprintf("Num: %s\n",res))
-  cat("\n\n")
-}
-```
-
 ## Distribution of GPs by facility type
 
 
@@ -1570,21 +1496,10 @@ nrow(dMaster)
 
 ```
 
-### Results BY CW00
+### Results
 
 ```{r message=FALSE, warning=FALSE}
 d <- dMaster[isProf_GP==1,
-             .(numerator=1),
-             by=.(HR01,IS06)]
-d <- d[,.(num=sum(numerator)),by=.(IS06)]
-setorder(d,IS06)
-print(d)
-```
-
-### Results BY CW00 AND CW06
-
-```{r message=FALSE, warning=FALSE}
-d <- dMaster[BOTH_isProf_GP==1,
              .(numerator=1),
              by=.(HR01,IS06)]
 d <- d[,.(num=sum(numerator)),by=.(IS06)]
@@ -1598,7 +1513,7 @@ print(d)
 
 ## Total number of doctors working at UNRWA in Palestine/WB/Gaza
 
-### Results BY CW00
+### Results
 
 ```{r message=FALSE, warning=FALSE}
 dMaster <- merge(dWorkers, dFacilities[,c("IDH00","facilitySector")], by="IDH00")
@@ -1633,44 +1548,9 @@ for(location in c("isPalestine","isWB","isGaza")){
 }
 ```
 
-### RESULTS BY CW00 AND CW06
-
-```{r message=FALSE, warning=FALSE}
-dMaster <- merge(dWorkers, dFacilities[,c("IDH00","facilitySector")], by="IDH00")
-nrow(dWorkers)
-nrow(dMaster)
-unique(dMaster$facilitySector)
-
-for(location in c("isPalestine","isWB","isGaza")){
-  cat("\n\n********",location,"**\n\n")
-  if(location=="isPalestine"){
-    usePopulation <- popunrwa[districtName=="Palestine population"]$pop
-  } else if(location=="isWB"){
-    usePopulation <- popunrwa[districtName=="West Bank Population"]$pop
-  } else if(location=="isGaza"){
-    usePopulation <- popunrwa[districtName=="Gaza Population"]$pop
-  }
-  d <- dMaster[BOTH_isProf_Doctor==1 & get(location)==1 & facilitySector=="UNRWA"]
-  d[,numerator:=1]
-  
-  d <- d[,.(
-    numerator=max(numerator,na.rm=T)
-  ),by=.(
-    HR01
-  )]
-  
-  d[is.infinite(numerator),numerator:=NA]
-  PrintTableNPerc(d)
-  
-  cat("***PER 1000 PEOPLE ***\n")
-  d[is.infinite(numerator),numerator:=NA]
-  print(sum(d$numerator)/usePopulation*1000)
-}
-```
-
 ## Density of all professions in Palestine, West Bank, Gaza
 
-### Results BY CW00
+### Results
 
 ```{r message=FALSE, warning=FALSE}
 dMaster <- merge(dWorkers, dFacilities[,c("IDH00","facilitySector")], by="IDH00")
@@ -1679,41 +1559,6 @@ nrow(dMaster)
 unique(dMaster$facilitySector)
 
 for(prof in professionVars) for(location in c("isPalestine","isWB","isGaza")){
-  cat("\n\n********",prof,"  ",location,"**\n\n")
-  if(location=="isPalestine"){
-    usePopulation <- popunrwa[districtName=="Palestine population"]$pop
-  } else if(location=="isWB"){
-    usePopulation <- popunrwa[districtName=="West Bank Population"]$pop
-  } else if(location=="isGaza"){
-    usePopulation <- popunrwa[districtName=="Gaza Population"]$pop
-  }
-  d <- dMaster[get(prof)==1 & get(location)==1 & facilitySector=="UNRWA"]
-  d[,numerator:=1]
-  
-  d <- d[,.(
-    numerator=max(numerator,na.rm=T)
-  ),by=.(
-    HR01
-  )]
-  
-  d[is.infinite(numerator),numerator:=NA]
-  PrintTableNPerc(d)
-  
-  cat("***PER 1000 PEOPLE ***\n")
-  d[is.infinite(numerator),numerator:=NA]
-  print(sum(d$numerator)/usePopulation*1000)
-}
-```
-
-### RESULTS BY CW00 AND CW06
-
-```{r message=FALSE, warning=FALSE}
-dMaster <- merge(dWorkers, dFacilities[,c("IDH00","facilitySector")], by="IDH00")
-nrow(dWorkers)
-nrow(dMaster)
-unique(dMaster$facilitySector)
-
-for(prof in professionVarsBOTH) for(location in c("isPalestine","isWB","isGaza")){
   cat("\n\n********",prof,"  ",location,"**\n\n")
   if(location=="isPalestine"){
     usePopulation <- popunrwa[districtName=="Palestine population"]$pop
@@ -1780,7 +1625,7 @@ setnames(dLoc,"localityCode","IDH03")
 nrow(dFacilities)
 d <- merge(dFacilities[IS06==9 & facilitySector %in% c("NGO","Private")],dLoc,by="IDH03",all.x=T)
 
-openxlsx::write.xlsx(d,file.path(RAWmisc::PROJ$SHARED_TODAY,"hospital_discrepancies.xlsx"))
+openxlsx::write.xlsx(d,file.path(SHARED_TODAY,"hospital_discrepancies.xlsx"))
 ```
 
 
@@ -1829,102 +1674,12 @@ setcolorder(d,c("gazaWBEJ","facilitySector","IS06","IS04","N"))
 print(d)
 ```
 
-## WHAT COUNTRY DO DOCTORS GRADUATE FROM CW00 AND CW06
+
+
+## Diploma vs BA nurse
 
 ```{r, warning=FALSE}
-d1 <- readxl::read_excel(file.path(RAWmisc::PROJ$RAW,
-                                    "Data collected by PCBS - Gaza 1st phase",
-                                    "Gaza Phase I - After auditing by Fayez",
-                                    "WORKERS_ED03 (1).xlsx"))
-
-d2 <- readxl::read_excel(file.path(RAWmisc::PROJ$RAW,
-                                    "Data collected by PCBS - WB 1st phase",
-                                    "WB - Phase I",
-                                    "WORKERS_ED03 WB.xlsx"))
-
-d3 <- readxl::read_excel(file.path(
-  RAWmisc::PROJ$RAW,
-  "Data collected by PNIPH - Gaza 2nd phase",
-  "WORKERS_ED03_GAZA-2nd phase-final.xlsx"))
-
-d4 <- readxl::read_excel(file.path(
-  RAWmisc::PROJ$RAW,
-  "Data collected by PNIPH - WB 2nd phase",
-  "WORKERS_ED03_WB-final-2nd phase.xlsx"))
-
-d5 <- haven::read_spss(file.path(
-  RAWmisc::PROJ$RAW,
-  "New 8,000 records for data importing-received from Fayez",
-  "worker_ed03 (4).sav"))
-
-dUNRWA <- readxl::read_excel(file.path(
-  RAWmisc::PROJ$RAW,
-  "New UNRWA West Bank employees",
-  "WORKER_ED03.xlsx"))
-
-if(EXTRA_8000){
-  masterdED03 <- dED03 <- data.table(rbind(d1,d2,d3[names(d1)],d4[names(d1)],d5[names(d1)],dUNRWA[names(d1)]))
-} else {
-  masterdED03 <- dED03 <- data.table(rbind(d1,d2,d3[names(d1)],d4[names(d1)],dUNRWA[names(d1)]))
-}
-
-#dED03[ED03C %in% 720101:720152 & ED03A<4]
-dED03 <- dED03[ED03C %in% 720101:720152 & ED03A>=4]
-dED03[,lowest:=min(ED03A),by=HR01]
-dED03 <- dED03[ED03A==lowest]
-dED03[,N:=1:.N,by=HR01]
-dED03 <- dED03[N==1]
-#dED03
-
-d <- dWorkers[BOTH_isProf_Doctor==1]
-nrow(d)
-d <- merge(d,dED03,by="HR01",all.x=T)
-nrow(d)
-
-dCountryCodes <- readxl::read_excel(file.path(
-  RAWmisc::PROJ$RAW,"county_codes.xlsx"))
-setnames(dCountryCodes,c("english","x","ED03D","x2"))
-
-nrow(d)
-d[,ED03D:=as.numeric(ED03D)]
-d <- merge(d,dCountryCodes,by="ED03D",all.x=T)
-nrow(d)
-
-d <- d[,.(numerator=.N),by=.(english)]
-d[,denominator:=sum(numerator)]
-d[,perc:=RAWmisc::Format(100*numerator/denominator,digits=2)]
-setorder(d,-numerator)
-print(d)
-```
-
-## WHAT COUNTRY DO GPs GRADUATE FROM CW00 AND CW06
-
-```{r, warning=FALSE}
-d <- dWorkers[BOTH_isProf_GP==1]
-nrow(d)
-d <- merge(d,dED03,by="HR01",all.x=T)
-nrow(d)
-
-dCountryCodes <- readxl::read_excel(file.path(
-  RAWmisc::PROJ$RAW,"county_codes.xlsx"))
-setnames(dCountryCodes,c("english","x","ED03D","x2"))
-
-nrow(d)
-d[,ED03D:=as.numeric(ED03D)]
-d <- merge(d,dCountryCodes,by="ED03D",all.x=T)
-nrow(d)
-
-d <- d[,.(numerator=.N),by=.(english)]
-d[,denominator:=sum(numerator)]
-d[,perc:=RAWmisc::Format(100*numerator/denominator,digits=2)]
-setorder(d,-numerator)
-print(d)
-```
-
-## Diploma vs BA nurse using CW00 AND CW06
-
-```{r, warning=FALSE}
-d <- dWorkers[BOTH_isProf_Nurse==1]
+d <- dWorkers[isProf_Nurse==1]
 d[,numerator:=ED01>=4]
 
 d <- d[,.(
@@ -1968,10 +1723,10 @@ setorder(d,ageCat)
 print(d)
 ```
 
-## How many OTHER places have you worked by profession (CW00 + CW06)
+## How many OTHER places have you worked by profession
 
 ```{r, warning=FALSE}
-for(i in professionVarsBOTH){
+for(i in professionVars){
   d <- dWorkers[get(i)==1]
   d[,age:=floor(as.numeric(difftime("2018-01-01",HR03,units="days"))/365.25)]
   
@@ -2022,7 +1777,7 @@ workerLabels[,N:=.N,by=ED03C]
 workerLabels <- workerLabels[N==1]
 workerLabels[,N:=NULL]
 
-d <- dWorkers[BOTH_isProf_Healthworker==1]
+d <- dWorkers[isProf_Healthworker==1]
 d[,isFemale:=HR02-1]
 d <- d[,.(isFemale=max(isFemale)),by=.(HR01)]
 
@@ -2061,7 +1816,7 @@ setorder(res,isFemale,-N)
 nrow(res)
 res <- merge(res,workerLabels,by=c("ED03C"),all.x=T)
 nrow(res)
-openxlsx::write.xlsx(res,file.path(RAWmisc::PROJ$SHARED_TODAY,"Distribution of health workers by Educational Speciality stratified by gender.xlsx"))
+openxlsx::write.xlsx(res,file.path(SHARED_TODAY,"Distribution of health workers by Educational Speciality stratified by gender.xlsx"))
 
 nrow(d)
 d[,ED03D:=as.numeric(ED03D)]
@@ -2073,12 +1828,12 @@ setorder(res,isFemale,english,-N)
 nrow(res)
 res <- merge(res,workerLabels,by=c("ED03C"),all.x=T)
 nrow(res)
-openxlsx::write.xlsx(res,file.path(RAWmisc::PROJ$SHARED_TODAY,"Distribution of health workers by graduation country, educational specialty by gender.xlsx"))
+openxlsx::write.xlsx(res,file.path(SHARED_TODAY,"Distribution of health workers by graduation country, educational specialty by gender.xlsx"))
 ```
 
 ## 3. Distribution of health workers by highest educational level and gender (ED01)
 ```{r, warning=FALSE}
-d <- dWorkers[BOTH_isProf_Healthworker==1]
+d <- dWorkers[isProf_Healthworker==1]
 d[,isFemale:=HR02-1]
 d <- d[,.(
   ED01=max(ED01,na.rm=T),
@@ -2093,7 +1848,7 @@ xtabs(~d$ED01+d$isFemale,addNA=T)
 
 ## 4. Distribution of health workers by years of experience and gender (ED02)
 ```{r, warning=FALSE}
-d <- dWorkers[BOTH_isProf_Healthworker==1]
+d <- dWorkers[isProf_Healthworker==1]
 d[,isFemale:=HR02-1]
 d <- d[,.(
   yearsExperience=max(ED02,na.rm=T),
@@ -2116,10 +1871,10 @@ dWorkers[,livesInSameDistrictAsWork:= HR08_B==IDH02]
 xtabs(~dWorkers$livesInSameDistrictAsWork, addNA=T)
 ```
 
-### BY CW00 AND CW06
+### BY PROFESSION
 
 ```{r, warning=FALSE}
-for(i in professionVarsBOTH){
+for(i in professionVars){
   print("")
   print("")
   print("****")
@@ -2140,10 +1895,10 @@ dWorkers[,worksInUrban:= IDH03 %in% dLocation[urbanRural=="Urban"]$localityCode]
 xtabs(~dWorkers$livesInRural+dWorkers$worksInUrban, addNA=T)
 ```
 
-### BY CW00 AND CW06
+### BY PROFESSION
 
 ```{r, warning=FALSE}
-for(i in professionVarsBOTH){
+for(i in professionVars){
   print("")
   print("")
   print("****")
@@ -2162,10 +1917,10 @@ keepIDH00 <- dFacilities[facilitySector=="Ministry of Health" & IS06==4]$IDH00
 xtabs(~dWorkers[IDH00 %in% keepIDH00]$livesInRural+dWorkers[IDH00 %in% keepIDH00]$worksInUrban, addNA=T)
 ```
 
-### sector = Ministry of Health  + IS06 = 4 BY CW00 AND CW06
+### sector = Ministry of Health  + IS06 = 4 BY PROFESSION
 
 ```{r, warning=FALSE}
-for(i in professionVarsBOTH){
+for(i in professionVars){
   print("")
   print("")
   print("****")
@@ -2207,7 +1962,7 @@ d <- rbind(d,d2)
 nrow(d)
 d <- d[,.(N=.N),by=.(gazaWBEJ,facilitySector,IS06)]
 setorder(d,gazaWBEJ,facilitySector,IS06)
-openxlsx::write.xlsx(d,file.path(RAWmisc::PROJ$SHARED_TODAY,"clinical_training_facility_is06.xlsx"))
+openxlsx::write.xlsx(d,file.path(SHARED_TODAY,"clinical_training_facility_is06.xlsx"))
 ```
 
 ```{r, warning=FALSE}
@@ -2225,7 +1980,7 @@ d <- d[!is.na(value)]
 setnames(d,"value","TR02")
 d <- d[,.(N=.N),by=.(gazaWBEJ,facilitySector,IS06,TR02)]
 setorder(d,gazaWBEJ,facilitySector,IS06,TR02)
-openxlsx::write.xlsx(d,file.path(RAWmisc::PROJ$SHARED_TODAY,"clinical_training_facility_is06_TR02.xlsx"))
+openxlsx::write.xlsx(d,file.path(SHARED_TODAY,"clinical_training_facility_is06_TR02.xlsx"))
 ```
 
 ## 1x NEW. Distribution of each type of facility (IS06) that provide internships by sector and the professions they train in ( this can be obtained from TR06)
@@ -2244,7 +1999,7 @@ d <- rbind(d,d2)
 nrow(d)
 d <- d[,.(N=.N),by=.(gazaWBEJ,facilitySector,IS06)]
 setorder(d,gazaWBEJ,facilitySector,IS06)
-openxlsx::write.xlsx(d,file.path(RAWmisc::PROJ$SHARED_TODAY,"clinical_internship_facility_is06.xlsx"))
+openxlsx::write.xlsx(d,file.path(SHARED_TODAY,"clinical_internship_facility_is06.xlsx"))
 ```
 
 ```{r, warning=FALSE}
@@ -2262,7 +2017,7 @@ d <- d[!is.na(value)]
 setnames(d,"value","TR06")
 d <- d[,.(N=.N),by=.(gazaWBEJ,facilitySector,IS06,TR06)]
 setorder(d,gazaWBEJ,facilitySector,IS06,TR06)
-openxlsx::write.xlsx(d,file.path(RAWmisc::PROJ$SHARED_TODAY,"clinical_internship_facility_is06_TR06.xlsx"))
+openxlsx::write.xlsx(d,file.path(SHARED_TODAY,"clinical_internship_facility_is06_TR06.xlsx"))
 ```
 
 
@@ -2450,7 +2205,7 @@ PrintTableNPerc(d)
 - Indicator description: Percentage distribution of health workers from each profession, who took certified CPD courses within the past year
 - Note: Note that this indicator needs to be repeated for each profession in CW00 and present percentage distribution ( the calculation provided was an example, repeat the indicator for doctors, allied health sciences, pharmacists, dentists, psychologists)
 
-### Results BY CW00
+### Results 
 
 ```{r message=FALSE, warning=FALSE}
 for(i in professionVars){
@@ -2472,27 +2227,6 @@ for(i in professionVars){
 }
 ```
 
-### Results BY BOTH CW00 AND CW06
-
-```{r message=FALSE, warning=FALSE}
-for(i in professionVarsBOTH){
-  d <- dWorkers[get(i)==1]
-  d[,numerator:=as.numeric(NA)]
-  d[!is.na(SK02),numerator:=0]
-  d[SK02==1,numerator:=1]
-  
-  d <- d[,.(
-    numerator=max(numerator,na.rm=T)
-  ),by=.(
-    HR01
-  )]
-  
-  d[is.infinite(numerator),numerator:=NA]
-  cat(sprintf("***** %s *****\n",i))
-  PrintTableNPerc(d)
-  cat("\n\n")
-}
-```
 
 ## 6. Percentage distribution of health workers  per sector who took CPD courses within the past year
 
@@ -2509,33 +2243,11 @@ nrow(dMaster)
 ```
 
 
-### Results BY CW00
+### Results 
 
 ```{r message=FALSE, warning=FALSE}
 for(i in unique(dMaster$facilitySector)){
   d <- dMaster[facilitySector==i & isProf_Healthworker==1]
-  d[,numerator:=as.numeric(NA)]
-  d[!is.na(SK02),numerator:=0]
-  d[SK02==1,numerator:=1]
-  
-  d <- d[,.(
-    numerator=max(numerator,na.rm=T)
-  ),by=.(
-    HR01
-  )]
-  
-  d[is.infinite(numerator),numerator:=NA]
-  cat(sprintf("***** %s *****\n",i))
-  PrintTableNPerc(d)
-  cat("\n\n")
-}
-```
-
-### Results BY CW00 AND CW06
-
-```{r message=FALSE, warning=FALSE}
-for(i in unique(dMaster$facilitySector)){
-  d <- dMaster[facilitySector==i & BOTH_isProf_Healthworker==1]
   d[,numerator:=as.numeric(NA)]
   d[!is.na(SK02),numerator:=0]
   d[SK02==1,numerator:=1]
@@ -2558,7 +2270,7 @@ for(i in unique(dMaster$facilitySector)){
 
 ## XX. Total number of working Radiologists in Palestine/WB/Gaza
 
-### Results BY CW00
+### Results 
 
 ```{r message=FALSE, warning=FALSE}
 for(location in c("isPalestine","isWB","isGaza")){
@@ -2588,39 +2300,9 @@ for(location in c("isPalestine","isWB","isGaza")){
 }
 ```
 
-### RESULTS BY CW00 AND CW06
-
-```{r message=FALSE, warning=FALSE}
-for(location in c("isPalestine","isWB","isGaza")){
-  cat("\n\n********",location,"**\n\n")
-  if(location=="isPalestine"){
-    usePopulation <- pop[districtName=="Palestine population"]$pop
-  } else if(location=="isWB"){
-    usePopulation <- pop[districtName=="West Bank Population"]$pop
-  } else if(location=="isGaza"){
-    usePopulation <- pop[districtName=="Gaza Population"]$pop
-  }
-  d <- dWorkers[BOTH_isProf_Radiologist==1 & get(location)==1]
-  d[,numerator:=1]
-  
-  d <- d[,.(
-    numerator=max(numerator,na.rm=T)
-  ),by=.(
-    HR01
-  )]
-  
-  d[is.infinite(numerator),numerator:=NA]
-  PrintTableNPerc(d)
-  
-  cat("***PER 1000 PEOPLE ***\n")
-  d[is.infinite(numerator),numerator:=NA]
-  print(sum(d$numerator)/usePopulation*1000)
-}
-```
-
 ## XX. Total number of working Lab Techs in Palestine/WB/Gaza
 
-### Results BY CW00
+### Results 
 
 ```{r message=FALSE, warning=FALSE}
 for(location in c("isPalestine","isWB","isGaza")){
@@ -2650,38 +2332,6 @@ for(location in c("isPalestine","isWB","isGaza")){
 }
 ```
 
-### RESULTS BY CW00 AND CW06
-
-```{r message=FALSE, warning=FALSE}
-for(location in c("isPalestine","isWB","isGaza")){
-  cat("\n\n********",location,"**\n\n")
-  if(location=="isPalestine"){
-    usePopulation <- pop[districtName=="Palestine population"]$pop
-  } else if(location=="isWB"){
-    usePopulation <- pop[districtName=="West Bank Population"]$pop
-  } else if(location=="isGaza"){
-    usePopulation <- pop[districtName=="Gaza Population"]$pop
-  }
-  d <- dWorkers[BOTH_isProf_LabTech==1 & get(location)==1]
-  d[,numerator:=1]
-  
-  d <- d[,.(
-    numerator=max(numerator,na.rm=T)
-  ),by=.(
-    HR01
-  )]
-  
-  d[is.infinite(numerator),numerator:=NA]
-  PrintTableNPerc(d)
-  
-  cat("***PER 1000 PEOPLE ***\n")
-  d[is.infinite(numerator),numerator:=NA]
-  print(sum(d$numerator)/usePopulation*1000)
-}
-```
-
-xxxx
-
 ## 1. Total number of working doctors in Palestine/WB/Gaza
 
 - Source: Workforce questionnaire 
@@ -2689,7 +2339,7 @@ xxxx
 - Indicator description: Total number of doctors ( General Doctors and Specialized Doctors ) currently working in Palestine
 - Note: 
 
-### Results BY CW00
+### Results 
 
 ```{r message=FALSE, warning=FALSE}
 for(location in c("isPalestine","isWB","isGaza")){
@@ -2719,36 +2369,6 @@ for(location in c("isPalestine","isWB","isGaza")){
 }
 ```
 
-### RESULTS BY CW00 AND CW06
-
-```{r message=FALSE, warning=FALSE}
-for(location in c("isPalestine","isWB","isGaza")){
-  cat("\n\n********",location,"**\n\n")
-  if(location=="isPalestine"){
-    usePopulation <- pop[districtName=="Palestine population"]$pop
-  } else if(location=="isWB"){
-    usePopulation <- pop[districtName=="West Bank Population"]$pop
-  } else if(location=="isGaza"){
-    usePopulation <- pop[districtName=="Gaza Population"]$pop
-  }
-  d <- dWorkers[BOTH_isProf_Doctor==1 & get(location)==1]
-  d[,numerator:=1]
-  
-  d <- d[,.(
-    numerator=max(numerator,na.rm=T)
-  ),by=.(
-    HR01
-  )]
-  
-  d[is.infinite(numerator),numerator:=NA]
-  PrintTableNPerc(d)
-  
-  cat("***PER 1000 PEOPLE ***\n")
-  d[is.infinite(numerator),numerator:=NA]
-  print(sum(d$numerator)/usePopulation*1000)
-}
-```
-
 
 ## 3. Total number of working specialized doctors per specialization in Palestine/WB/Gaza
 
@@ -2757,7 +2377,7 @@ for(location in c("isPalestine","isWB","isGaza")){
 - Indicator description: Total number of specialized doctors currently working in Palestine
 - Note: 
 
-### Results for all specialized doctors BY CW00
+### Results for all specialized doctors 
 
 ```{r message=FALSE, warning=FALSE}
 for(location in c("isPalestine","isWB","isGaza")){
@@ -2787,37 +2407,7 @@ for(location in c("isPalestine","isWB","isGaza")){
 }
 ```
 
-### Results for all specialized doctors BY CW00 AND CW06
-
-```{r message=FALSE, warning=FALSE}
-for(location in c("isPalestine","isWB","isGaza")){
-  cat("\n\n********",location,"**\n\n")
-  if(location=="isPalestine"){
-    usePopulation <- pop[districtName=="Palestine population"]$pop
-  } else if(location=="isWB"){
-    usePopulation <- pop[districtName=="West Bank Population"]$pop
-  } else if(location=="isGaza"){
-    usePopulation <- pop[districtName=="Gaza Population"]$pop
-  }
-  d <- dWorkers[BOTH_isProf_Specializeddoctor==1 & get(location)==1]
-  d[,numerator:=1]
-  
-  d <- d[,.(
-    numerator=max(numerator,na.rm=T)
-  ),by=.(
-    HR01
-  )]
-  
-  d[is.infinite(numerator),numerator:=NA]
-  PrintTableNPerc(d)
-  
-  cat("***PER 1000 PEOPLE ***\n")
-  d[is.infinite(numerator),numerator:=NA]
-  print(sum(d$numerator)/usePopulation*1000)
-}
-```
-
-### Results stratified by type of specialized doctors BY CW00
+### Results stratified by type of specialized doctors
 
 ```{r message=FALSE, warning=FALSE}
 for(location in c("isPalestine","isWB","isGaza")){
@@ -2850,40 +2440,6 @@ for(location in c("isPalestine","isWB","isGaza")){
 }
 ```
 
-### Results stratified by type of specialized doctors BY CW00 AND CW06
-
-```{r message=FALSE, warning=FALSE}
-for(location in c("isPalestine","isWB","isGaza")){
-  cat("\n\n********",location,"**\n\n")
-  if(location=="isPalestine"){
-    usePopulation <- pop[districtName=="Palestine population"]$pop
-  } else if(location=="isWB"){
-    usePopulation <- pop[districtName=="West Bank Population"]$pop
-  } else if(location=="isGaza"){
-    usePopulation <- pop[districtName=="Gaza Population"]$pop
-  }
-  d <- dWorkers[BOTH_isProf_Specializeddoctor==1 & get(location)==1]
-  d[,numerator:=1]
-  
-  d <- d[,.(
-    numerator=max(numerator,na.rm=T)
-  ),by=.(
-    HR01,BOTHdoctor_specialization
-  )]
-  
-  d <- d[,.(
-    numerator=sum(numerator,na.rm=T)
-  ),by=.(
-    BOTHdoctor_specialization
-  )]
-  
-  setorder(d,BOTHdoctor_specialization)
-  d[,per1000:=numerator/usePopulation*1000]
-  
-  print(d)
-}
-```
-
 ## 5. Total number of  working dentists in Palestine/WB/Gaza
 
 - Source: Workforce questionnaire 
@@ -2891,7 +2447,7 @@ for(location in c("isPalestine","isWB","isGaza")){
 - Indicator description: Total number of dentists currently working in Palestine 
 - Note: 
 
-### Results BY CW00
+### Results
 
 ```{r message=FALSE, warning=FALSE}
 for(location in c("isPalestine","isWB","isGaza")){
@@ -2922,43 +2478,13 @@ for(location in c("isPalestine","isWB","isGaza")){
 }
 ```
 
-### Results BY CW00 AND CW06
-
-```{r message=FALSE, warning=FALSE}
-for(location in c("isPalestine","isWB","isGaza")){
-  cat("\n\n********",location,"**\n\n")
-  if(location=="isPalestine"){
-    usePopulation <- pop[districtName=="Palestine population"]$pop
-  } else if(location=="isWB"){
-    usePopulation <- pop[districtName=="West Bank Population"]$pop
-  } else if(location=="isGaza"){
-    usePopulation <- pop[districtName=="Gaza Population"]$pop
-  }
-  d <- dWorkers[BOTH_isProf_Dentist==1 & get(location)==1]
-  d[,numerator:=1]
-  
-  d <- d[,.(
-    numerator=max(numerator,na.rm=T)
-  ),by=.(
-    HR01
-  )]
-  
-  d[is.infinite(numerator),numerator:=NA]
-  PrintTableNPerc(d)
-  
-  cat("***PER 1000 PEOPLE ***\n")
-  d[is.infinite(numerator),numerator:=NA]
-  print(sum(d$numerator)/usePopulation*1000)
-}
-```
-
 ## 7. Total number of working pharmacists in Palestine/WB/Gaza
 
 - Source: Workforce questionnaire 
 - Calculation: Sum of CW00 pharmacists 
 - Indicator description: Total number of pharmacists working in Palestine
 
-### Results BY CW00
+### Results
 
 ```{r message=FALSE, warning=FALSE}
 for(location in c("isPalestine","isWB","isGaza")){
@@ -2988,44 +2514,13 @@ for(location in c("isPalestine","isWB","isGaza")){
 }
 ```
 
-### Results BY CW00 AND CW06
-
-```{r message=FALSE, warning=FALSE}
-for(location in c("isPalestine","isWB","isGaza")){
-  cat("\n\n********",location,"**\n\n")
-  if(location=="isPalestine"){
-    usePopulation <- pop[districtName=="Palestine population"]$pop
-  } else if(location=="isWB"){
-    usePopulation <- pop[districtName=="West Bank Population"]$pop
-  } else if(location=="isGaza"){
-    usePopulation <- pop[districtName=="Gaza Population"]$pop
-  }
-  d <- dWorkers[BOTH_isProf_Pharmacist==1 & get(location)==1]
-  d[,numerator:=1]
-  
-  d <- d[,.(
-    numerator=max(numerator,na.rm=T)
-  ),by=.(
-    HR01
-  )]
-  
-  d[is.infinite(numerator),numerator:=NA]
-  PrintTableNPerc(d)
-  
-  cat("***PER 1000 PEOPLE ***\n")
-  d[is.infinite(numerator),numerator:=NA]
-  print(sum(d$numerator)/usePopulation*1000)
-}
-```
-
-
 ## 9. Total number of working nurses in Palestine/WB/Gaza
 
 - Source: Workforce questionnaire 
 - Calculation: Sum of CW00 nurses
 - Indicator description: Total number of nurses ( Registered and Practical ) working in Palestine
 
-### Results BY CW00
+### Results
 
 ```{r message=FALSE, warning=FALSE}
 for(location in c("isPalestine","isWB","isGaza")){
@@ -3055,43 +2550,13 @@ for(location in c("isPalestine","isWB","isGaza")){
 }
 ```
 
-### Results BY CW00 AND CW06
-
-```{r message=FALSE, warning=FALSE}
-for(location in c("isPalestine","isWB","isGaza")){
-  cat("\n\n********",location,"**\n\n")
-  if(location=="isPalestine"){
-    usePopulation <- pop[districtName=="Palestine population"]$pop
-  } else if(location=="isWB"){
-    usePopulation <- pop[districtName=="West Bank Population"]$pop
-  } else if(location=="isGaza"){
-    usePopulation <- pop[districtName=="Gaza Population"]$pop
-  }
-  d <- dWorkers[BOTH_isProf_Nurse==1 & get(location)==1]
-  d[,numerator:=1]
-  
-  d <- d[,.(
-    numerator=max(numerator,na.rm=T)
-  ),by=.(
-    HR01
-  )]
-  
-  d[is.infinite(numerator),numerator:=NA]
-  PrintTableNPerc(d)
-  
-  cat("***PER 1000 PEOPLE ***\n")
-  d[is.infinite(numerator),numerator:=NA]
-  print(sum(d$numerator)/usePopulation*1000)
-}
-```
-
 ## 11. Total number of working midwives in Palestine/WB/Gaza
 
 - Source: Workforce questionnaire 
 - Calculation: Sum of CW00 midwives
 - Indicator description: Total number of midwives working in Palestine
 
-### Results BY CW00
+### Results
 
 ```{r message=FALSE, warning=FALSE}
 for(location in c("isPalestine","isWB","isGaza")){
@@ -3121,43 +2586,13 @@ for(location in c("isPalestine","isWB","isGaza")){
 }
 ```
 
-### Results BY CW00 AND CW06
-
-```{r message=FALSE, warning=FALSE}
-for(location in c("isPalestine","isWB","isGaza")){
-  cat("\n\n********",location,"**\n\n")
-  if(location=="isPalestine"){
-    usePopulation <- pop[districtName=="Palestine population"]$pop
-  } else if(location=="isWB"){
-    usePopulation <- pop[districtName=="West Bank Population"]$pop
-  } else if(location=="isGaza"){
-    usePopulation <- pop[districtName=="Gaza Population"]$pop
-  }
-  d <- dWorkers[BOTH_isProf_Midwife==1 & get(location)==1]
-  d[,numerator:=1]
-  
-  d <- d[,.(
-    numerator=max(numerator,na.rm=T)
-  ),by=.(
-    HR01
-  )]
-  
-  d[is.infinite(numerator),numerator:=NA]
-  PrintTableNPerc(d)
-  
-  cat("***PER 1000 PEOPLE ***\n")
-  d[is.infinite(numerator),numerator:=NA]
-  print(sum(d$numerator)/usePopulation*1000)
-}
-```
-
 ## 13. Total number of working allied health sciences professionals in Palestine/WB/Gaza
 
 - Source: Workforce questionnaire 
 - Calculation: Sum of CW00 allied health sciences
 - Indicator description: Total number of allied health sciences professionals working in Palestine
 
-### Results BY CW00
+### Results
 
 ```{r message=FALSE, warning=FALSE}
 for(location in c("isPalestine","isWB","isGaza")){
@@ -3187,43 +2622,13 @@ for(location in c("isPalestine","isWB","isGaza")){
 }
 ```
 
-### Results BY CW00 AND CW06
-
-```{r message=FALSE, warning=FALSE}
-for(location in c("isPalestine","isWB","isGaza")){
-  cat("\n\n********",location,"**\n\n")
-  if(location=="isPalestine"){
-    usePopulation <- pop[districtName=="Palestine population"]$pop
-  } else if(location=="isWB"){
-    usePopulation <- pop[districtName=="West Bank Population"]$pop
-  } else if(location=="isGaza"){
-    usePopulation <- pop[districtName=="Gaza Population"]$pop
-  }
-  d <- dWorkers[BOTH_isProf_Alliedhealthsciences==1 & get(location)==1]
-  d[,numerator:=1]
-  
-  d <- d[,.(
-    numerator=max(numerator,na.rm=T)
-  ),by=.(
-    HR01
-  )]
-  
-  d[is.infinite(numerator),numerator:=NA]
-  PrintTableNPerc(d)
-  
-  cat("***PER 1000 PEOPLE ***\n")
-  d[is.infinite(numerator),numerator:=NA]
-  print(sum(d$numerator)/usePopulation*1000)
-}
-```
-
 ## 15. Total number of working psychologists, counselors and therapists in Palestine/WB/Gaza
 
 - Source: Workforce questionnaire 
 - Calculation: Sum of CW00 ( psychologists, counselor and therapists )
 - Indicator description: Total number of psychologists, counselors and therapists working in Palestine
 
-### Results BY CW00
+### Results
 
 ```{r message=FALSE, warning=FALSE}
 for(location in c("isPalestine","isWB","isGaza")){
@@ -3253,43 +2658,13 @@ for(location in c("isPalestine","isWB","isGaza")){
 }
 ```
 
-### Results BY CW00 AND CW06
-
-```{r message=FALSE, warning=FALSE}
-for(location in c("isPalestine","isWB","isGaza")){
-  cat("\n\n********",location,"**\n\n")
-  if(location=="isPalestine"){
-    usePopulation <- pop[districtName=="Palestine population"]$pop
-  } else if(location=="isWB"){
-    usePopulation <- pop[districtName=="West Bank Population"]$pop
-  } else if(location=="isGaza"){
-    usePopulation <- pop[districtName=="Gaza Population"]$pop
-  }
-  d <- dWorkers[BOTH_isProf_Psychologistcounselorstherap==1 & get(location)==1]
-  d[,numerator:=1]
-  
-  d <- d[,.(
-    numerator=max(numerator,na.rm=T)
-  ),by=.(
-    HR01
-  )]
-  
-  d[is.infinite(numerator),numerator:=NA]
-  PrintTableNPerc(d)
-  
-  cat("***PER 1000 PEOPLE ***\n")
-  d[is.infinite(numerator),numerator:=NA]
-  print(sum(d$numerator)/usePopulation*1000)
-}
-```
-
 ## 17. Total number of working psychaitrists in Palestine/WB/Gaza
 
 - Source: Workforce questionnaire 
 - Calculation: Sum of CW00 psychaitrists
 - Indicator description: Total number of psychologists, counselors and therapists working in Palestine
 
-### Results BY CW00
+### Results
 
 ```{r message=FALSE, warning=FALSE}
 for(location in c("isPalestine","isWB","isGaza")){
@@ -3319,43 +2694,13 @@ for(location in c("isPalestine","isWB","isGaza")){
 }
 ```
 
-### Results BY CW00 AND CW06
-
-```{r message=FALSE, warning=FALSE}
-for(location in c("isPalestine","isWB","isGaza")){
-  cat("\n\n********",location,"**\n\n")
-  if(location=="isPalestine"){
-    usePopulation <- pop[districtName=="Palestine population"]$pop
-  } else if(location=="isWB"){
-    usePopulation <- pop[districtName=="West Bank Population"]$pop
-  } else if(location=="isGaza"){
-    usePopulation <- pop[districtName=="Gaza Population"]$pop
-  }
-  d <- dWorkers[BOTH_isProf_Psychiatrist==1 & get(location)==1]
-  d[,numerator:=1]
-  
-  d <- d[,.(
-    numerator=max(numerator,na.rm=T)
-  ),by=.(
-    HR01
-  )]
-  
-  d[is.infinite(numerator),numerator:=NA]
-  PrintTableNPerc(d)
-  
-  cat("***PER 1000 PEOPLE ***\n")
-  d[is.infinite(numerator),numerator:=NA]
-  print(sum(d$numerator)/usePopulation*1000)
-}
-```
-
 ## 19. Total number of working alternative medicine practitioners in Palestine/WB/Gaza 
 
 - Source: Workforce questionnaire 
 - Calculation: Sum of CW00 alternative medicine practitioners
 - Indicator description: Total number of alternative medicine practitioners in Palestine
 
-### Results BY CW00
+### Results
 
 ```{r message=FALSE, warning=FALSE}
 for(location in c("isPalestine","isWB","isGaza")){
@@ -3385,43 +2730,13 @@ for(location in c("isPalestine","isWB","isGaza")){
 }
 ```
 
-### Results BY CW00 AND CW06
-
-```{r message=FALSE, warning=FALSE}
-for(location in c("isPalestine","isWB","isGaza")){
-  cat("\n\n********",location,"**\n\n")
-  if(location=="isPalestine"){
-    usePopulation <- pop[districtName=="Palestine population"]$pop
-  } else if(location=="isWB"){
-    usePopulation <- pop[districtName=="West Bank Population"]$pop
-  } else if(location=="isGaza"){
-    usePopulation <- pop[districtName=="Gaza Population"]$pop
-  }
-  d <- dWorkers[BOTH_isProf_AlternativeMedicine==1 & get(location)==1]
-  d[,numerator:=1]
-  
-  d <- d[,.(
-    numerator=max(numerator,na.rm=T)
-  ),by=.(
-    HR01
-  )]
-  
-  d[is.infinite(numerator),numerator:=NA]
-  PrintTableNPerc(d)
-  
-  cat("***PER 1000 PEOPLE ***\n")
-  d[is.infinite(numerator),numerator:=NA]
-  print(sum(d$numerator)/usePopulation*1000)
-}
-```
-
 ## 21. Total number of working doctors, nurses and midwives per 1,000 population in Palestine/WB/Gaza
 
 - Source: Workforce questionnaire 
 - Calculation: ( CW00 doctors + CW00 nurses + CW00 midwives / total Palestine population ) * 1,000
 - Indicator description: Total number of doctors, nurses and midwives working in Palestine per 1,000 population
 
-### Results BY CW00
+### Results
 
 ```{r message=FALSE, warning=FALSE}
 for(location in c("isPalestine","isWB","isGaza")){
@@ -3451,43 +2766,13 @@ for(location in c("isPalestine","isWB","isGaza")){
 }
 ```
 
-### Results BY CW00 AND CW06
-
-```{r message=FALSE, warning=FALSE}
-for(location in c("isPalestine","isWB","isGaza")){
-  cat("\n\n********",location,"**\n\n")
-  if(location=="isPalestine"){
-    usePopulation <- pop[districtName=="Palestine population"]$pop
-  } else if(location=="isWB"){
-    usePopulation <- pop[districtName=="West Bank Population"]$pop
-  } else if(location=="isGaza"){
-    usePopulation <- pop[districtName=="Gaza Population"]$pop
-  }
-  d <- dWorkers[(BOTH_isProf_Doctor==1 | BOTH_isProf_Nurse==1 | BOTH_isProf_Midwife==1) & get(location)==1]
-  d[,numerator:=1]
-  
-  d <- d[,.(
-    numerator=max(numerator,na.rm=T)
-  ),by=.(
-    HR01
-  )]
-  
-  d[is.infinite(numerator),numerator:=NA]
-  PrintTableNPerc(d)
-  
-  cat("***PER 1000 PEOPLE ***\n")
-  d[is.infinite(numerator),numerator:=NA]
-  print(sum(d$numerator)/usePopulation*1000)
-}
-```
-
 ## 22. Total number of administrative and support staff in the health sector in Palestine/WB/Gaza
 
 - Source: Workforce questionnaire 
 - Calculation: Sum of CW00 administrative and support staff
 - Indicator description: Total number of administrative and support staff working in the health sector in Palestine
 
-### Results BY CW00
+### Results
 
 ```{r message=FALSE, warning=FALSE}
 for(location in c("isPalestine","isWB","isGaza")){
@@ -3500,36 +2785,6 @@ for(location in c("isPalestine","isWB","isGaza")){
     usePopulation <- pop[districtName=="Gaza Population"]$pop
   }
   d <- dWorkers[(isProf_Administrativesupportstaff==1) & get(location)==1]
-  d[,numerator:=1]
-  
-  d <- d[,.(
-    numerator=max(numerator,na.rm=T)
-  ),by=.(
-    HR01
-  )]
-  
-  d[is.infinite(numerator),numerator:=NA]
-  PrintTableNPerc(d)
-  
-  cat("***PER 1000 PEOPLE ***\n")
-  d[is.infinite(numerator),numerator:=NA]
-  print(sum(d$numerator)/usePopulation*1000)
-}
-```
-
-### Results BY CW00 AND CW06
-
-```{r message=FALSE, warning=FALSE}
-for(location in c("isPalestine","isWB","isGaza")){
-  cat("\n\n********",location,"**\n\n")
-  if(location=="isPalestine"){
-    usePopulation <- pop[districtName=="Palestine population"]$pop
-  } else if(location=="isWB"){
-    usePopulation <- pop[districtName=="West Bank Population"]$pop
-  } else if(location=="isGaza"){
-    usePopulation <- pop[districtName=="Gaza Population"]$pop
-  }
-  d <- dWorkers[(BOTH_isProf_Administrativesupportstaff==1) & get(location)==1]
   d[,numerator:=1]
   
   d <- d[,.(
@@ -3560,7 +2815,7 @@ nrow(dMaster)
 ```
 
 
-### Results BY CW00
+### Results
 
 ```{r message=FALSE, warning=FALSE}
 for(i in unique(dMaster$facilitySector)){
@@ -3594,47 +2849,11 @@ for(i in unique(dMaster$facilitySector)){
 }
 ```
 
-### Results USING BOTH CW00 and CW06
-
-```{r message=FALSE, warning=FALSE}
-for(i in unique(dMaster$facilitySector)){
-  for(location in c("isPalestine","isWB","isGaza")){
-    if(location=="isPalestine"){
-      usePopulation <- pop[districtName=="Palestine population"]$pop
-    } else if(location=="isWB"){
-      usePopulation <- pop[districtName=="West Bank Population"]$pop
-    } else if(location=="isGaza"){
-      usePopulation <- pop[districtName=="Gaza Population"]$pop
-    }
-    d <- dMaster[facilitySector==i & (BOTH_isProf_Healthworker==1 | BOTH_isProf_Administrativesupportstaff==1) & get(location)==1]
-  
-    d[,numerator:=BOTH_isProf_Healthworker]
-    d[,denominator:=BOTH_isProf_Administrativesupportstaff]
-    
-    d <- d[,.(
-      numerator=max(numerator,na.rm=T),
-      denominator=max(denominator,na.rm=T)
-    ),by=.(
-      HR01
-    )]
-    
-    cat(sprintf("***** %s %s *****\n",i,location))
-    cat(sprintf("Healthcare worker: %s\n",sum(d$numerator)))
-    cat(sprintf("Admin staff: %s\n",sum(d$denominator)))
-    cat(sprintf("Ratio: %s\n",sum(d$numerator)/sum(d$denominator)))
-    cat(sprintf("Number of people in both categories: %s\n",sum(d$numerator==1 & d$denominator==1)))
-    cat("\n\n")
-  }
-}
-```
-
 ## 24/25. Percentage distribution of each health profession per sector  of employment in Palestine/WB/Gaza
 
 - Source: Workforce and facility questionnaire
 - Calculation: ( total number of health workers in MoH / total number of health workers ) * 100 --This is repeated for all sectors to come out with percentage distribution
 - Indicator description: Percentge of total health workers at each sector to total health workers in all sectors ( repeat indicator for each sector of employment )
-
-### BY CW00
 
 ```{r, warning=FALSE}
 dMaster <- merge(dWorkers, dFacilities[,c("IDH00","facilitySector")], by="IDH00")
@@ -3682,55 +2901,7 @@ for(i in professionVars){
 }
 ```
 
-### BY CW00 AND CW06
-
-```{r, warning=FALSE}
-dMaster <- merge(dWorkers, dFacilities[,c("IDH00","facilitySector")], by="IDH00")
-nrow(dWorkers)
-nrow(dMaster)
-
-for(i in professionVarsBOTH){
-  for(location in c("isPalestine","isWB","isGaza")){
-    if(location=="isPalestine"){
-      usePopulation <- pop[districtName=="Palestine population"]$pop
-    } else if(location=="isWB"){
-      usePopulation <- pop[districtName=="West Bank Population"]$pop
-    } else if(location=="isGaza"){
-      usePopulation <- pop[districtName=="Gaza Population"]$pop
-    }
-    d <- dMaster[get(i)==1 & get(location)==1]
-    
-    d[,numerator:=1]
-    d <- d[,.(
-        person=max(numerator,na.rm=T),
-        jobs=sum(numerator,na.rm=T)
-      ),by=.(
-        HR01,
-        facilitySector
-      )]
-    
-    
-    NumberOfPeople <- length(unique(d$HR01))
-    
-    d <- d[,.(
-      person=sum(person),
-      jobs=sum(jobs)),
-      by=.(facilitySector)]
-    d[,denom:=sum(person)]
-    d[,percentagePerson:=person/denom*100]
-    d[,denom:=NULL]
-    
-    cat(sprintf("***** %s %s *****\n",i,location))
-    print(d)
-    print(sprintf("Number of jobs: %s",sum(d$jobs)))
-    print(sprintf("Number of people-sectors: %s",sum(d$person)))
-    print(sprintf("Number of unique people WITHIN %s: %s",location,NumberOfPeople))
-    cat("\n\n")
-  }
-}
-```
-
-### BY SPECIALIZED DOCTOR BY CW00
+### BY SPECIALIZED DOCTOR
 
 ```{r, warning=FALSE}
 dMaster <- merge(dWorkers, dFacilities[,c("IDH00","facilitySector")], by="IDH00")
@@ -3780,63 +2951,13 @@ for(i in specializations){
 }
 ```
 
-### BY SPECIALIZED DOCTOR BY CW00 AND CW06
-
-```{r, warning=FALSE}
-dMaster <- merge(dWorkers, dFacilities[,c("IDH00","facilitySector")], by="IDH00")
-nrow(dWorkers)
-nrow(dMaster)
-
-specializations <- unique(dMaster$BOTHdoctor_specialization)
-
-for(i in specializations){
-  for(location in c("isPalestine","isWB","isGaza")){
-    if(location=="isPalestine"){
-      usePopulation <- pop[districtName=="Palestine population"]$pop
-    } else if(location=="isWB"){
-      usePopulation <- pop[districtName=="West Bank Population"]$pop
-    } else if(location=="isGaza"){
-      usePopulation <- pop[districtName=="Gaza Population"]$pop
-    }
-    d <- dMaster[BOTHdoctor_specialization==i & get(location)==1]
-    
-    d[,numerator:=1]
-    d <- d[,.(
-        person=max(numerator,na.rm=T),
-        jobs=sum(numerator,na.rm=T)
-      ),by=.(
-        HR01,
-        facilitySector
-      )]
-    
-    
-    NumberOfPeople <- length(unique(d$HR01))
-    
-    d <- d[,.(
-      person=sum(person),
-      jobs=sum(jobs)),
-      by=.(facilitySector)]
-    d[,denom:=sum(person)]
-    d[,percentagePerson:=person/denom*100]
-    d[,denom:=NULL]
-    
-    cat(sprintf("***** %s %s *****\n",i,location))
-    print(d)
-    print(sprintf("Number of jobs: %s",sum(d$jobs)))
-    print(sprintf("Number of people-sectors: %s",sum(d$person)))
-    print(sprintf("Number of unique people WITHIN %s: %s",location,NumberOfPeople))
-    cat("\n\n")
-  }
-}
-```
-
 ## 26/27. Ratio of total working nurses to working doctors in Palestine/WB/Gaza
 
 - Source: Workforce and facility questionnaire
 - Calculation: All CW00 nurses / All CW00 doctors
 - Indicator description: Ratio of working nurses to working doctors in Palestine
 
-### Results BY CW00
+### Results
 
 ```{r, warning=FALSE}
 # todo
@@ -3858,44 +2979,6 @@ for(i in c("All",unique(dMaster$facilitySector))){
     
     d[,numerator:=isProf_Nurse]
     d[,denominator:=isProf_Doctor]
-    
-    d <- d[,.(
-      numerator=max(numerator,na.rm=T),
-      denominator=max(denominator,na.rm=T)
-    ),by=.(
-      HR01
-    )]
-    
-    cat(sprintf("***** %s %s *****\n",i,location))
-    cat(sprintf("Nurse: %s\n",sum(d$numerator)))
-    cat(sprintf("Doctor: %s\n",sum(d$denominator)))
-    cat(sprintf("Ratio: %s\n",sum(d$numerator)/sum(d$denominator)))
-    cat("\n\n")
-  }
-}
-```
-
-### Results BY CW00 AND CW06
-
-```{r, warning=FALSE}
-dMaster <- merge(dWorkers, dFacilities[,c("IDH00","facilitySector")], by="IDH00")
-nrow(dWorkers)
-nrow(dMaster)
-
-for(i in c("All",unique(dMaster$facilitySector))){
-  for(location in c("isPalestine","isWB","isGaza")){
-    if(location=="isPalestine"){
-      usePopulation <- pop[districtName=="Palestine population"]$pop
-    } else if(location=="isWB"){
-      usePopulation <- pop[districtName=="West Bank Population"]$pop
-    } else if(location=="isGaza"){
-      usePopulation <- pop[districtName=="Gaza Population"]$pop
-    }
-    d <- dMaster[(BOTH_isProf_Doctor==1 | BOTH_isProf_Nurse==1) & get(location)==1]
-    if(i!="All") d <- d[facilitySector==i]
-    
-    d[,numerator:=BOTH_isProf_Nurse]
-    d[,denominator:=BOTH_isProf_Doctor]
     
     d <- d[,.(
       numerator=max(numerator,na.rm=T),
@@ -3919,7 +3002,7 @@ for(i in c("All",unique(dMaster$facilitySector))){
 - Calculation: All CW00 nurses / All CW00 doctors
 - Indicator description: Ratio of working nurses to working doctors in Palestine
 
-### Results BY CW00
+### Results
 
 ```{r, warning=FALSE}
 # todo
@@ -3958,51 +3041,13 @@ for(i in c("All",unique(dMaster$facilitySector))){
 }
 ```
 
-### Results BY CW00 AND CW06
-
-```{r, warning=FALSE}
-dMaster <- merge(dWorkers, dFacilities[IS06==9,c("IDH00","facilitySector")], by="IDH00")
-nrow(dWorkers)
-nrow(dMaster)
-
-for(i in c("All",unique(dMaster$facilitySector))){
-  for(location in c("isPalestine","isWB","isGaza")){
-    if(location=="isPalestine"){
-      usePopulation <- pop[districtName=="Palestine population"]$pop
-    } else if(location=="isWB"){
-      usePopulation <- pop[districtName=="West Bank Population"]$pop
-    } else if(location=="isGaza"){
-      usePopulation <- pop[districtName=="Gaza Population"]$pop
-    }
-    d <- dMaster[(BOTH_isProf_Doctor==1 | BOTH_isProf_Nurse==1) & get(location)==1]
-    if(i!="All") d <- d[facilitySector==i]
-    
-    d[,numerator:=BOTH_isProf_Nurse]
-    d[,denominator:=BOTH_isProf_Doctor]
-    
-    d <- d[,.(
-      numerator=max(numerator,na.rm=T),
-      denominator=max(denominator,na.rm=T)
-    ),by=.(
-      HR01
-    )]
-    
-    cat(sprintf("***** %s %s *****\n",i,location))
-    cat(sprintf("Nurse: %s\n",sum(d$numerator)))
-    cat(sprintf("Doctor: %s\n",sum(d$denominator)))
-    cat(sprintf("Ratio: %s\n",sum(d$numerator)/sum(d$denominator)))
-    cat("\n\n")
-  }
-}
-```
-
 ## xx. Ratio of admin to HCW IN HOSPITALS BY SECTOR in Palestine/WB/Gaza
 
 - Source: Workforce and facility questionnaire
 - Calculation: All CW00 nurses / All CW00 doctors
 - Indicator description: Ratio of working nurses to working doctors in Palestine
 
-### Results BY CW00
+### Results
 
 ```{r, warning=FALSE}
 # todo
@@ -4041,51 +3086,13 @@ for(i in c("All",unique(dMaster$facilitySector))){
 }
 ```
 
-### Results BY CW00 AND CW06
-
-```{r, warning=FALSE}
-dMaster <- merge(dWorkers, dFacilities[IS06==9,c("IDH00","facilitySector")], by="IDH00")
-nrow(dWorkers)
-nrow(dMaster)
-
-for(i in c("All",unique(dMaster$facilitySector))){
-  for(location in c("isPalestine","isWB","isGaza")){
-    if(location=="isPalestine"){
-      usePopulation <- pop[districtName=="Palestine population"]$pop
-    } else if(location=="isWB"){
-      usePopulation <- pop[districtName=="West Bank Population"]$pop
-    } else if(location=="isGaza"){
-      usePopulation <- pop[districtName=="Gaza Population"]$pop
-    }
-    d <- dMaster[(BOTH_isProf_Administrativesupportstaff==1 | BOTH_isProf_Healthworker==1) & get(location)==1]
-    if(i!="All") d <- d[facilitySector==i]
-    
-    d[,numerator:=BOTH_isProf_Administrativesupportstaff]
-    d[,denominator:=BOTH_isProf_Healthworker]
-    
-    d <- d[,.(
-      numerator=max(numerator,na.rm=T),
-      denominator=max(denominator,na.rm=T)
-    ),by=.(
-      HR01
-    )]
-    
-    cat(sprintf("***** %s %s *****\n",i,location))
-    cat(sprintf("Admin: %s\n",sum(d$numerator)))
-    cat(sprintf("HCW: %s\n",sum(d$denominator)))
-    cat(sprintf("Ratio: %s\n",sum(d$numerator)/sum(d$denominator)))
-    cat("\n\n")
-  }
-}
-```
-
 ## 28/30. Percentage of health workers from the Ministry of Health who dual practice Palestine/WB/Gaza
 
 - Source: Workforce and facility questionnaire
 - Calculation: ( Health workers at Ministry of Health (IS04) with IDs found in outside MoH sector / all MoH workers ) * 100
 - Indicator description: Percentage of health workers at the Ministry of Health of who dual practice
 
-### Results BY CW00
+### Results
 
 ```{r, warning=FALSE}
 dMaster <- merge(dWorkers, dFacilities[,c("IDH00","facilitySector")], by="IDH00")
@@ -4126,48 +3133,7 @@ for(i in professionVars){
 }
 ```
 
-### Results BY CW00 AND CW06
-
-```{r, warning=FALSE}
-dMaster <- merge(dWorkers, dFacilities[,c("IDH00","facilitySector")], by="IDH00")
-nrow(dWorkers)
-nrow(dMaster)
-unique(dMaster$facilitySector)
-
-for(i in professionVarsBOTH){
-  for(location in c("isPalestine","isWB","isGaza")){
-    if(location=="isPalestine"){
-      usePopulation <- pop[districtName=="Palestine population"]$pop
-    } else if(location=="isWB"){
-      usePopulation <- pop[districtName=="West Bank Population"]$pop
-    } else if(location=="isGaza"){
-      usePopulation <- pop[districtName=="Gaza Population"]$pop
-    }
-    d <- dMaster[get(i)==1 & get(location)==1]
-    
-    d[,numerator:=0]
-    d[facilitySector!="Ministry of Health",numerator:=1]
-    d[,denominator:=0]
-    d[facilitySector=="Ministry of Health",denominator:=1]
-    
-    d <- d[,.(
-      numerator=max(numerator,na.rm=T),
-      denominator=max(denominator,na.rm=T)
-    ),by=.(
-      HR01
-    )]
-    d <- d[denominator==1]
-    
-    cat(sprintf("***** %s %s *****\n",i,location))
-    cat(sprintf("Numerator: %s\n",sum(d$numerator)))
-    cat(sprintf("Denominator: %s\n",sum(d$denominator)))
-    cat(sprintf("Percentage: %s%%\n",sum(d$numerator)/sum(d$denominator)*100))
-    cat("\n\n")
-  }
-}
-```
-
-### BY SPECIALIZED DOCTOR BY CW00
+### BY SPECIALIZED DOCTOR
 
 ```{r, warning=FALSE}
 dMaster <- merge(dWorkers, dFacilities[,c("IDH00","facilitySector")], by="IDH00")
@@ -4187,49 +3153,6 @@ for(i in specializations){
       usePopulation <- pop[districtName=="Gaza Population"]$pop
     }
     d <- dMaster[doctor_specialization==i & get(location)==1]
-    
-    d[,numerator:=0]
-    d[facilitySector!="Ministry of Health",numerator:=1]
-    d[,denominator:=0]
-    d[facilitySector=="Ministry of Health",denominator:=1]
-    
-    d <- d[,.(
-      numerator=max(numerator,na.rm=T),
-      denominator=max(denominator,na.rm=T)
-    ),by=.(
-      HR01
-    )]
-    d <- d[denominator==1]
-    
-    cat(sprintf("***** %s %s *****\n",i,location))
-    cat(sprintf("Numerator: %s\n",sum(d$numerator)))
-    cat(sprintf("Denominator: %s\n",sum(d$denominator)))
-    cat(sprintf("Percentage: %s%%\n",sum(d$numerator)/sum(d$denominator)*100))
-    cat("\n\n")
-  }
-}
-```
-
-### BY SPECIALIZED DOCTOR BY CW00 AND CW06
-
-```{r, warning=FALSE}
-dMaster <- merge(dWorkers, dFacilities[,c("IDH00","facilitySector")], by="IDH00")
-nrow(dWorkers)
-nrow(dMaster)
-unique(dMaster$facilitySector)
-
-specializations <- unique(dMaster$BOTHdoctor_specialization)
-
-for(i in specializations){
-  for(location in c("isPalestine","isWB","isGaza")){
-    if(location=="isPalestine"){
-      usePopulation <- pop[districtName=="Palestine population"]$pop
-    } else if(location=="isWB"){
-      usePopulation <- pop[districtName=="West Bank Population"]$pop
-    } else if(location=="isGaza"){
-      usePopulation <- pop[districtName=="Gaza Population"]$pop
-    }
-    d <- dMaster[BOTHdoctor_specialization==i & get(location)==1]
     
     d[,numerator:=0]
     d[facilitySector!="Ministry of Health",numerator:=1]
@@ -4259,7 +3182,7 @@ for(i in specializations){
 - Calculation: ( Health workers at Ministry of Health (IS04) with IDs found in outside MoH sector / all MoH workers ) * 100
 - Indicator description: Percentage of health workers at the Ministry of Health of who dual practice
 
-### Results BY CW00 IN HOSPITALS
+### Results IN HOSPITALS
 
 ```{r, warning=FALSE}
 dMaster <- merge(dWorkers, dFacilities[IS06==9,c("IDH00","facilitySector")], by="IDH00")
@@ -4300,48 +3223,7 @@ for(i in professionVars){
 }
 ```
 
-### Results BY CW00 AND CW06 IN HOSPITALS
-
-```{r, warning=FALSE}
-dMaster <- merge(dWorkers, dFacilities[IS06==9,c("IDH00","facilitySector")], by="IDH00")
-nrow(dWorkers)
-nrow(dMaster)
-unique(dMaster$facilitySector)
-
-for(i in professionVarsBOTH){
-  for(location in c("isPalestine","isWB","isGaza")){
-    if(location=="isPalestine"){
-      usePopulation <- pop[districtName=="Palestine population"]$pop
-    } else if(location=="isWB"){
-      usePopulation <- pop[districtName=="West Bank Population"]$pop
-    } else if(location=="isGaza"){
-      usePopulation <- pop[districtName=="Gaza Population"]$pop
-    }
-    d <- dMaster[get(i)==1 & get(location)]
-    
-    d[,numerator:=0]
-    d[facilitySector!="Ministry of Health",numerator:=1]
-    d[,denominator:=0]
-    d[facilitySector=="Ministry of Health",denominator:=1]
-    
-    d <- d[,.(
-      numerator=max(numerator,na.rm=T),
-      denominator=max(denominator,na.rm=T)
-    ),by=.(
-      HR01
-    )]
-    d <- d[denominator==1]
-    
-    cat(sprintf("***** %s %s *****\n",i,location))
-    cat(sprintf("Numerator: %s\n",sum(d$numerator)))
-    cat(sprintf("Denominator: %s\n",sum(d$denominator)))
-    cat(sprintf("Percentage: %s%%\n",sum(d$numerator)/sum(d$denominator)*100))
-    cat("\n\n")
-  }
-}
-```
-
-### BY SPECIALIZED DOCTOR BY CW00 IN HOSPITALS
+### BY SPECIALIZED DOCTOR IN HOSPITALS
 
 ```{r, warning=FALSE}
 dMaster <- merge(dWorkers, dFacilities[IS06==9,c("IDH00","facilitySector")], by="IDH00")
@@ -4361,49 +3243,6 @@ for(i in specializations){
       usePopulation <- pop[districtName=="Gaza Population"]$pop
     }
     d <- dMaster[doctor_specialization==i & get(location)==1]
-    
-    d[,numerator:=0]
-    d[facilitySector!="Ministry of Health",numerator:=1]
-    d[,denominator:=0]
-    d[facilitySector=="Ministry of Health",denominator:=1]
-    
-    d <- d[,.(
-      numerator=max(numerator,na.rm=T),
-      denominator=max(denominator,na.rm=T)
-    ),by=.(
-      HR01
-    )]
-    d <- d[denominator==1]
-    
-    cat(sprintf("***** %s %s *****\n",i,location))
-    cat(sprintf("Numerator: %s\n",sum(d$numerator)))
-    cat(sprintf("Denominator: %s\n",sum(d$denominator)))
-    cat(sprintf("Percentage: %s%%\n",sum(d$numerator)/sum(d$denominator)*100))
-    cat("\n\n")
-  }
-}
-```
-
-### BY SPECIALIZED DOCTOR BY CW00 AND CW06 IN HOSPITALS
-
-```{r, warning=FALSE}
-dMaster <- merge(dWorkers, dFacilities[IS06==9,c("IDH00","facilitySector")], by="IDH00")
-nrow(dWorkers)
-nrow(dMaster)
-unique(dMaster$facilitySector)
-
-specializations <- unique(dMaster$BOTHdoctor_specialization)
-
-for(i in specializations){
-  for(location in c("isPalestine","isWB","isGaza")){
-    if(location=="isPalestine"){
-      usePopulation <- pop[districtName=="Palestine population"]$pop
-    } else if(location=="isWB"){
-      usePopulation <- pop[districtName=="West Bank Population"]$pop
-    } else if(location=="isGaza"){
-      usePopulation <- pop[districtName=="Gaza Population"]$pop
-    }
-    d <- dMaster[BOTHdoctor_specialization==i & get(location)==1]
     
     d[,numerator:=0]
     d[facilitySector!="Ministry of Health",numerator:=1]
@@ -4433,7 +3272,7 @@ for(i in specializations){
 - Calculation: ( Health workers at Ministry of Health (IS04) with IDs found in outside MoH sector / all MoH workers ) * 100
 - Indicator description: Percentage of health workers at the Ministry of Health of who dual practice
 
-### Results BY CW00 IN HEALTH CENTERS
+### Results IN HEALTH CENTERS
 
 ```{r, warning=FALSE}
 dMaster <- merge(dWorkers, dFacilities[IS06==4,c("IDH00","facilitySector")], by="IDH00")
@@ -4474,48 +3313,7 @@ for(i in professionVars){
 }
 ```
 
-### Results BY CW00 AND CW06 IN HEALTH CENTERS
-
-```{r, warning=FALSE}
-dMaster <- merge(dWorkers, dFacilities[IS06==4,c("IDH00","facilitySector")], by="IDH00")
-nrow(dWorkers)
-nrow(dMaster)
-unique(dMaster$facilitySector)
-
-for(i in professionVarsBOTH){
-  for(location in c("isPalestine","isWB","isGaza")){
-    if(location=="isPalestine"){
-      usePopulation <- pop[districtName=="Palestine population"]$pop
-    } else if(location=="isWB"){
-      usePopulation <- pop[districtName=="West Bank Population"]$pop
-    } else if(location=="isGaza"){
-      usePopulation <- pop[districtName=="Gaza Population"]$pop
-    }
-    d <- dMaster[get(i)==1 & get(location)==1]
-    
-    d[,numerator:=0]
-    d[facilitySector!="Ministry of Health",numerator:=1]
-    d[,denominator:=0]
-    d[facilitySector=="Ministry of Health",denominator:=1]
-    
-    d <- d[,.(
-      numerator=max(numerator,na.rm=T),
-      denominator=max(denominator,na.rm=T)
-    ),by=.(
-      HR01
-    )]
-    d <- d[denominator==1]
-    
-    cat(sprintf("***** %s %s*****\n",i,location))
-    cat(sprintf("Numerator: %s\n",sum(d$numerator)))
-    cat(sprintf("Denominator: %s\n",sum(d$denominator)))
-    cat(sprintf("Percentage: %s%%\n",sum(d$numerator)/sum(d$denominator)*100))
-    cat("\n\n")
-  }
-}
-```
-
-### BY SPECIALIZED DOCTOR BY CW00 IN HEALTH CENTERS
+### BY SPECIALIZED DOCTOR IN HEALTH CENTERS
 
 ```{r, warning=FALSE}
 dMaster <- merge(dWorkers, dFacilities[IS06==4,c("IDH00","facilitySector")], by="IDH00")
@@ -4558,57 +3356,12 @@ for(i in specializations){
 }
 ```
 
-### BY SPECIALIZED DOCTOR BY CW00 AND CW06 IN HEALTH CENTERS
-
-```{r, warning=FALSE}
-dMaster <- merge(dWorkers, dFacilities[IS06==4,c("IDH00","facilitySector")], by="IDH00")
-nrow(dWorkers)
-nrow(dMaster)
-unique(dMaster$facilitySector)
-
-specializations <- unique(dMaster$BOTHdoctor_specialization)
-
-for(i in specializations){
-  for(location in c("isPalestine","isWB","isGaza")){
-    if(location=="isPalestine"){
-      usePopulation <- pop[districtName=="Palestine population"]$pop
-    } else if(location=="isWB"){
-      usePopulation <- pop[districtName=="West Bank Population"]$pop
-    } else if(location=="isGaza"){
-      usePopulation <- pop[districtName=="Gaza Population"]$pop
-    }
-    d <- dMaster[BOTHdoctor_specialization==i & get(location)==1]
-    
-    d[,numerator:=0]
-    d[facilitySector!="Ministry of Health",numerator:=1]
-    d[,denominator:=0]
-    d[facilitySector=="Ministry of Health",denominator:=1]
-    
-    d <- d[,.(
-      numerator=max(numerator,na.rm=T),
-      denominator=max(denominator,na.rm=T)
-    ),by=.(
-      HR01
-    )]
-    d <- d[denominator==1]
-    
-    cat(sprintf("***** %s %s *****\n",i,location))
-    cat(sprintf("Numerator: %s\n",sum(d$numerator)))
-    cat(sprintf("Denominator: %s\n",sum(d$denominator)))
-    cat(sprintf("Percentage: %s%%\n",sum(d$numerator)/sum(d$denominator)*100))
-    cat("\n\n")
-  }
-}
-```
-
-
 ## 31. Percentage of doctors working in hospitals in Palestine/WB/Gaza
 
 - Source: Workforce and facility questionnaire
 - Calculation: ( sum of CW00 doctors with answer 9 in facility questionnaire IS06 / total doctors ) * 100
 - Indicator description: Percentage of doctors working in Palestine who work in hospitals
 
-### Results BY CW00
 
 ```{r, warning=FALSE}
 for(location in c("isPalestine","isWB","isGaza")){
@@ -4635,40 +3388,13 @@ for(location in c("isPalestine","isWB","isGaza")){
 }
 ```
 
-### Results BY CW00 AND CW06
-
-```{r, warning=FALSE}
-for(location in c("isPalestine","isWB","isGaza")){
-  if(location=="isPalestine"){
-    usePopulation <- pop[districtName=="Palestine population"]$pop
-  } else if(location=="isWB"){
-    usePopulation <- pop[districtName=="West Bank Population"]$pop
-  } else if(location=="isGaza"){
-    usePopulation <- pop[districtName=="Gaza Population"]$pop
-  }
-  d <- merge(dWorkers, dFacilities[,c("IDH00","IS06")], by="IDH00")
-  d <- d[BOTH_isProf_Doctor==1 & get(location)==1]
-  d[!is.na(IS06),numerator:=0]
-  d[IS06==9,numerator:=1]
-  
-  d <- d[,.(
-    numerator=max(numerator,na.rm=T)
-  ),by=.(
-    HR01
-  )]
-   
-  cat("\n\n******* ",location," **\n")
-  PrintTableNPerc(d)
-}
-```
-
 ## 32. Percentage of nurses working in hospitals in Palestine/WB/Gaza
 
 - Source: Workforce and facility questionnaire
 - Calculation: ( sum of CW00 nurses with answer 9 in facility questionnaire IS06 / total nurses ) * 100
 - Indicator description: Percentage of nurses working in Palestine who work in hospitals
 
-### Results BY CW00
+### Results 
 
 ```{r, warning=FALSE}
 for(location in c("isPalestine","isWB","isGaza")){
@@ -4695,40 +3421,13 @@ for(location in c("isPalestine","isWB","isGaza")){
 }
 ```
 
-### Results BY CW00 AND CW06
-
-```{r, warning=FALSE}
-for(location in c("isPalestine","isWB","isGaza")){
-  if(location=="isPalestine"){
-    usePopulation <- pop[districtName=="Palestine population"]$pop
-  } else if(location=="isWB"){
-    usePopulation <- pop[districtName=="West Bank Population"]$pop
-  } else if(location=="isGaza"){
-    usePopulation <- pop[districtName=="Gaza Population"]$pop
-  }
-  d <- merge(dWorkers, dFacilities[,c("IDH00","IS06")], by="IDH00")
-  d <- d[BOTH_isProf_Nurse==1 & get(location)==1]
-  d[!is.na(IS06),numerator:=0]
-  d[IS06==9,numerator:=1]
-  
-  d <- d[,.(
-    numerator=max(numerator,na.rm=T)
-  ),by=.(
-    HR01
-  )]
-   
-  cat("\n\n******* ",location," **\n")
-  PrintTableNPerc(d)
-}
-```
-
 ## 33. Percentage of working doctors in private clinics in Palestine/WB/Gaza
 
 - Source: Workforce and facility questionnaire
 - Calculation: ( sum of CW00 doctors with answers in facility questionnaire IS06 1 +2 (and IS04--Private sector) / total number of CW00 doctors ) * 100
 - Indicator description: Percentage of doctors working in Palestine who work in private clinics
 
-### Results BY CW00
+### Results
 
 ```{r, warning=FALSE}
 for(location in c("isPalestine","isWB","isGaza")){
@@ -4756,41 +3455,13 @@ for(location in c("isPalestine","isWB","isGaza")){
 }
 ```
 
-### Results BY CW00 AND CW06
-
-```{r, warning=FALSE}
-for(location in c("isPalestine","isWB","isGaza")){
-  if(location=="isPalestine"){
-    usePopulation <- pop[districtName=="Palestine population"]$pop
-  } else if(location=="isWB"){
-    usePopulation <- pop[districtName=="West Bank Population"]$pop
-  } else if(location=="isGaza"){
-    usePopulation <- pop[districtName=="Gaza Population"]$pop
-  }
-  d <- merge(dWorkers, dFacilities[,c("IDH00","IS06","facilitySector")], by="IDH00")
-  d <- d[BOTH_isProf_Doctor==1 & get(location)==1]
-  d[!is.na(IS06),numerator:=0]
-  d[IS06 %in% c(1,2),numerator:=1]
-  d[facilitySector=="Private",numerator:=1]
-  
-  d <- d[,.(
-    numerator=max(numerator,na.rm=T)
-  ),by=.(
-    HR01
-  )]
-   
-  cat("\n\n******* ",location," **\n")
-  PrintTableNPerc(d) 
-}
-```
-
 ## 34. Percentage of working specialized doctors in private clinics in Palestine/WB/Gaza
 
 - Source: Workforce and facility questionnaire
 - Calculation: ( sum of CW00 specialized doctors with answers in facilitiy questionnaire IS06 1+ 2 (ad IS04--private sector)/ total number of CW00 specialized doctors ) * 100
 - Indicator description: Percentage of working specialized doctors in private clinics in Palestine
 
-### Results BY CW00
+### Results
 
 ```{r, warning=FALSE}
 for(location in c("isPalestine","isWB","isGaza")){
@@ -4818,35 +3489,7 @@ for(location in c("isPalestine","isWB","isGaza")){
 }
 ```
 
-### Results BY CW00 AND CW06
-
-```{r, warning=FALSE}
-for(location in c("isPalestine","isWB","isGaza")){
-  if(location=="isPalestine"){
-    usePopulation <- pop[districtName=="Palestine population"]$pop
-  } else if(location=="isWB"){
-    usePopulation <- pop[districtName=="West Bank Population"]$pop
-  } else if(location=="isGaza"){
-    usePopulation <- pop[districtName=="Gaza Population"]$pop
-  }
-  d <- merge(dWorkers, dFacilities[,c("IDH00","IS06","facilitySector")], by="IDH00")
-  d <- d[BOTH_isProf_Specializeddoctor==1 & get(location)==1]
-  d[!is.na(IS06),numerator:=0]
-  d[IS06 %in% c(1,2),numerator:=1]
-  d[facilitySector=="Private",numerator:=1]
-  
-  d <- d[,.(
-    numerator=max(numerator,na.rm=T)
-  ),by=.(
-    HR01
-  )]
-   
-  cat("\n\n******* ",location," **\n")
-  PrintTableNPerc(d) 
-}
-```
-
-### Results by specialization type BY CW00
+### Results by specialization type
 
 ```{r, warning=FALSE}
 for(location in c("isPalestine","isWB","isGaza")){
@@ -4883,45 +3526,6 @@ for(location in c("isPalestine","isWB","isGaza")){
 }
 ```
 
-### Results by specialization type BY CW00 AND CW06
-
-```{r, warning=FALSE}
-for(location in c("isPalestine","isWB","isGaza")){
-  if(location=="isPalestine"){
-    usePopulation <- pop[districtName=="Palestine population"]$pop
-  } else if(location=="isWB"){
-    usePopulation <- pop[districtName=="West Bank Population"]$pop
-  } else if(location=="isGaza"){
-    usePopulation <- pop[districtName=="Gaza Population"]$pop
-  }
-  d <- merge(dWorkers, dFacilities[,c("IDH00","IS06","facilitySector")], by="IDH00")
-  d <- d[BOTH_isProf_Specializeddoctor==1 & get(location)==1]
-  d[!is.na(IS06),numerator:=0]
-  d[IS06 %in% c(1,2),numerator:=1]
-  d[facilitySector=="Private",numerator:=1]
-  
-  d <- d[,.(
-    numerator=max(numerator,na.rm=T)
-  ),by=.(
-    HR01,BOTHdoctor_specialization
-  )]
-  
-  d <- d[,.(
-    numerator=sum(numerator,na.rm=T),
-    denominator=.N
-  ),by=.(
-    BOTHdoctor_specialization
-  )]
-  d[,perc:=RAWmisc::Format(100*numerator/denominator,digits = 2)]
-  
-  setorder(d,BOTHdoctor_specialization)
-  cat("\n\n******* ",location," **\n")
-  print(d)
-}
-```
-
-
-
 ## 35x-41x. Total number of X (doctors/nurses/etc) working in East Jerusalem hospitals
 
 
@@ -4929,7 +3533,7 @@ for(location in c("isPalestine","isWB","isGaza")){
 - Calculation: ( sum of CW00 doctors IDH03 who work in a facility in East Jerusalem and IS06 9. hospitals )
 - Indicator description: Total number of doctors working in East Jerusalem hospitals
 
-### Results BY CW00
+### Results
 
 ```{r message=FALSE, warning=FALSE}
 
@@ -4955,33 +3559,7 @@ for(i in professionVars){
 }
 ```
 
-### Results BY CW00 AND CW06
-
-```{r message=FALSE, warning=FALSE}
-
-dMaster <- merge(dWorkers, dFacilities[,c("IDH00","IS06")], by="IDH00")
-
-for(i in professionVarsBOTH){
-  #d <- dWorkers[get(i)==1 & IDH03 %in% c(dLocation[district=="East Jerusalem (J1)"]$localityCode)]
-  d <- dMaster[get(i)==1 & 
-                  IDH03 %in% c(dLocation[district=="East Jerusalem (J1)"]$localityCode) &
-                  IS06==9]
-  
-  d[,numerator:=1]
-  
-  d <- d[,.(
-    numerator=max(numerator,na.rm=T)
-  ),by=.(
-    HR01
-  )]
-  
-  cat(sprintf("***** %s *****\n",i))
-  cat(sprintf("Numerator: %s\n",sum(d$numerator)))
-  cat("\n\n")
-}
-```
-
-### BY SPECIALIZED DOCTOR BY CW00
+### BY SPECIALIZED DOCTOR
 
 ```{r message=FALSE, warning=FALSE}
 
@@ -5009,41 +3587,11 @@ for(i in specializations){
 }
 ```
 
-### BY SPECIALIZED DOCTOR BY CW00 AND CW06
-
-```{r message=FALSE, warning=FALSE}
-
-dMaster <- merge(dWorkers, dFacilities[,c("IDH00","IS06")], by="IDH00")
-
-specializations <- unique(dMaster$BOTHdoctor_specialization)
-
-for(i in specializations){
-  #d <- dWorkers[get(i)==1 & IDH03 %in% c(dLocation[district=="East Jerusalem (J1)"]$localityCode)]
-  d <- dMaster[BOTHdoctor_specialization==i & 
-                  IDH03 %in% c(dLocation[district=="East Jerusalem (J1)"]$localityCode) &
-                  IS06==9]
-  
-  d[,numerator:=1]
-  
-  d <- d[,.(
-    numerator=max(numerator,na.rm=T)
-  ),by=.(
-    HR01
-  )]
-  
-  cat(sprintf("***** %s *****\n",i))
-  cat(sprintf("Numerator: %s\n",sum(d$numerator)))
-  cat("\n\n")
-}
-```
-
 # At Risk Area Indicators
 
 - Number/per 1000 
 - Doctors, Dentists, Pharmacists, Nurses, Midwives, Doctors+Nurses+Midwives
 - Area C, Jordan Valley, Jerusalem District
-
-## BY CW00
 
 ```{r message=FALSE, warning=FALSE}
 
@@ -5103,47 +3651,6 @@ res[,ratep1000:=RAWmisc::Format(n/pop*1000,digits=2)]
 print(res)
 ```
 
-## BY CW00 AND CW06
-
-```{r message=FALSE, warning=FALSE}
-
-#dMaster <- merge(dWorkers, dFacilities[,c("IDH00","RE02")], by="IDH00")
-#xtabs(~dMaster$RE02)
-
-res <- list()
-index <- 1
-for(prof in c(
-  "BOTH_isProf_Doctor",
-  "BOTH_isProf_Dentist",
-  "BOTH_isProf_Pharmacist",
-  "BOTH_isProf_Nurse",
-  "BOTH_isProf_Midwife",
-  "BOTH_isProf_DocNurseMid"
-  )) for(area in c(
-    "worksInAreaC",
-    "worksInJordanValley",
-    "isJerusalem"
-  )){
-    d <- dWorkers[get(prof)==1 & get(area)==1]
-    d[,numerator:=1]
-  
-    d <- d[,.(
-     numerator=max(numerator,na.rm=T)
-    ),by=.(
-     HR01
-    )]
-    res[[index]] <- data.frame(prof=prof,area=area,n=nrow(d))
-    index <- index + 1
-  }
-
-res <- rbindlist(res)
-res[,pop:=161596.6]
-res[area=="worksInAreaC",pop:=297986]
-res[area=="worksInJordanValley",pop:=18241]
-res[,ratep1000:=RAWmisc::Format(n/pop*1000,digits=2)]
-print(res)
-```
-
 # Age Indicators
 
 - Age -> should sum up to 100%
@@ -5151,8 +3658,6 @@ print(res)
 - Stratified by Palestine/Gaza/WB
 - Doctors, Dentists, Pharmacists, Nurses, Midwives, Doctors+Nurses+Midwives
 - Area C, Jordan Valley, Jerusalem District
-
-## BY CW00
 
 ```{r message=FALSE, warning=FALSE}
 
@@ -5210,65 +3715,7 @@ for(prof in professionVars) for(area in c(
 
 ```
 
-## BY CW00 AND CW06
-
-```{r message=FALSE, warning=FALSE}
-
-dWorkers[,isGaza:=as.numeric(NA)]
-dWorkers[,isWB:=as.numeric(NA)]
-
-dWorkers[,isPalestine:=1]
-dWorkers[IDH03 %in% dLocation[isGaza==1]$localityCode, isGaza:=1]
-dWorkers[IDH03 %in% dLocation[isGaza==0]$localityCode, isWB:=1]
-dWorkers[,age:=floor(as.numeric(difftime("2018-01-01",HR03,units="days"))/365.25)]
-
-dWorkers[,ageCat:=as.character(NA)]
-dWorkers[age>=18 & age<=30,ageCat:="18-30"]
-dWorkers[age>=31 & age<=45,ageCat:="31-45"]
-dWorkers[age>=46 & age<=54,ageCat:="46-54"]
-dWorkers[age>=55 & age<=59,ageCat:="55-59"]
-dWorkers[age>=60,ageCat:="60+"]
-
-for(prof in professionVarsBOTH) for(area in c(
-    "isPalestine",
-    "isGaza",
-    "isWB"
-  )){
-    d <- dWorkers[get(prof)==1 & get(area)==1]
-    d[,numerator:=1]
-  
-    d <- d[,.(
-     numerator=max(numerator,na.rm=T)
-    ),by=.(
-     HR01,
-     ageCat
-    )]
-    
-    d <- d[,.(numerator=sum(numerator)),by=ageCat]
-    d[!is.na(ageCat),denominator_excl_miss:=sum(numerator)]
-    d[,perc:=RAWmisc::Format(numerator/denominator_excl_miss*100,1)]
-    d[,ageCat:=factor(ageCat,levels=c(
-      "18-30",
-      "31-45",
-      "46-54",
-      "55-59",
-      "60+"
-      ))]
-    setorder(d,ageCat)
-
-    cat("*******\n")
-    cat(sprintf("%s %s\n",prof,area))
-    if(nrow(d)==0){
-      print("THERE ARE NO PEOPLE HERE")
-    } else {
-      print(d)
-    }
-    cat("\n\n")
-  }
-
-```
-
-### STRATIFIED BY SPECIALIZED DOCTOR BY CW00
+### STRATIFIED BY SPECIALIZED DOCTOR
 
 ```{r message=FALSE, warning=FALSE}
 specializations <- unique(dWorkers$doctor_specialization)
@@ -5312,50 +3759,6 @@ for(prof in specializations) for(area in c(
 
 ```
 
-### STRATIFIED BY SPECIALIZED DOCTOR BY CW00 AND CW06
-
-```{r message=FALSE, warning=FALSE}
-specializations <- unique(dWorkers$BOTHdoctor_specialization)
-
-for(prof in specializations) for(area in c(
-    "isPalestine",
-    "isGaza",
-    "isWB"
-  )){
-    d <- dWorkers[BOTHdoctor_specialization==prof & get(area)==1]
-    d[,numerator:=1]
-  
-    d <- d[,.(
-     numerator=max(numerator,na.rm=T)
-    ),by=.(
-     HR01,
-     ageCat
-    )]
-    
-    d <- d[,.(numerator=sum(numerator)),by=ageCat]
-    d[!is.na(ageCat),denominator_excl_miss:=sum(numerator)]
-    d[,perc:=RAWmisc::Format(numerator/denominator_excl_miss*100,1)]
-    d[,ageCat:=factor(ageCat,levels=c(
-      "18-30",
-      "31-45",
-      "46-54",
-      "55-59",
-      "60+"
-      ))]
-    setorder(d,ageCat)
-
-    cat("*******\n")
-    cat(sprintf("%s %s\n",prof,area))
-    if(nrow(d)==0){
-      print("THERE ARE NO PEOPLE HERE")
-    } else {
-      print(d)
-    }
-    cat("\n\n")
-  }
-
-```
-
 # Age Indicators FOR MINISTRY OF HEALTH AND IS06==9
 
 - Age -> should sum up to 100%
@@ -5364,7 +3767,7 @@ for(prof in specializations) for(area in c(
 - Doctors, Dentists, Pharmacists, Nurses, Midwives, Doctors+Nurses+Midwives
 - Area C, Jordan Valley, Jerusalem District
 
-## BY CW00 FOR MINISTRY OF HEALTH AND IS06==9
+## FOR MINISTRY OF HEALTH AND IS06==9
 
 ```{r message=FALSE, warning=FALSE}
 
@@ -5424,65 +3827,7 @@ for(prof in professionVars) for(area in c(
 
 ```
 
-## BY CW00 AND CW06 FOR MINISTRY OF HEALTH AND IS06==9
-
-```{r message=FALSE, warning=FALSE}
-
-dWorkers[,isGaza:=as.numeric(NA)]
-dWorkers[,isWB:=as.numeric(NA)]
-
-dWorkers[,isPalestine:=1]
-dWorkers[IDH03 %in% dLocation[isGaza==1]$localityCode, isGaza:=1]
-dWorkers[IDH03 %in% dLocation[isGaza==0]$localityCode, isWB:=1]
-dWorkers[,age:=floor(as.numeric(difftime("2018-01-01",HR03,units="days"))/365.25)]
-
-dWorkers[,ageCat:=as.character(NA)]
-dWorkers[age>=18 & age<=30,ageCat:="18-30"]
-dWorkers[age>=31 & age<=45,ageCat:="31-45"]
-dWorkers[age>=46 & age<=54,ageCat:="46-54"]
-dWorkers[age>=55 & age<=59,ageCat:="55-59"]
-dWorkers[age>=60,ageCat:="60+"]
-
-for(prof in professionVarsBOTH) for(area in c(
-    "isPalestine",
-    "isGaza",
-    "isWB"
-  )){
-    d <- dWorkers[get(prof)==1 & get(area)==1 & IDH00 %in% keepIDH00]
-    d[,numerator:=1]
-  
-    d <- d[,.(
-     numerator=max(numerator,na.rm=T)
-    ),by=.(
-     HR01,
-     ageCat
-    )]
-    
-    d <- d[,.(numerator=sum(numerator)),by=ageCat]
-    d[!is.na(ageCat),denominator_excl_miss:=sum(numerator)]
-    d[,perc:=RAWmisc::Format(numerator/denominator_excl_miss*100,1)]
-    d[,ageCat:=factor(ageCat,levels=c(
-      "18-30",
-      "31-45",
-      "46-54",
-      "55-59",
-      "60+"
-      ))]
-    setorder(d,ageCat)
-
-    cat("*******\n")
-    cat(sprintf("%s %s\n",prof,area))
-    if(nrow(d)==0){
-      print("THERE ARE NO PEOPLE HERE")
-    } else {
-      print(d)
-    }
-    cat("\n\n")
-  }
-
-```
-
-### STRATIFIED BY SPECIALIZED DOCTOR BY CW00 FOR MINISTRY OF HEALTH AND IS06==9
+### STRATIFIED BY SPECIALIZED DOCTOR FOR MINISTRY OF HEALTH AND IS06==9
 
 ```{r message=FALSE, warning=FALSE}
 specializations <- unique(dWorkers$doctor_specialization)
@@ -5526,50 +3871,6 @@ for(prof in specializations) for(area in c(
 
 ```
 
-### STRATIFIED BY SPECIALIZED DOCTOR BY CW00 AND CW06 FOR MINISTRY OF HEALTH AND IS06==9
-
-```{r message=FALSE, warning=FALSE}
-specializations <- unique(dWorkers$BOTHdoctor_specialization)
-
-for(prof in specializations) for(area in c(
-    "isPalestine",
-    "isGaza",
-    "isWB"
-  )){
-    d <- dWorkers[BOTHdoctor_specialization==prof & get(area)==1 & IDH00 %in% keepIDH00]
-    d[,numerator:=1]
-  
-    d <- d[,.(
-     numerator=max(numerator,na.rm=T)
-    ),by=.(
-     HR01,
-     ageCat
-    )]
-    
-    d <- d[,.(numerator=sum(numerator)),by=ageCat]
-    d[!is.na(ageCat),denominator_excl_miss:=sum(numerator)]
-    d[,perc:=RAWmisc::Format(numerator/denominator_excl_miss*100,1)]
-    d[,ageCat:=factor(ageCat,levels=c(
-      "18-30",
-      "31-45",
-      "46-54",
-      "55-59",
-      "60+"
-      ))]
-    setorder(d,ageCat)
-
-    cat("*******\n")
-    cat(sprintf("%s %s\n",prof,area))
-    if(nrow(d)==0){
-      print("THERE ARE NO PEOPLE HERE")
-    } else {
-      print(d)
-    }
-    cat("\n\n")
-  }
-
-```
-
 # Age Indicators FOR MINISTRY OF HEALTH AND IS06==4
 
 - Age -> should sum up to 100%
@@ -5578,7 +3879,7 @@ for(prof in specializations) for(area in c(
 - Doctors, Dentists, Pharmacists, Nurses, Midwives, Doctors+Nurses+Midwives
 - Area C, Jordan Valley, Jerusalem District
 
-## BY CW00 FOR MINISTRY OF HEALTH AND IS06==4
+## FOR MINISTRY OF HEALTH AND IS06==4
 
 ```{r message=FALSE, warning=FALSE}
 
@@ -5638,65 +3939,7 @@ for(prof in professionVars) for(area in c(
 
 ```
 
-## BY CW00 AND CW06 FOR MINISTRY OF HEALTH AND IS06==4
-
-```{r message=FALSE, warning=FALSE}
-
-dWorkers[,isGaza:=as.numeric(NA)]
-dWorkers[,isWB:=as.numeric(NA)]
-
-dWorkers[,isPalestine:=1]
-dWorkers[IDH03 %in% dLocation[isGaza==1]$localityCode, isGaza:=1]
-dWorkers[IDH03 %in% dLocation[isGaza==0]$localityCode, isWB:=1]
-dWorkers[,age:=floor(as.numeric(difftime("2018-01-01",HR03,units="days"))/365.25)]
-
-dWorkers[,ageCat:=as.character(NA)]
-dWorkers[age>=18 & age<=30,ageCat:="18-30"]
-dWorkers[age>=31 & age<=45,ageCat:="31-45"]
-dWorkers[age>=46 & age<=54,ageCat:="46-54"]
-dWorkers[age>=55 & age<=59,ageCat:="55-59"]
-dWorkers[age>=60,ageCat:="60+"]
-
-for(prof in professionVarsBOTH) for(area in c(
-    "isPalestine",
-    "isGaza",
-    "isWB"
-  )){
-    d <- dWorkers[get(prof)==1 & get(area)==1 & IDH00 %in% keepIDH00]
-    d[,numerator:=1]
-  
-    d <- d[,.(
-     numerator=max(numerator,na.rm=T)
-    ),by=.(
-     HR01,
-     ageCat
-    )]
-    
-    d <- d[,.(numerator=sum(numerator)),by=ageCat]
-    d[!is.na(ageCat),denominator_excl_miss:=sum(numerator)]
-    d[,perc:=RAWmisc::Format(numerator/denominator_excl_miss*100,1)]
-    d[,ageCat:=factor(ageCat,levels=c(
-      "18-30",
-      "31-45",
-      "46-54",
-      "55-59",
-      "60+"
-      ))]
-    setorder(d,ageCat)
-
-    cat("*******\n")
-    cat(sprintf("%s %s\n",prof,area))
-    if(nrow(d)==0){
-      print("THERE ARE NO PEOPLE HERE")
-    } else {
-      print(d)
-    }
-    cat("\n\n")
-  }
-
-```
-
-### STRATIFIED BY SPECIALIZED DOCTOR BY CW00 FOR MINISTRY OF HEALTH AND IS06==4
+### STRATIFIED BY SPECIALIZED DOCTOR FOR MINISTRY OF HEALTH AND IS06==4
 
 ```{r message=FALSE, warning=FALSE}
 specializations <- unique(dWorkers$doctor_specialization)
@@ -5740,50 +3983,6 @@ for(prof in specializations) for(area in c(
 
 ```
 
-### STRATIFIED BY SPECIALIZED DOCTOR BY CW00 AND CW06 FOR MINISTRY OF HEALTH AND IS06==4
-
-```{r message=FALSE, warning=FALSE}
-specializations <- unique(dWorkers$BOTHdoctor_specialization)
-
-for(prof in specializations) for(area in c(
-    "isPalestine",
-    "isGaza",
-    "isWB"
-  )){
-    d <- dWorkers[BOTHdoctor_specialization==prof & get(area)==1 & IDH00 %in% keepIDH00]
-    d[,numerator:=1]
-  
-    d <- d[,.(
-     numerator=max(numerator,na.rm=T)
-    ),by=.(
-     HR01,
-     ageCat
-    )]
-    
-    d <- d[,.(numerator=sum(numerator)),by=ageCat]
-    d[!is.na(ageCat),denominator_excl_miss:=sum(numerator)]
-    d[,perc:=RAWmisc::Format(numerator/denominator_excl_miss*100,1)]
-    d[,ageCat:=factor(ageCat,levels=c(
-      "18-30",
-      "31-45",
-      "46-54",
-      "55-59",
-      "60+"
-      ))]
-    setorder(d,ageCat)
-
-    cat("*******\n")
-    cat(sprintf("%s %s\n",prof,area))
-    if(nrow(d)==0){
-      print("THERE ARE NO PEOPLE HERE")
-    } else {
-      print(d)
-    }
-    cat("\n\n")
-  }
-
-```
-
 # Gender Indicators
 
 - Sex -> should sum up to 100% (numbers and percentages)
@@ -5791,8 +3990,6 @@ for(prof in specializations) for(area in c(
 - Stratified by Palestine/Gaza/WB/Gaza Districts/WB Districts
 - Doctors, Dentists, Pharmacists, Nurses, Midwives, Doctors+Nurses+Midwives
 - Area C, Jordan Valley, Jerusalem District
-
-## BY CW00
 
 ```{r message=FALSE, warning=FALSE}
 
@@ -5956,7 +4153,7 @@ for(i in 1:nrow(stack)){
 ```
 
 
-### STRATIFIED BY SPECIALIZED DOCTORS BY CW00
+### STRATIFIED BY SPECIALIZED DOCTORS
 
 ```{r, warning=FALSE}
 ## FINDING OUT DUAL SPECIALIZATIONS
@@ -5970,7 +4167,7 @@ temp[,N:=.N,by=HR01]
 setorder(temp,HR01)
 temp <- temp[N>1]
 temp <- merge(temp,locationsToMerge,by=c("HR01","doctor_specialization"))
-openxlsx::write.xlsx(temp,file.path(RAWmisc::PROJ$SHARED_TODAY,"dual_specialization_female.xlsx"))
+openxlsx::write.xlsx(temp,file.path(SHARED_TODAY,"dual_specialization_female.xlsx"))
 
 temp <- dWorkers[isFemale==0 & isProf_Specializeddoctor==1,.(N=.N),by=.(HR01,doctor_specialization)]
 temp[,N:=NULL]
@@ -5978,7 +4175,7 @@ temp[,N:=.N,by=HR01]
 setorder(temp,HR01)
 temp <- temp[N>1]
 temp <- merge(temp,locationsToMerge,by=c("HR01","doctor_specialization"))
-openxlsx::write.xlsx(temp,file.path(RAWmisc::PROJ$SHARED_TODAY,"dual_specialization_male.xlsx"))
+openxlsx::write.xlsx(temp,file.path(SHARED_TODAY,"dual_specialization_male.xlsx"))
 ```
 
 ```{r, warning=FALSE}
@@ -6019,154 +4216,7 @@ for(i in 1:nrow(stack)){
 }
 ```
 
-## BY CW00 AND CW06
-
-```{r message=FALSE, warning=FALSE}
-stack <- data.table(expand.grid(prof=professionVarsBOTH,dist=districtNames,stringsAsFactors = F))
-
-for(i in 1:nrow(stack)){
-  s <- stack[i]
-  d <- dWorkers[get(s$prof)==1 & get(s$dist)==1]
-  allFemalesInPalestine <- length(unique(dWorkers[get(s$prof)==1 & isFemale==TRUE]$HR01))
-  d[,numerator:=1]
-
-  d <- d[,.(
-   numerator=max(numerator,na.rm=T)
-  ),by=.(
-   HR01,
-   isFemale
-  )]
-  
-  d <- d[,.(numerator=sum(numerator)),by=isFemale]
-  d[!is.na(isFemale),denominator_excl_miss:=sum(numerator)]
-  d[,perc:=RAWmisc::Format(numerator/denominator_excl_miss*100,1)]
-  d[,ratio:=RAWmisc::Format(numerator/(denominator_excl_miss-numerator),2)]
-  d[,allFemalesInPalestine:=allFemalesInPalestine]
-  d[isFemale==1,percOfAllFemalesInPalestine:=RAWmisc::Format(numerator/allFemalesInPalestine*100,1)]
-  setorder(d,isFemale)
-  cat("*******\n")
-  cat(sprintf("%s %s\n",s$prof,s$dist))
-  if(nrow(d)==0){
-    print("THERE ARE NO PEOPLE HERE")
-  } else {
-    print(d)
-  }
-  cat("\n\n")
-}
-
-```
-
-### IS06==9 & MINISTRY OF HEALTH BY CW00 AND CW06
-
-```{r, warning=FALSE}
-keepIDH00 <- dFacilities[facilitySector=="Ministry of Health" & IS06==9]$IDH00
-for(i in 1:nrow(stack)){
-  s <- stack[i]
-  d <- dWorkers[get(s$prof)==1 & get(s$dist)==1 & IDH00 %in% keepIDH00]
-  allFemalesInPalestine <- length(unique(dWorkers[get(s$prof)==1 & isFemale==TRUE]$HR01))
-  d[,numerator:=1]
-
-  d <- d[,.(
-   numerator=max(numerator,na.rm=T)
-  ),by=.(
-   HR01,
-   isFemale
-  )]
-  
-  d <- d[,.(numerator=sum(numerator)),by=isFemale]
-  d[!is.na(isFemale),denominator_excl_miss:=sum(numerator)]
-  d[,perc:=RAWmisc::Format(numerator/denominator_excl_miss*100,1)]
-  d[,ratio:=RAWmisc::Format(numerator/(denominator_excl_miss-numerator),2)]
-  d[,allFemalesInPalestine:=allFemalesInPalestine]
-  d[isFemale==1,percOfAllFemalesInPalestine:=RAWmisc::Format(numerator/allFemalesInPalestine*100,1)]
-  setorder(d,isFemale)
-  cat("*******\n")
-  cat(sprintf("%s %s\n",s$prof,s$dist))
-  if(nrow(d)==0){
-    print("THERE ARE NO PEOPLE HERE")
-  } else {
-    print(d)
-  }
-  cat("\n\n")
-}
-```
-
-### IS06==4 & MINISTRY OF HEALTH BY CW00 AND CW06
-
-```{r, warning=FALSE}
-keepIDH00 <- dFacilities[facilitySector=="Ministry of Health" & IS06==4]$IDH00
-for(i in 1:nrow(stack)){
-  s <- stack[i]
-  d <- dWorkers[get(s$prof)==1 & get(s$dist)==1 & IDH00 %in% keepIDH00]
-  allFemalesInPalestine <- length(unique(dWorkers[get(s$prof)==1 & isFemale==TRUE]$HR01))
-  d[,numerator:=1]
-
-  d <- d[,.(
-   numerator=max(numerator,na.rm=T)
-  ),by=.(
-   HR01,
-   isFemale
-  )]
-  
-  d <- d[,.(numerator=sum(numerator)),by=isFemale]
-  d[!is.na(isFemale),denominator_excl_miss:=sum(numerator)]
-  d[,perc:=RAWmisc::Format(numerator/denominator_excl_miss*100,1)]
-  d[,ratio:=RAWmisc::Format(numerator/(denominator_excl_miss-numerator),2)]
-  d[,allFemalesInPalestine:=allFemalesInPalestine]
-  d[isFemale==1,percOfAllFemalesInPalestine:=RAWmisc::Format(numerator/allFemalesInPalestine*100,1)]
-  setorder(d,isFemale)
-  cat("*******\n")
-  cat(sprintf("%s %s\n",s$prof,s$dist))
-  if(nrow(d)==0){
-    print("THERE ARE NO PEOPLE HERE")
-  } else {
-    print(d)
-  }
-  cat("\n\n")
-}
-```
-
-### STRATIFIED BY SPECIALIZED DOCTORS BY CW00 AND CW06
-
-```{r, warning=FALSE}
-specializations <- unique(dWorkers$BOTHdoctor_specialization)
-stack <- data.table(expand.grid(prof=specializations,dist=districtNames,stringsAsFactors = F))
-
-res <- list()
-for(i in 1:nrow(stack)){
-  s <- stack[i]
-  d <- dWorkers[BOTHdoctor_specialization==s$prof & get(s$dist)==1]
-  allFemalesInPalestine <- length(unique(dWorkers[BOTHdoctor_specialization==s$prof & isFemale==TRUE]$HR01))
-  d[,numerator:=1]
-
-  d <- d[,.(
-   numerator=max(numerator,na.rm=T)
-  ),by=.(
-   HR01,
-   isFemale
-  )]
-  
-  d <- d[,.(numerator=sum(numerator)),by=isFemale]
-  d[!is.na(isFemale),denominator_excl_miss:=sum(numerator)]
-  d[,perc:=RAWmisc::Format(numerator/denominator_excl_miss*100,1)]
-  d[,ratio:=RAWmisc::Format(numerator/(denominator_excl_miss-numerator),2)]
-  d[,allFemalesInPalestine:=allFemalesInPalestine]
-  d[isFemale==1,percOfAllFemalesInPalestine:=RAWmisc::Format(numerator/allFemalesInPalestine*100,1)]
-  setorder(d,isFemale)
-  cat("*******\n")
-  cat(sprintf("%s %s\n",s$prof,s$dist))
-  if(nrow(d)==0){
-    print("THERE ARE NO PEOPLE HERE")
-  } else {
-    print(d)
-    res[[i]] <- d
-  }
-  
-  cat("\n\n")
-}
-```
-
-## BY SECTOR BY CW00
+## BY SECTOR
 
 - Sex -> should sum up to 100% (numbers and percentages)
 - Stratified by professionVars
@@ -6211,59 +4261,11 @@ for(i in unique(dMaster$facilitySector)){
 
 ```
 
-## BY SECTOR BY CW00 AND CW06
-
-- Sex -> should sum up to 100% (numbers and percentages)
-- Stratified by professionVars
-- Stratified by Palestine/Gaza/WB/Gaza Districts/WB Districts
-- Doctors, Dentists, Pharmacists, Nurses, Midwives, Doctors+Nurses+Midwives
-- Area C, Jordan Valley, Jerusalem District
-
-```{r message=FALSE, warning=FALSE}
-
-dMaster <- merge(dWorkers, dFacilities[,c("IDH00","facilitySector")], by="IDH00")
-nrow(dWorkers)
-nrow(dMaster)
-
-for(i in unique(dMaster$facilitySector)){
-  d <- dMaster[facilitySector==i & BOTH_isProf_Healthworker==1]
-  allFemalesInPalestine <- length(unique(dWorkers[BOTH_isProf_Healthworker==1 & isFemale==TRUE]$HR01))
-  d[,numerator:=1]
-
-  d <- d[,.(
-   numerator=max(numerator,na.rm=T)
-  ),by=.(
-   HR01,
-   isFemale
-  )]
-  
-  d <- d[,.(numerator=sum(numerator)),by=isFemale]
-  d[!is.na(isFemale),denominator_excl_miss:=sum(numerator)]
-  d[,perc:=RAWmisc::Format(numerator/denominator_excl_miss*100,1)]
-  d[,ratio:=RAWmisc::Format(numerator/(denominator_excl_miss-numerator),2)]
-  d[,allFemalesInPalestine:=allFemalesInPalestine]
-  d[isFemale==1,percOfAllFemalesInPalestine:=RAWmisc::Format(numerator/allFemalesInPalestine*100,1)]
-  setorder(d,isFemale)
-  cat("*******\n")
-  cat(sprintf("%s\n",i))
-  if(nrow(d)==0){
-    print("THERE ARE NO PEOPLE HERE")
-  } else {
-    print(d)
-  }
-  cat("\n\n")
-}
-
-```
-
-
-# GEOGRAPHIC INDICATORS x
+# GEOGRAPHIC INDICATORS 
 
 ## PERCENTAGE DISTRIBUTIONS BY GEOGRAPHY
 
 - Percentage distribution (doctors/dentist/nurses/midwives/psychologisttherapistcounselor/psychiatrist) per (palestine), (WB/Gaza), (north/middle/south of wb/gaza)
-
-### BY CW00
 
 ```{r, warning=FALSE}
 
@@ -6400,128 +4402,9 @@ for(i in 1:nrow(stack)){
 }
 ```
 
-### BY CW00 AND CW06
-
-```{r, warning=FALSE}
-stack <- data.table(expand.grid(prof=professionVarsBOTH,dist=districtNames,
-  sector=c("All sectors",unique(dFacilities$facilitySector)),stringsAsFactors = F))
-
-dLocation[,IDH03:=localityCode]
-dMaster <- merge(dWorkers, dLocation[,c("IDH03","region","district")], by="IDH03",all.x=T)
-nrow(dWorkers)
-nrow(dMaster)
-
-nrow(dMaster)
-dMaster <- merge(dMaster, dFacilities[,c("IDH00","facilitySector")], by="IDH00", all.x=T)
-nrow(dMaster)
-
-unique(dMaster[is.na(region),"IDH03"])
-
-for(i in 1:nrow(stack)){
-  s <- stack[i]
-  d <- dMaster[get(s$prof)==1 & get(s$dist)==1]
-  if(s$sector!="All sectors"){
-    d <- d[facilitySector==s$sector]
-  }
-  
-  d[,numerator:=1]
-  d <- d[,.(
-      person=max(numerator,na.rm=T),
-      jobs=sum(numerator,na.rm=T)
-    ),by=.(
-      HR01,
-      region
-    )]
-  
-  NumberOfPeople <- length(unique(d$HR01))
-  
-  d <- d[,.(
-    person=sum(person),
-    jobs=sum(jobs)),
-    by=.(region)]
-  d[,denom:=sum(person)]
-  d[,percentagePerson:=person/denom]
-  d[,denom:=NULL]
-  
-  cat(sprintf("***** %s - %s - %s *****\n",s$prof,s$dist,s$sector))
-  print(d)
-  print(sprintf("Number of jobs: %s",sum(d$jobs)))
-  print(sprintf("Number of people-regions: %s",sum(d$person)))
-  print(sprintf("Number of unique people WITHIN %s: %s",s$dist,NumberOfPeople))
-  cat("\n\n")
-  
-  s <- stack[i]
-  d <- dMaster[get(s$prof)==1 & get(s$dist)==1]
-  if(s$sector!="All sectors"){
-    d <- d[facilitySector==s$sector]
-  }
-  
-  d[,numerator:=1]
-  d <- d[,.(
-      person=max(numerator,na.rm=T),
-      jobs=sum(numerator,na.rm=T)
-    ),by=.(
-      HR01,
-      district
-    )]
-  
-  NumberOfPeople <- length(unique(d$HR01))
-  
-  d <- d[,.(
-    person=sum(person),
-    jobs=sum(jobs)),
-    by=.(district)]
-  d[,denom:=sum(person)]
-  d[,percentagePerson:=person/denom*100]
-  d[,denom:=NULL]
-  
-  cat(sprintf("***** %s - %s - %s *****\n",s$prof,s$dist,s$sector))
-  print(d)
-  print(sprintf("Number of jobs: %s",sum(d$jobs)))
-  print(sprintf("Number of people-regions: %s",sum(d$person)))
-  print(sprintf("Number of unique people WITHIN %s: %s",s$dist,NumberOfPeople))
-  cat("\n\n")
-  
-  ## by camp\urban\rural
-  s <- stack[i]
-  d <- dMaster[get(s$prof)==1 & get(s$dist)==1]
-  if(s$sector!="All sectors"){
-    d <- d[facilitySector==s$sector]
-  }
-  
-  d[,numerator:=1]
-  d <- d[,.(
-      person=max(numerator,na.rm=T),
-      jobs=sum(numerator,na.rm=T)
-    ),by=.(
-      HR01,
-      campUrbanRural
-    )]
-  
-  NumberOfPeople <- length(unique(d$HR01))
-  
-  d <- d[,.(
-    person=sum(person),
-    jobs=sum(jobs)),
-    by=.(campUrbanRural)]
-  d[,denom:=sum(person)]
-  d[,percentagePerson:=person/denom*100]
-  d[,denom:=NULL]
-  
-  cat(sprintf("***** %s - %s - %s *****\n",s$prof,s$dist,s$sector))
-  print(d)
-  print(sprintf("Number of jobs: %s",sum(d$jobs)))
-  print(sprintf("Number of people-regions: %s",sum(d$person)))
-  print(sprintf("Number of unique people WITHIN %s: %s",s$dist,NumberOfPeople))
-  cat("\n\n")
-}
-```
-
 ## RATIOS OF NURSES TO DOCTORS
 
 - Percentage distribution (doctors/dentist/nurses/midwives/psychologisttherapistcounselor/psychiatrist) per (palestine), (WB/Gaza), (north/middle/south of wb/gaza)
-
-### BY CW00
 
 ```{r, warning=FALSE}
 
@@ -6637,126 +4520,6 @@ for(i in c("isPalestine","isGaza","isWB")){
     
     d[,numerator:=isProf_Nurse]
     d[,denominator:=isProf_Doctor]
-    
-    d <- d[,.(
-      numerator=max(numerator,na.rm=T),
-      denominator=max(denominator,na.rm=T)
-    ),by=.(
-      HR01,campUrbanRural
-    )]
-    
-    d <- d[,.(
-      nurses=sum(numerator),
-      doctors=sum(denominator)
-    ),by=.(campUrbanRural)]
-    d[,ratio:=nurses/doctors]
-    
-    cat(sprintf("***** campUrbanRural: %s - %s *****\n",i,s))
-    print(d)
-    cat("\n\n")
-  }
-}
-```
-
-### BY CW00 AND CW06
-
-```{r, warning=FALSE}
-
-dLocation[,IDH03:=localityCode]
-dMaster <- merge(dWorkers, dLocation[,c("IDH03","region","district")], by="IDH03",all.x=T)
-nrow(dWorkers)
-nrow(dMaster)
-
-unique(dMaster[is.na(region),"IDH03"])
-
-nrow(dMaster)
-dMaster <- merge(dMaster, dFacilities[,c("IDH00","facilitySector")], by="IDH00", all.x=T)
-nrow(dMaster)
-
-for(i in c("isPalestine","isGaza","isWB")){
-  for(s in c("All sectors",unique(dFacilities$facilitySector))){
-    d <- dMaster[(BOTH_isProf_Doctor==1 | BOTH_isProf_Nurse==1) & get(i)==1]
-    if(s!="All sectors"){
-      d <- d[facilitySector==s]
-    }
-    
-    d[,numerator:=BOTH_isProf_Nurse]
-    d[,denominator:=BOTH_isProf_Doctor]
-    
-    d <- d[,.(
-      numerator=max(numerator,na.rm=T),
-      denominator=max(denominator,na.rm=T)
-    ),by=.(
-      HR01
-    )]
-    
-    d <- d[,.(
-      nurses=sum(numerator),
-      doctors=sum(denominator)
-    )]
-    d[,ratio:=nurses/doctors]
-    
-    cat(sprintf("***** ALL: %s - %s *****\n",i,s))
-    print(d)
-    cat("\n\n")
-    
-    d <- dMaster[(BOTH_isProf_Doctor==1 | BOTH_isProf_Nurse==1) & get(i)==1]
-    if(s!="All sectors"){
-      d <- d[facilitySector==s]
-    }
-    
-    d[,numerator:=BOTH_isProf_Nurse]
-    d[,denominator:=BOTH_isProf_Doctor]
-    
-    d <- d[,.(
-      numerator=max(numerator,na.rm=T),
-      denominator=max(denominator,na.rm=T)
-    ),by=.(
-      HR01,region
-    )]
-    
-    d <- d[,.(
-      nurses=sum(numerator),
-      doctors=sum(denominator)
-    ),by=.(region)]
-    d[,ratio:=nurses/doctors]
-    
-    cat(sprintf("***** REGION: %s - %s *****\n",i,s))
-    print(d)
-    cat("\n\n")
-    
-    d <- dMaster[(BOTH_isProf_Doctor==1 | BOTH_isProf_Nurse==1) & get(i)==1]
-    if(s!="All sectors"){
-      d <- d[facilitySector==s]
-    }
-    
-    d[,numerator:=BOTH_isProf_Nurse]
-    d[,denominator:=BOTH_isProf_Doctor]
-    
-    d <- d[,.(
-      numerator=max(numerator,na.rm=T),
-      denominator=max(denominator,na.rm=T)
-    ),by=.(
-      HR01,district
-    )]
-    
-    d <- d[,.(
-      nurses=sum(numerator),
-      doctors=sum(denominator)
-    ),by=.(district)]
-    d[,ratio:=nurses/doctors]
-    
-    cat(sprintf("***** DISTRICT: %s - %s *****\n",i,s))
-    print(d)
-    cat("\n\n")
-    
-    d <- dMaster[(BOTH_isProf_Doctor==1 | BOTH_isProf_Nurse==1) & get(i)==1]
-    if(s!="All sectors"){
-      d <- d[facilitySector==s]
-    }
-    
-    d[,numerator:=BOTH_isProf_Nurse]
-    d[,denominator:=BOTH_isProf_Doctor]
     
     d <- d[,.(
       numerator=max(numerator,na.rm=T),
@@ -6946,7 +4709,7 @@ for(i in c("isPalestine","isGaza","isWB")){
 
 # Palestine Medical Council (July 2018)
 
-## CW00 Age distribution of specialist doctors by specialisation, by Pal/WB/Gaza
+## Age distribution of specialist doctors by specialisation, by Pal/WB/Gaza
 
 ```{r, warning=FALSE}
 
@@ -6988,49 +4751,7 @@ for(i in 1:nrow(stack)){
 }
 ```
 
-## CW00 AND CW06 Age distribution of specialist doctors by specialisation, by Pal/WB/Gaza
-
-```{r, warning=FALSE}
-
-specializations <- sort(unique(dWorkers$BOTHdoctor_specialization))
-stack <- na.omit(data.table(expand.grid(dist=districtNames,prof=specializations,stringsAsFactors = F)))
-
-res <- list()
-for(i in 1:nrow(stack)){
-  s <- stack[i]
-  d <- dWorkers[BOTHdoctor_specialization==s$prof & get(s$dist)==1]
-  
-  d <- d[,.(
-    numerator=1
-  ),by=.(
-   HR01,
-   ageCat
-  )]
-  
-  d <- d[,.(
-    numerator=sum(numerator)
-  ),by=.(
-   ageCat
-  )]
-  setorder(d,ageCat)
-  
-  d[!is.na(ageCat),denominator_excl_miss:=sum(numerator)]
-  d[,perc:=RAWmisc::Format(numerator/denominator_excl_miss*100,1)]
-  
-  cat("*******\n")
-  cat(sprintf("%s %s\n",s$prof,s$dist))
-  if(nrow(d)==0){
-    print("THERE ARE NO PEOPLE HERE")
-  } else {
-    print(d)
-    res[[i]] <- d
-  }
-  
-  cat("\n\n")
-}
-```
-
-## CW00 Gender distribution of specialist doctors by specialisation, by Pal/WB/Gaza/District
+## Gender distribution of specialist doctors by specialisation, by Pal/WB/Gaza/District
 
 ```{r, warning=FALSE}
 
@@ -7072,49 +4793,7 @@ for(i in 1:nrow(stack)){
 }
 ```
 
-## CW00 AND CW06 Gender distribution of specialist doctors by specialisation, by Pal/WB/Gaza/District
-
-```{r, warning=FALSE}
-
-specializations <- sort(unique(dWorkers$BOTHdoctor_specialization))
-stack <- na.omit(data.table(expand.grid(dist=c(districtNames,names(dWorkers)[stringr::str_detect(names(dWorkers),"^isDistrict_")]),prof=specializations,stringsAsFactors = F)))
-
-res <- list()
-for(i in 1:nrow(stack)){
-  s <- stack[i]
-  d <- dWorkers[BOTHdoctor_specialization==s$prof & get(s$dist)==1]
-  
-  d <- d[,.(
-    numerator=1
-  ),by=.(
-   HR01,
-   isFemale
-  )]
-  
-  d <- d[,.(
-    numerator=sum(numerator)
-  ),by=.(
-   isFemale
-  )]
-  setorder(d,isFemale)
-  
-  d[!is.na(isFemale),denominator_excl_miss:=sum(numerator)]
-  d[,perc:=RAWmisc::Format(numerator/denominator_excl_miss*100,1)]
-  
-  cat("*******\n")
-  cat(sprintf("%s %s\n",s$prof,s$dist))
-  if(nrow(d)==0){
-    print("THERE ARE NO PEOPLE HERE")
-  } else {
-    print(d)
-    res[[i]] <- d
-  }
-  
-  cat("\n\n")
-}
-```
-
-## CW00 Geographical distribution of specialist doctors by specialisation
+## Geographical distribution of specialist doctors by specialisation
 
 ```{r, warning=FALSE}
 
@@ -7151,49 +4830,9 @@ for(i in 1:nrow(stack)){
 }
 ```
 
-## CW00 AND CW06 Geographical distribution of specialist doctors by specialisation
-
-```{r, warning=FALSE}
-
-specializations <- sort(unique(dWorkers$BOTHdoctor_specialization))
-stack <- na.omit(data.table(expand.grid(prof=specializations,stringsAsFactors = F)))
-
-areas <- sort(names(dWorkers)[stringr::str_detect(names(dWorkers),"^isDistrict_")])
-
-res <- list()
-for(i in 1:nrow(stack)){
-  s <- stack[i]
-  res <- list()
-  
-  d <- dWorkers[BOTHdoctor_specialization==s$prof]
-  temp <- data.frame(area="00PALESTINE (no duplicates)",num=length(unique(d$HR01)))
-  res[["00PALESTINE (no duplicates)"]] <- temp
-  
-  for(j in areas){
-    d <- dWorkers[BOTHdoctor_specialization==s$prof & get(j)==TRUE]
-    temp <- data.frame(area=j,num=length(unique(d$HR01)))
-    res[[j]] <- temp
-  }
-  d <- rbindlist(res)
-  
-  cat("*******\n")
-  cat(sprintf("%s \n",s$prof))
-  if(nrow(d)==0){
-    print("THERE ARE NO PEOPLE HERE")
-  } else {
-    print(d)
-  }
-  
-  cat("\n\n")
-}
-```
-
-
 # Requests 22nd July 2018
 
 ## We need the gender distribution by districts by profession
-
-### BY CW00
 
 ```{r message=FALSE, warning=FALSE}
 districtNames <- c("isPalestine","isGaza","isWB")
@@ -7237,47 +4876,7 @@ for(i in 1:nrow(stack)){
 
 ```
 
-### BY CW00 AND CW06
-
-```{r message=FALSE, warning=FALSE}
-
-stack <- data.table(expand.grid(prof=professionVarsBOTH,dist=districtNames,stringsAsFactors = F))
-
-for(i in 1:nrow(stack)){
-  s <- stack[i]
-  d <- dWorkers[get(s$prof)==1 & get(s$dist)==1]
-  allFemalesInPalestine <- length(unique(dWorkers[get(s$prof)==1 & isFemale==TRUE]$HR01))
-  d[,numerator:=1]
-
-  d <- d[,.(
-   numerator=max(numerator,na.rm=T)
-  ),by=.(
-   HR01,
-   isFemale
-  )]
-  
-  d <- d[!is.na(isFemale),.(numerator=sum(numerator)),by=isFemale]
-  d[!is.na(isFemale),denominator_excl_miss:=sum(numerator)]
-  d[,perc:=RAWmisc::Format(numerator/denominator_excl_miss*100,1)]
-  d[,ratio:=RAWmisc::Format(numerator/(denominator_excl_miss-numerator),2)]
-  d[,allFemalesInPalestine:=allFemalesInPalestine]
-  d[isFemale==1,percOfAllFemalesInPalestine:=RAWmisc::Format(numerator/allFemalesInPalestine*100,1)]
-  setorder(d,isFemale)
-  cat("*******\n")
-  cat(sprintf("%s %s\n",s$prof,s$dist))
-  if(nrow(d)==0){
-    print("THERE ARE NO PEOPLE HERE")
-  } else {
-    print(d)
-  }
-  cat("\n\n")
-}
-
-```
-
 ## The total number of nurses with a diploma nursing (ED03 A = 3. Diploma and ED01 = 3.)
-
-### BY CW00
 
 ```{r message=FALSE, warning=FALSE}
 dED03 <- masterdED03[ED03A==3]
@@ -7285,17 +4884,7 @@ d <- merge(dWorkers[ED01==3],dED03,by="HR01")
 print(nrow(d[isProf_Nurse==TRUE]))
 ```
 
-### BY CW00 AND CW06
-
-```{r message=FALSE, warning=FALSE}
-dED03 <- masterdED03[ED03A==3]
-d <- merge(dWorkers[ED01==3],dED03,by="HR01")
-print(nrow(d[BOTH_isProf_Nurse==TRUE]))
-```
-
 ## xx. isProf_Specializeddoctor to isProf_GP ratio in Palestine/West Bank/Gaza and by sector.
-
-### Results BY CW00
 
 ```{r, warning=FALSE}
 # todo
@@ -7334,50 +4923,7 @@ for(i in c("All",unique(dMaster$facilitySector))){
 }
 ```
 
-### Results BY CW00 AND CW06
-
-```{r, warning=FALSE}
-# todo
-dMaster <- merge(dWorkers, dFacilities[,c("IDH00","facilitySector")], by="IDH00")
-nrow(dWorkers)
-nrow(dMaster)
-
-for(i in c("All",unique(dMaster$facilitySector))){
-  for(location in c("isPalestine","isWB","isGaza")){
-    if(location=="isPalestine"){
-      usePopulation <- pop[districtName=="Palestine population"]$pop
-    } else if(location=="isWB"){
-      usePopulation <- pop[districtName=="West Bank Population"]$pop
-    } else if(location=="isGaza"){
-      usePopulation <- pop[districtName=="Gaza Population"]$pop
-    }
-    d <- dMaster[(BOTH_isProf_Specializeddoctor==1 | BOTH_isProf_GP==1) & get(location)==1]
-    if(i!="All") d <- d[facilitySector==i]
-    
-    d[,numerator:=BOTH_isProf_Specializeddoctor]
-    d[,denominator:=BOTH_isProf_GP]
-    
-    d <- d[,.(
-      numerator=max(numerator,na.rm=T),
-      denominator=max(denominator,na.rm=T)
-    ),by=.(
-      HR01
-    )]
-    
-    cat(sprintf("***** %s %s *****\n",i,location))
-    cat(sprintf("BOTH_isProf_Specializeddoctor: %s\n",sum(d$numerator)))
-    cat(sprintf("BOTH_isProf_GP: %s\n",sum(d$denominator)))
-    cat(sprintf("Ratio: %s\n",sum(d$numerator)/sum(d$denominator)))
-    cat("\n\n")
-  }
-}
-```
-
-
 ## 1. Total number of PharmacyAssistant in Palestine/WB/Gaza
-
-
-### Results BY CW00
 
 ```{r message=FALSE, warning=FALSE}
 for(location in c("isPalestine","isWB","isGaza")){
@@ -7407,38 +4953,70 @@ for(location in c("isPalestine","isWB","isGaza")){
 }
 ```
 
-### RESULTS BY CW00 AND CW06
+## WHAT COUNTRY DO DOCTORS GRADUATE FROM
 
-```{r message=FALSE, warning=FALSE}
-for(location in c("isPalestine","isWB","isGaza")){
-  cat("\n\n********",location,"**\n\n")
-  if(location=="isPalestine"){
-    usePopulation <- pop[districtName=="Palestine population"]$pop
-  } else if(location=="isWB"){
-    usePopulation <- pop[districtName=="West Bank Population"]$pop
-  } else if(location=="isGaza"){
-    usePopulation <- pop[districtName=="Gaza Population"]$pop
-  }
-  d <- dWorkers[BOTH_isProf_PharmacyAssistant==1 & get(location)==1]
-  d[,numerator:=1]
+```{r, warning=FALSE}
+#dED03[ED03C %in% 720101:720152 & ED03A<4]
+dED03 <- masterdED03[ED03C %in% 720101:720152 & ED03A>=4]
+dED03[,lowest:=min(ED03A),by=HR01]
+dED03 <- dED03[ED03A==lowest]
+dED03[,N:=1:.N,by=HR01]
+dED03 <- dED03[N==1]
+#dED03
+
+for(i in c("isPalestine","isGaza","isWB")){
+  print(i)
   
-  d <- d[,.(
-    numerator=max(numerator,na.rm=T)
-  ),by=.(
-    HR01
-  )]
+  d <- dWorkers[isProf_Doctor==1 & get(i)==1]
+  nrow(d)
+  d <- merge(d,dED03,by="HR01",all.x=T)
+  nrow(d)
   
-  d[is.infinite(numerator),numerator:=NA]
-  PrintTableNPerc(d)
+  dCountryCodes <- readxl::read_excel(file.path(
+    RAWmisc::PROJ$RAW,"county_codes.xlsx"))
+  setnames(dCountryCodes,c("english","x","ED03D","x2"))
   
-  cat("***PER 1000 PEOPLE ***\n")
-  d[is.infinite(numerator),numerator:=NA]
-  print(sum(d$numerator)/usePopulation*1000)
+  nrow(d)
+  d[,ED03D:=as.numeric(ED03D)]
+  d <- merge(d,dCountryCodes,by="ED03D",all.x=T)
+  nrow(d)
+  
+  d <- d[,.(numerator=.N),by=.(english)]
+  d[,denominator:=sum(numerator)]
+  d[,perc:=RAWmisc::Format(100*numerator/denominator,digits=2)]
+  setorder(d,-numerator)
+  print(d)
 }
 ```
 
+## WHAT COUNTRY DO GPs GRADUATE FROM
 
-## WHAT COUNTRY DO NURSES GRADUATE FROM CW00 AND CW06
+```{r, warning=FALSE}
+for(i in c("isPalestine","isGaza","isWB")){
+  print(i)
+  d <- dWorkers[isProf_GP==1 & get(i)==1]
+  nrow(d)
+  d <- merge(d,dED03,by="HR01",all.x=T)
+  nrow(d)
+  
+  dCountryCodes <- readxl::read_excel(file.path(
+    RAWmisc::PROJ$RAW,"county_codes.xlsx"))
+  setnames(dCountryCodes,c("english","x","ED03D","x2"))
+  
+  nrow(d)
+  d[,ED03D:=as.numeric(ED03D)]
+  d <- merge(d,dCountryCodes,by="ED03D",all.x=T)
+  nrow(d)
+  
+  d <- d[,.(numerator=.N),by=.(english)]
+  d[,denominator:=sum(numerator)]
+  d[,perc:=RAWmisc::Format(100*numerator/denominator,digits=2)]
+  setorder(d,-numerator)
+  print(d)
+}
+```
+
+## WHAT COUNTRY DO NURSES GRADUATE FROM
 
 ```{r, warning=FALSE}
 dED03 <- masterdED03[ED03C %in% 720301:720315 & ED03A>=4]
@@ -7448,28 +5026,31 @@ dED03[,N:=1:.N,by=HR01]
 dED03 <- dED03[N==1]
 #dED03
 
-d <- dWorkers[BOTH_isProf_Nurse==1]
-nrow(d)
-d <- merge(d,dED03,by="HR01",all.x=T)
-nrow(d)
-
-dCountryCodes <- readxl::read_excel(file.path(
-  RAWmisc::PROJ$RAW,"county_codes.xlsx"))
-setnames(dCountryCodes,c("english","x","ED03D","x2"))
-
-nrow(d)
-d[,ED03D:=as.numeric(ED03D)]
-d <- merge(d,dCountryCodes,by="ED03D",all.x=T)
-nrow(d)
-
-d <- d[,.(numerator=.N),by=.(english)]
-d[,denominator:=sum(numerator)]
-d[,perc:=RAWmisc::Format(100*numerator/denominator,digits=2)]
-setorder(d,-numerator)
-print(d)
+for(i in c("isPalestine","isGaza","isWB")){
+  print(i)
+  d <- dWorkers[isProf_Nurse==1 & get(i)==1]
+  nrow(d)
+  d <- merge(d,dED03,by="HR01",all.x=T)
+  nrow(d)
+  
+  dCountryCodes <- readxl::read_excel(file.path(
+    RAWmisc::PROJ$RAW,"county_codes.xlsx"))
+  setnames(dCountryCodes,c("english","x","ED03D","x2"))
+  
+  nrow(d)
+  d[,ED03D:=as.numeric(ED03D)]
+  d <- merge(d,dCountryCodes,by="ED03D",all.x=T)
+  nrow(d)
+  
+  d <- d[,.(numerator=.N),by=.(english)]
+  d[,denominator:=sum(numerator)]
+  d[,perc:=RAWmisc::Format(100*numerator/denominator,digits=2)]
+  setorder(d,-numerator)
+  print(d)
+}
 ```
 
-## WHAT COUNTRY DO dentists GRADUATE FROM CW00 AND CW06
+## WHAT COUNTRY DO dentists GRADUATE FROM
 
 ```{r, warning=FALSE}
 dED03 <- masterdED03[ED03C %in% 720401:720412 & ED03A>=4]
@@ -7479,28 +5060,31 @@ dED03[,N:=1:.N,by=HR01]
 dED03 <- dED03[N==1]
 #dED03
 
-d <- dWorkers[BOTH_isProf_Dentist==1]
-nrow(d)
-d <- merge(d,dED03,by="HR01",all.x=T)
-nrow(d)
-
-dCountryCodes <- readxl::read_excel(file.path(
-  RAWmisc::PROJ$RAW,"county_codes.xlsx"))
-setnames(dCountryCodes,c("english","x","ED03D","x2"))
-
-nrow(d)
-d[,ED03D:=as.numeric(ED03D)]
-d <- merge(d,dCountryCodes,by="ED03D",all.x=T)
-nrow(d)
-
-d <- d[,.(numerator=.N),by=.(english)]
-d[,denominator:=sum(numerator)]
-d[,perc:=RAWmisc::Format(100*numerator/denominator,digits=2)]
-setorder(d,-numerator)
-print(d)
+for(i in c("isPalestine","isGaza","isWB")){
+  print(i)
+  d <- dWorkers[isProf_Dentist==1 & get(i)==1]
+  nrow(d)
+  d <- merge(d,dED03,by="HR01",all.x=T)
+  nrow(d)
+  
+  dCountryCodes <- readxl::read_excel(file.path(
+    RAWmisc::PROJ$RAW,"county_codes.xlsx"))
+  setnames(dCountryCodes,c("english","x","ED03D","x2"))
+  
+  nrow(d)
+  d[,ED03D:=as.numeric(ED03D)]
+  d <- merge(d,dCountryCodes,by="ED03D",all.x=T)
+  nrow(d)
+  
+  d <- d[,.(numerator=.N),by=.(english)]
+  d[,denominator:=sum(numerator)]
+  d[,perc:=RAWmisc::Format(100*numerator/denominator,digits=2)]
+  setorder(d,-numerator)
+  print(d)
+}
 ```
 
-## WHAT COUNTRY DO pharmacists GRADUATE FROM CW00 AND CW06
+## WHAT COUNTRY DO pharmacists GRADUATE FROM
 
 ```{r, warning=FALSE}
 dED03 <- masterdED03[ED03C %in% 720228:720229 & ED03A>=4]
@@ -7510,24 +5094,98 @@ dED03[,N:=1:.N,by=HR01]
 dED03 <- dED03[N==1]
 #dED03
 
-d <- dWorkers[BOTH_isProf_Pharmacist==1]
-nrow(d)
-d <- merge(d,dED03,by="HR01",all.x=T)
-nrow(d)
-
-dCountryCodes <- readxl::read_excel(file.path(
-  RAWmisc::PROJ$RAW,"county_codes.xlsx"))
-setnames(dCountryCodes,c("english","x","ED03D","x2"))
-
-nrow(d)
-d[,ED03D:=as.numeric(ED03D)]
-d <- merge(d,dCountryCodes,by="ED03D",all.x=T)
-nrow(d)
-
-d <- d[,.(numerator=.N),by=.(english)]
-d[,denominator:=sum(numerator)]
-d[,perc:=RAWmisc::Format(100*numerator/denominator,digits=2)]
-setorder(d,-numerator)
-print(d)
+for(i in c("isPalestine","isGaza","isWB")){
+  print(i)
+  d <- dWorkers[isProf_Pharmacist==1 & get(i)==1]
+  nrow(d)
+  d <- merge(d,dED03,by="HR01",all.x=T)
+  nrow(d)
+  
+  dCountryCodes <- readxl::read_excel(file.path(
+    RAWmisc::PROJ$RAW,"county_codes.xlsx"))
+  setnames(dCountryCodes,c("english","x","ED03D","x2"))
+  
+  nrow(d)
+  d[,ED03D:=as.numeric(ED03D)]
+  d <- merge(d,dCountryCodes,by="ED03D",all.x=T)
+  nrow(d)
+  
+  d <- d[,.(numerator=.N),by=.(english)]
+  d[,denominator:=sum(numerator)]
+  d[,perc:=RAWmisc::Format(100*numerator/denominator,digits=2)]
+  setorder(d,-numerator)
+  print(d)
+}
 ```
+
+
+
+
+
+## WHAT COUNTRY DO specialized doctors GRADUATE FROM
+
+```{r, warning=FALSE}
+dED03 <- masterdED03[ED03C %in% 720101:720152 & ED03A>=4]
+dED03[,lowest:=min(ED03A),by=HR01]
+dED03 <- dED03[ED03A==lowest]
+dED03[,N:=1:.N,by=HR01]
+dED03 <- dED03[N==1]
+#dED03
+
+for(i in c("isPalestine","isGaza","isWB")){
+  for(j in na.omit(unique(dMaster$doctor_specialization))){
+    cat(i,j,"\n")
+    d <- dWorkers[doctor_specialization==j & get(i)==1]
+    nrow(d)
+    d <- merge(d,dED03,by="HR01",all.x=T)
+    nrow(d)
+    
+    dCountryCodes <- readxl::read_excel(file.path(
+      RAWmisc::PROJ$RAW,"county_codes.xlsx"))
+    setnames(dCountryCodes,c("english","x","ED03D","x2"))
+    
+    nrow(d)
+    d[,ED03D:=as.numeric(ED03D)]
+    d <- merge(d,dCountryCodes,by="ED03D",all.x=T)
+    nrow(d)
+    
+    d <- d[,.(numerator=.N),by=.(english)]
+    d[,denominator:=sum(numerator)]
+    d[,perc:=RAWmisc::Format(100*numerator/denominator,digits=2)]
+    setorder(d,-numerator)
+    print(d)
+  }
+}
+```
+
+
+## Total number of working allied health sciences professionals in Palestine/WB/Gaza BY SECTOR
+
+```{r message=FALSE, warning=FALSE}
+dMaster <- merge(dWorkers, dFacilities[,c("IDH00","facilitySector","IS06")], by="IDH00",all.x=T)
+nrow(dWorkers)
+nrow(dMaster)
+
+for(i in c("isPalestine","isWB","isGaza")){
+  cat(i,"\n")
+  d <- dMaster[get(i)==1]
+  d <- d[isProf_Alliedhealthsciences==1,.(
+    numerator=1
+  ),by=.(
+    HR01,
+    facilitySector
+  )]
+  d <- d[,
+         .(num=sum(numerator)),
+         by=.(
+           facilitySector
+         )
+         ]
+  setorder(d,facilitySector)
+  
+  print(d)
+}
+```
+
+
 

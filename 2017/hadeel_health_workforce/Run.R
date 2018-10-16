@@ -9,21 +9,62 @@ RAWmisc::InitialiseProject(
 
 #unlink(file.path(RAWmisc::PROJ$SHARED_TODAY,sprintf("health_workforce_%s.pdf",lubridate::today())))
 
-rmarkdown::render(input = "hadeel_health_workforce.Rmd", output_file = sprintf("without8000_NOTremoving1000_health_workforce_%s.pdf",lubridate::today()), 
-                  output_dir = RAWmisc::PROJ$SHARED_TODAY, output_format = rmarkdown::pdf_document(toc=TRUE),
-                  params = list(EXTRA_8000 = FALSE, REMOVE_1000 = FALSE))
+dir.create(file.path(RAWmisc::PROJ$SHARED_TODAY,"without8000_NOTremoving1000"))
+dir.create(file.path(RAWmisc::PROJ$SHARED_TODAY,"without8000_removing1000"))
+dir.create(file.path(RAWmisc::PROJ$SHARED_TODAY,"with8000_NOTremoving1000"))
+dir.create(file.path(RAWmisc::PROJ$SHARED_TODAY,"with8000_removing1000"))
 
-rmarkdown::render(input = "hadeel_health_workforce.Rmd", output_file = sprintf("without8000_removing1000_health_workforce_%s.pdf",lubridate::today()), 
-                  output_dir = RAWmisc::PROJ$SHARED_TODAY, output_format = rmarkdown::pdf_document(toc=TRUE),
-                  params = list(EXTRA_8000 = FALSE))
+dir.create(file.path(RAWmisc::PROJ$SHARED_TODAY,"without8000_NOTremoving1000","CW00"))
+dir.create(file.path(RAWmisc::PROJ$SHARED_TODAY,"without8000_removing1000","CW00"))
+dir.create(file.path(RAWmisc::PROJ$SHARED_TODAY,"with8000_NOTremoving1000","CW00"))
+dir.create(file.path(RAWmisc::PROJ$SHARED_TODAY,"with8000_removing1000","CW00"))
 
-rmarkdown::render(input = "hadeel_health_workforce.Rmd", output_file = sprintf("with8000_NOTremoving1000_health_workforce_%s.pdf",lubridate::today()), 
-                  output_dir = RAWmisc::PROJ$SHARED_TODAY, output_format = rmarkdown::pdf_document(toc=TRUE),
-                  params = list(EXTRA_8000 = TRUE, REMOVE_1000 = FALSE))
+dir.create(file.path(RAWmisc::PROJ$SHARED_TODAY,"without8000_NOTremoving1000","CW00_AND_CW06"))
+dir.create(file.path(RAWmisc::PROJ$SHARED_TODAY,"without8000_removing1000","CW00_AND_CW06"))
+dir.create(file.path(RAWmisc::PROJ$SHARED_TODAY,"with8000_NOTremoving1000","CW00_AND_CW06"))
+dir.create(file.path(RAWmisc::PROJ$SHARED_TODAY,"with8000_removing1000","CW00_AND_CW06"))
 
-rmarkdown::render(input = "hadeel_health_workforce.Rmd", output_file = sprintf("with8000_removing1000_health_workforce_%s.pdf",lubridate::today()), 
-                  output_dir = RAWmisc::PROJ$SHARED_TODAY, output_format = rmarkdown::pdf_document(toc=TRUE),
-                  params = list(EXTRA_8000 = TRUE))
+rmarkdown::render(input = "hadeel_health_workforce.Rmd",
+                  output_file = sprintf("CW00_with8000_removing1000_health_workforce_%s.pdf",lubridate::today()), 
+                  output_dir = file.path(RAWmisc::PROJ$SHARED_TODAY,"with8000_removing1000","CW00"), output_format = rmarkdown::pdf_document(toc=TRUE),
+                  params = list(EXTRA_8000 = TRUE, CW00_AND_CW06 = FALSE))
+
+rmarkdown::render(input = "hadeel_health_workforce.Rmd",
+                  output_file = sprintf("CW00_without8000_NOTremoving1000_health_workforce_%s.pdf",lubridate::today()), 
+                  output_dir = file.path(RAWmisc::PROJ$SHARED_TODAY,"without8000_NOTremoving1000","CW00"), output_format = rmarkdown::pdf_document(toc=TRUE),
+                  params = list(EXTRA_8000 = FALSE, REMOVE_1000 = FALSE, CW00_AND_CW06 = FALSE))
+
+rmarkdown::render(input = "hadeel_health_workforce.Rmd", 
+                  output_file = sprintf("CW00_without8000_removing1000_health_workforce_%s.pdf",lubridate::today()), 
+                  output_dir = file.path(RAWmisc::PROJ$SHARED_TODAY,"without8000_removing1000","CW00"), output_format = rmarkdown::pdf_document(toc=TRUE),
+                  params = list(EXTRA_8000 = FALSE, CW00_AND_CW06 = FALSE))
+
+rmarkdown::render(input = "hadeel_health_workforce.Rmd",
+                  output_file = sprintf("CW00_with8000_NOTremoving1000_health_workforce_%s.pdf",lubridate::today()), 
+                  output_dir = file.path(RAWmisc::PROJ$SHARED_TODAY,"with8000_NOTremoving1000","CW00"), output_format = rmarkdown::pdf_document(toc=TRUE),
+                  params = list(EXTRA_8000 = TRUE, REMOVE_1000 = FALSE, CW00_AND_CW06 = FALSE))
+
+
+# CW00 and CW06
+rmarkdown::render(input = "hadeel_health_workforce.Rmd",
+                  output_file = sprintf("CW00_AND_CW06_with8000_removing1000_health_workforce_%s.pdf",lubridate::today()), 
+                  output_dir = file.path(RAWmisc::PROJ$SHARED_TODAY,"with8000_removing1000","CW00_AND_CW06"), output_format = rmarkdown::pdf_document(toc=TRUE),
+                  params = list(EXTRA_8000 = TRUE, CW00_AND_CW06 = TRUE))
+
+rmarkdown::render(input = "hadeel_health_workforce.Rmd",
+                  output_file = sprintf("CW00_AND_CW06_without8000_NOTremoving1000_health_workforce_%s.pdf",lubridate::today()), 
+                  output_dir = file.path(RAWmisc::PROJ$SHARED_TODAY,"without8000_NOTremoving1000","CW00_AND_CW06"), output_format = rmarkdown::pdf_document(toc=TRUE),
+                  params = list(EXTRA_8000 = FALSE, REMOVE_1000 = FALSE, CW00_AND_CW06 = TRUE))
+
+rmarkdown::render(input = "hadeel_health_workforce.Rmd", 
+                  output_file = sprintf("CW00_AND_CW06_without8000_removing1000_health_workforce_%s.pdf",lubridate::today()), 
+                  output_dir = file.path(RAWmisc::PROJ$SHARED_TODAY,"without8000_removing1000","CW00_AND_CW06"), output_format = rmarkdown::pdf_document(toc=TRUE),
+                  params = list(EXTRA_8000 = FALSE, CW00_AND_CW06 = TRUE))
+
+rmarkdown::render(input = "hadeel_health_workforce.Rmd",
+                  output_file = sprintf("CW00_AND_CW06_with8000_NOTremoving1000_health_workforce_%s.pdf",lubridate::today()), 
+                  output_dir = file.path(RAWmisc::PROJ$SHARED_TODAY,"with8000_NOTremoving1000","CW00_AND_CW06"), output_format = rmarkdown::pdf_document(toc=TRUE),
+                  params = list(EXTRA_8000 = TRUE, REMOVE_1000 = FALSE, CW00_AND_CW06 = TRUE))
 
 
 Folders:

@@ -8,6 +8,8 @@ RAWmisc::InitialiseProject(
   FINAL = "/analyses/results_final/code_major/2017/invaginasjon/",
   SHARED = "/dropbox/results_shared/code_major/2017/invaginasjon/")
 
+RAWmisc::InitialiseOpinionatedUnix("code_major/2017/invaginasjon")
+
 suppressWarnings(suppressMessages(library(data.table)))
 suppressWarnings(suppressMessages(library(ggplot2)))
 
@@ -87,19 +89,18 @@ data[,predSE:=predict(fit, data, se.fit=T)$se.fit]
 dataYear <- data[!is.na(n),.(n=sum(n,na.rm=T),pred=log(sum(exp(pred))),born=sum(born)),by=.(age)]
 
 q <- ggplot(dataYear,aes(x=age)) ############################ All children up to 2 years
-q <- q + geom_point(aes(y=n/born*100000),size=5)
-q <- q + geom_line(aes(y=exp(pred)/born*100000),colour="red",lwd=3)
+q <- q + geom_point(aes(y=n/born*100000),size=1)
+q <- q + geom_line(aes(y=exp(pred)/born*100000),colour="red",lwd=1)
 q <- q + scale_x_continuous("Age in weeks",breaks=seq(0,105,13))
-q <- q + scale_y_continuous("Weekly IS Rate per 100,000 person-weeks")
-q <- q + labs(title="Observed and predicted weekly IS rates per 100,000 person-weeks for cases diagnosed in Norway 2008-2013")
+q <- q + scale_y_continuous("Weekly Intussusception Rate per 100,000 person-weeks")
+q <- q + labs(title="Observed and predicted weekly intussusception rates per 100,000 person-weeks\nfor cases diagnosed in Norway 2008-2013")
 # q <- q + RAWmisc::theme_SMAO()
 # RAWmisc::SMAOpng(file.path(RAWmisc::PROJ$SHARED,lubridate::today(),"rates.png"))
 q <- q + RAWmisc::theme_gray()
 # options(expressions = 5e5)
-q <- q + RAWmisc::theme_gray( base_size = 24) #+ ops( plot.margin = unit(c(1, 1, 0.5, 0.5), "lines"), panel.background =  theme_rect(fill = "blue", colour = NA),  )
-RAWmisc::png_a4(file.path(RAWmisc::PROJ$SHARED,lubridate::today(),"rates.png"), landscape = T)
-print(q)
-dev.off()
+q <- q + theme_classic( base_size = 16) #+ ops( plot.margin = unit(c(1, 1, 0.5, 0.5), "lines"), panel.background =  theme_rect(fill = "blue", colour = NA),  )
+q <- q + theme(panel.grid.major = element_line(colour = "black", linetype=3))
+RAWmisc::saveA4(q, file.path(RAWmisc::PROJ$SHARED,lubridate::today(),"rates.png"))
 
 q <- ggplot(dataYear[age<52],aes(x=age)) ############################ Children up to 1 year
 q <- q + geom_point(aes(y=n/born*100000),size=5)

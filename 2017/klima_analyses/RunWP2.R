@@ -102,6 +102,7 @@ res[, pvalBonf:=pval*.N]
 res[,sig:=""]
 res[pvalBonf<0.05,sig:="*"]
 res[pvalBonf>1,pvalBonf:=1]
+toPlot <- copy(res)
 res[,pvalBonf:=RAWmisc::Format(pvalBonf,3)]
 res[pvalBonf=="0.000",pvalBonf:="<0.001"]
 
@@ -121,6 +122,37 @@ res
 openxlsx::write.xlsx(res,file = file.path(
   RAWmisc::PROJ$SHARED_TODAY,"WP_20.xlsx"
 ))
+
+
+toPlot[,category:="Not significant"]
+toPlot[pvalBonf<0.05 & est>0,category:="Increases"]
+toPlot[pvalBonf<0.05 & est<0,category:="Decreases"]
+toPlot[,category:=factor(category,levels=c("Decreases","Not significant","Increases"))]
+
+RAWmisc::RecodeDT(toPlot,switch=c(
+  "wp950_c_rain0_3"="Rain",
+  "wp950_a_runoff0_3"="Runoff",
+  "wp950_c_temperature0_3"="Temperature"
+),"var")
+
+toPlot[,season:=factor(season,levels=rev(c("Whole year","Winter","Spring","Summer","Autumn")))]
+toPlot[,age:=factor(age,levels=c("Totalt","0-4","5-14","15-64","65+"))]
+setattr(toPlot$age,"levels",c("Total","0-4","5-14","15-64","65+"))
+#setorder(toPlot,outcome,season,age)
+
+q <- ggplot(toPlot,aes(x=age,y=season,fill=category))
+q <- q + geom_tile(alpha=0.7,colour="black")
+q <- q + facet_grid(.~var,scales="free")
+q <- q + scale_fill_brewer("",drop=F,palette="Set1")
+q <- q + scale_x_discrete("")
+q <- q + scale_y_discrete("")
+q <- q + guides(fill = guide_legend(reverse=T))
+q <- q + theme_gray(12)
+q <- q + theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust=0.5))
+q <- q + theme(legend.position="bottom")
+q <- q + labs(caption="Exposure on panel titles, stratified analyses on x-axis and y-axis")
+ggsave(file.path(RAWmisc::PROJ$SHARED_TODAY,"WP2.png"), plot = q, width = 210, height = 297/2, 
+       units = "mm")
 
 
 
