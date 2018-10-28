@@ -239,17 +239,31 @@ for(type in c("raw","clean","raw_outbreaks","clean_outbreaks")){
   if(type=="raw"){
     d <- WP1DataRaw()
     outcomeVar <- "value"
+    
+    # exposure =
+    # c_temperature0_3 = average daily value over a 4 week period
+    # gridRain0_3 = average daily value over a 4 week period
+    # gridRunoffStandardised0_3 = average daily value over a 4 week period
   } else if(type=="clean"){
     d <- WP1DataClean()
     outcomeVar <- "value"
+    
+    # exposure =
+    # c_temperature0_3 = average daily value over a 4 week period
+    # gridRain0_3 = average daily value over a 4 week period
+    # gridRunoffStandardised0_3 = average daily value over a 4 week period
   } else if(type=="raw_outbreaks"){
     d <- WP2WaterworkRawData()
     d[,value:=(value0+value1+value2+value3)/4]
+    
+    # exposure = average daily value over a 4 week period
     outcomeVar <- "s_outbreakLege"
   } else if(type=="clean_outbreaks"){
     d <- WP2WaterworkCleanData()
     d[,value:=(value0+value1+value2+value3)/4]
     outcomeVar <- "s_outbreakLege"
+    
+    # exposure = average daily value over a 4 week period
   }
   
   

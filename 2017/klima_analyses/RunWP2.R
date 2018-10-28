@@ -30,6 +30,8 @@ suppressMessages(library(pomp))
 
 assign("RUN_ALL", TRUE, envir=globalenv())
 
+# exposure = "number of days >95th percentile in the last 4 weeks
+
 d <- WP2Data()
 
 stack <- data.table(expand.grid(c("Whole year",unique(d$season)),

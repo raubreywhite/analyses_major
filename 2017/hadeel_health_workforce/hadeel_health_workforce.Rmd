@@ -280,7 +280,6 @@ dxxx2 <- d5 <- haven::read_spss(file.path(RAWmisc::PROJ$RAW,
 d6 <- readxl::read_excel(file.path(RAWmisc::PROJ$RAW,
                                    "data_richard",
                                    "MoH West Bank records  - missing from system.xlsx"))
-
 dUNRWA <- readxl::read_excel(file.path(
   RAWmisc::PROJ$RAW,
   "New UNRWA West Bank employees",
@@ -906,15 +905,16 @@ openxlsx::write.xlsx(d[,c("IDH00","IDH02_W_dist","IDH03_W_loc","IDH01_F_dist","I
 I have also included a list on our shared file called MoH West Bank official list, could you please cross-check our MoH West Bank records with the MoH official list by ID and let me know if we have any still missing in our records. 
 
 ```{r, warning=FALSE}
-dMaster <- merge(dWorkers, dFacilities[IDH03 %in% dLocation[isGaza==0]$localityCode,c("IDH00","facilitySector")], by="IDH00",all.x=T)
+dMaster <- merge(dWorkers, dFacilities[facilitySector=="Ministry of Health" & IDH03 %in% dLocation[isGaza==0]$localityCode,c("IDH00","facilitySector")], by="IDH00")
 nrow(dWorkers)
 nrow(dMaster)
 #dMaster[HR01=="910435585"]
 
-dMOHMaster <- data.table(readxl::read_excel(file.path(RAWmisc::PROJ$RAW,"data_richard","MoH West Bank Official list of employees.xlsx")))
-dMOH <- unique(na.omit(data.table(HR01=as.numeric(dMOHMaster[["ID"]]))))
+dMOHMaster <- data.table(readxl::read_excel(file.path(RAWmisc::PROJ$RAW,"Fixed excels - to be included in calculations","2018 MoH WB employees with DOB - Richard.xlsx")))
+dMOHMaster[,HR01:=as.numeric(HR01)]
+dMOH <- unique(na.omit(data.table(HR01=as.numeric(dMOHMaster[["HR01"]]))))
 
-dMOH_From_System <- unique(dMaster[facilitySector=="Ministry of Health",c("HR01")])
+dMOH_From_System <- unique(dMaster[,c("HR01")])
 
 dMOH[,existsInMOH:="MOH"]
 dMOH_From_System[,existsInSystem:="SYSTEM"]
@@ -939,13 +939,41 @@ openxlsx::write.xlsx(final,file.path(SHARED_TODAY,"VALIDATING MoH West Bank offi
 
 openxlsx::write.xlsx(dWorkers[HR01 %in% final$SYSTEM_ONLY,NAMES_OF_WORKERS_FILE,with=F],file.path(SHARED_TODAY,"VALIDATING MoH West Bank official list_DATASET_THAT_EXISTS_IN_SYSTEM_BUT_NOT_MOH_LIST.xlsx"))
 
-openxlsx::write.xlsx(dMOHMaster[ID %in% final$MOH_ONLY],file.path(SHARED_TODAY,"VALIDATING MoH West Bank official list_DATASET_THAT_EXISTS_IN_MOH_LIST_BUT_NOT_SYSTEM.xlsx"))
+openxlsx::write.xlsx(dMOHMaster[HR01 %in% final$MOH_ONLY],file.path(SHARED_TODAY,"VALIDATING MoH West Bank official list_DATASET_THAT_EXISTS_IN_MOH_LIST_BUT_NOT_SYSTEM.xlsx"))
 
-sum(dMOHMaster$ID %in% final$BOTH)
-sum(dMOHMaster$ID %in% final$MOH_ONLY)
-sum(dMOHMaster[ID %in% final$MOH_ONLY]$ID %in% dxxx$HR01)
-sum(dMOHMaster[ID %in% final$MOH_ONLY]$ID %in% dxxx2$HR01)
-sum(dMOHMaster[ID %in% final$MOH_ONLY]$ID %in% dWorkers$HR01)
+## checking to see if date of births are different
+## TODO MORE HERE
+tabx <- unique(dMaster[HR01 %in% final$BOTH,c("HR00","HR01","CW00","CW00_T")])
+setnames(tabx,c("CW00","CW00_T"),c("CW00_OLD","CW00_T_OLD"))
+new <- unique(dMOHMaster[HR01 %in% final$BOTH,c("HR01","CW00","CW00_T")])
+setnames(new,c("CW00","CW00_T"),c("CW00_NEW","CW00_T_NEW"))
+
+tab <- merge(tabx,new,by="HR01",all.x=T,all.y=T)
+nrow(tabx)
+nrow(new)
+nrow(tab)
+tab <- tab[CW00_OLD!=CW00_NEW]
+setorder(tab,HR01)
+
+edu <- dED03[HR01 %in% final$BOTH & ED03A<=7,]
+edu[,m:=max(ED03A),by=HR01]
+edu <- unique(edu[ED03A==m])
+edu[,m:=NULL]
+edu[,m:=1:.N,by=HR01]
+edu <- edu[m==1]
+edu[,m:=NULL]
+
+tab2 <- merge(tab,edu,by="HR01",all.x=T)
+nrow(tab)
+nrow(tab2)
+
+openxlsx::write.xlsx(tab2,file.path(SHARED_TODAY,"VALIDATING MoH West Bank official list_WHEN_CW00_DISAGREES.xlsx"))
+## end
+sum(dMOHMaster$HR01 %in% final$BOTH)
+sum(dMOHMaster$HR01 %in% final$MOH_ONLY)
+sum(dMOHMaster[HR01 %in% final$MOH_ONLY]$HR01 %in% dxxx$HR01)
+sum(dMOHMaster[HR01 %in% final$MOH_ONLY]$HR01 %in% dxxx2$HR01)
+sum(dMOHMaster[HR01 %in% final$MOH_ONLY]$HR01 %in% dWorkers$HR01)
 
 
 #dWorkers[HR01 %in% dMOHMaster[ID %in% final$MOH_ONLY & ID %in% dxxx2$HR01]]
