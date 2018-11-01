@@ -57,6 +57,77 @@ if(CW00_AND_CW06){
 
 SHARED_TODAY <- file.path(RAWmisc::PROJ$SHARED_TODAY,extraDir)
 
+## MOH WORKERS TO REMOVE
+dMOHToRemove <- readxl::read_excel(file.path(RAWmisc::PROJ$RAW,
+                                             "Fixed excels - to be included in calculations",
+                                             "Copy of MoH employees - to be removed from calculations 2018 latest.xlsx"),sheet=2)
+dMOHToRemove <- as.numeric(dMOHToRemove[[1]])
+length(dMOHToRemove)
+
+# ED03
+
+
+# 
+d1 <- readxl::read_excel(file.path(RAWmisc::PROJ$RAW,
+                                    "Data collected by PCBS - Gaza 1st phase",
+                                    "Gaza Phase I - After auditing by Fayez",
+                                    "WORKERS_ED03 (1).xlsx"))
+
+d2 <- readxl::read_excel(file.path(RAWmisc::PROJ$RAW,
+                                    "Data collected by PCBS - WB 1st phase",
+                                    "WB - Phase I",
+                                    "WORKERS_ED03 WB.xlsx"))
+
+d3 <- readxl::read_excel(file.path(
+  RAWmisc::PROJ$RAW,
+  "Data collected by PNIPH - Gaza 2nd phase",
+  "WORKERS_ED03_GAZA-2nd phase-final.xlsx"))
+
+d4 <- readxl::read_excel(file.path(
+  RAWmisc::PROJ$RAW,
+  "Data collected by PNIPH - WB 2nd phase",
+  "WORKERS_ED03_WB-final-2nd phase.xlsx"))
+
+d5 <- haven::read_spss(file.path(
+  RAWmisc::PROJ$RAW,
+  "New 8,000 records for data importing-received from Fayez",
+  "worker_ed03 (4).sav"))
+
+dUNRWA <- readxl::read_excel(file.path(
+  RAWmisc::PROJ$RAW,
+  "New UNRWA West Bank employees",
+  "WORKER_ED03.xlsx"))
+
+if(EXTRA_8000){
+  masterdED03 <- dED03 <- data.table(rbind(d1,d2,d3[names(d1)],d4[names(d1)],d5[names(d1)],dUNRWA[names(d1)]))
+} else {
+  masterdED03 <- dED03 <- data.table(rbind(d1,d2,d3[names(d1)],d4[names(d1)],dUNRWA[names(d1)]))
+}
+
+# DISTRICTS
+dLocation <- list()
+for(i in c("North WB","Middle WB", "South WB", "North Gaza", "Middle Gaza", "South Gaza", "East Jerusalem (J1)")){
+  dLocation[[i]] <- readxl::read_excel(file.path(RAWmisc::PROJ$RAW,
+                                                   "Districts and localities codes - Richard.xls"),
+                                         sheet = i)
+  dLocation[[i]]$region <- i
+}
+dLocation <- rbindlist(dLocation)
+dLocation[,isGaza := 0]
+dLocation[region %in% c("North Gaza", "Middle Gaza", "South Gaza"), isGaza := 1]
+setnames(dLocation,c("district","districtCode","localityCode","localityName","urbanRural","region","isGaza"))
+dLocation[,districtCode:=as.numeric(districtCode)]
+dLocation <- dLocation[!is.na(districtCode)]
+dLocation[,districtJerusalemClean:=district]
+dLocation[district %in% c("Jerusalem (J2)", "East Jerusalem (J1)"),districtJerusalemClean:="Jerusalem"]
+
+dLocation[,isGazaNOJERUSALEM:=isGaza]
+dLocation[district=="East Jerusalem (J1)",isGazaNOJERUSALEM:=NA]
+dLocation[,gazaWBEJ:="West Bank (Not East J)"]
+dLocation[isGaza==1,gazaWBEJ:="Gaza"]
+dLocation[district=="East Jerusalem (J1)",gazaWBEJ:="East Jerusalem"]
+
+
 dCountryCodes <- readxl::read_excel(file.path(
     RAWmisc::PROJ$RAW,"county_codes.xlsx"))
   setnames(dCountryCodes,c("english","x","ED03D","x2"))
@@ -314,6 +385,12 @@ if(REMOVE_1000){
   nrow(dWorkers)
 }
 
+# remove MOH retired, etc
+(a <- nrow(dWorkers))
+dWorkers <- dWorkers[!HR01 %in% dMOHToRemove]
+(b <- nrow(dWorkers))
+b-a
+
 dWorkers[CW00=="",CW00:=NA]
 dWorkers[CW06=="",CW06:=NA]
 
@@ -506,6 +583,104 @@ namesIDGender <- unique(dWorkers[,c("HR00","HR01","HR02")])
 namesIDGender <- namesIDGender[,.(N=.N),by=.(HR00,HR01)]
 openxlsx::write.xlsx(namesIDGender[N>1],file.path(SHARED_TODAY,"two_genders_same_name.xlsx"))
 
+##### MOH WORKERS #############
+
+dMaster <- merge(dWorkers, dFacilities[facilitySector=="Ministry of Health" & IDH03 %in% dLocation[isGaza==0]$localityCode,c("IDH00","facilitySector")], by="IDH00")
+nrow(dWorkers)
+nrow(dMaster)
+#dMaster[HR01=="910435585"]
+
+dMOHMaster <- data.table(readxl::read_excel(file.path(RAWmisc::PROJ$RAW,"Fixed excels - to be included in calculations","2018 MoH WB employees with DOB - Richard.xlsx")))
+dMOHMaster[,HR01:=as.numeric(HR01)]
+
+# remove MOH retired, etc
+(a <- nrow(dMOHMaster))
+dMOHMaster <- dMOHMaster[!HR01 %in% dMOHToRemove]
+(b <- nrow(dMOHMaster))
+b-a
+
+
+dMOH <- unique(na.omit(data.table(HR01=as.numeric(dMOHMaster[["HR01"]]))))
+
+dMOH_From_System <- unique(dMaster[,c("HR01")])
+
+dMOH[,existsInMOH:="MOH"]
+dMOH_From_System[,existsInSystem:="SYSTEM"]
+
+final <- merge(dMOH_From_System,dMOH,by="HR01",all.x=T,all.y=T)
+nrow(final)
+nrow(dMOH)
+nrow(dMOH_From_System)
+final[,cat:="BOTH"]
+final[is.na(existsInSystem),cat:="MOH_ONLY"]
+final[is.na(existsInMOH),cat:="SYSTEM_ONLY"]
+
+#final[HR01=="910435585"]
+
+final[,num:=1:.N,by=cat]
+final <- dcast.data.table(final,num~cat,value.var="HR01")
+final[,num:=NULL]
+
+#final[MOH_ONLY=="910435585"]
+
+openxlsx::write.xlsx(final,file.path(SHARED_TODAY,"VALIDATING MoH West Bank official list.xlsx"))
+
+openxlsx::write.xlsx(dWorkers[HR01 %in% final$SYSTEM_ONLY,NAMES_OF_WORKERS_FILE,with=F],file.path(SHARED_TODAY,"VALIDATING MoH West Bank official list_DATASET_THAT_EXISTS_IN_SYSTEM_BUT_NOT_MOH_LIST.xlsx"))
+
+openxlsx::write.xlsx(dMOHMaster[HR01 %in% final$MOH_ONLY],file.path(SHARED_TODAY,"VALIDATING MoH West Bank official list_DATASET_THAT_EXISTS_IN_MOH_LIST_BUT_NOT_SYSTEM.xlsx"))
+
+##### ADDING IN THE SPECIAL PEOPLE WHO EXIST ON MOH LIST BUT NOT IN SYSTEM
+goodNames <- names(dWorkers)
+badNames <- names(dMOHMaster)
+newNames <- badNames[badNames %in% goodNames]
+f <- rbind(dWorkers,dMOHMaster[HR01 %in% final$MOH_ONLY,newNames,with=F],fill=T)
+
+## checking to see if professions are different
+## TODO MORE HERE
+tabx <- unique(dMaster[HR01 %in% final$BOTH,c("HR00","HR01","CW00","CW00_T")])
+setnames(tabx,c("CW00","CW00_T"),c("CW00_OLD","CW00_T_OLD"))
+new <- unique(dMOHMaster[HR01 %in% final$BOTH,c("HR01","CW00","CW00_T")])
+setnames(new,c("CW00","CW00_T"),c("CW00_NEW","CW00_T_NEW"))
+
+tab <- merge(tabx,new,by="HR01",all.x=T,all.y=T)
+nrow(tabx)
+nrow(new)
+nrow(tab)
+tab <- tab[CW00_OLD!=CW00_NEW]
+setorder(tab,HR01)
+
+edu <- dED03[HR01 %in% final$BOTH & ED03A<=7,]
+edu[,m:=max(ED03A),by=HR01]
+edu <- unique(edu[ED03A==m])
+edu[,m:=NULL]
+edu[,m:=1:.N,by=HR01]
+edu <- edu[m==1]
+edu[,m:=NULL]
+
+tab2 <- merge(tab,edu,by="HR01",all.x=T)
+nrow(tab)
+nrow(tab2)
+
+openxlsx::write.xlsx(tab2,file.path(SHARED_TODAY,"VALIDATING MoH West Bank official list_WHEN_CW00_DISAGREES.xlsx"))
+## end
+
+problematic <- dMaster[HR01 %in% final$MOH_ONLY]
+xtabs(~problematic$facilitySector,addNA=T)
+xtabs(~problematic[is.na(facilitySector)]$IDH00,addNA=T)
+
+### UPDATING DOB (HR03) FOR ALL MOH WORKERS
+newDOB <- unique(na.omit(dMOHMaster[,c("HR01","HR03")]))
+setnames(newDOB,c("HR01","HR03_new"))
+
+dWorkers <- merge(dWorkers,newDOB,by="HR01",all.x=T)
+nrow(dWorkers)
+sum(!is.na(dWorkers$HR03))
+dWorkers[!is.na(HR03_new),HR03:=HR03_new]
+sum(!is.na(dWorkers$HR03))
+nrow(dWorkers)
+
+######## MOH WORKERS END
+
 # update old workers facilities data with new facilities data
 xtabs(~updatedFacilitiesList$IDH01)
 xtabs(~updatedFacilitiesList$IDH01_T)
@@ -532,28 +707,6 @@ dWorkers <- merge(dWorkers,fixable,by="IDH00",all.x=T)
 nrow(dWorkers)
 dWorkers[is.na(IDH03),IDH03:=IDH03_from_facility]
 nrow(dWorkers)
-# DISTRICTS
-dLocation <- list()
-for(i in c("North WB","Middle WB", "South WB", "North Gaza", "Middle Gaza", "South Gaza", "East Jerusalem (J1)")){
-  dLocation[[i]] <- readxl::read_excel(file.path(RAWmisc::PROJ$RAW,
-                                                   "Districts and localities codes - Richard.xls"),
-                                         sheet = i)
-  dLocation[[i]]$region <- i
-}
-dLocation <- rbindlist(dLocation)
-dLocation[,isGaza := 0]
-dLocation[region %in% c("North Gaza", "Middle Gaza", "South Gaza"), isGaza := 1]
-setnames(dLocation,c("district","districtCode","localityCode","localityName","urbanRural","region","isGaza"))
-dLocation[,districtCode:=as.numeric(districtCode)]
-dLocation <- dLocation[!is.na(districtCode)]
-dLocation[,districtJerusalemClean:=district]
-dLocation[district %in% c("Jerusalem (J2)", "East Jerusalem (J1)"),districtJerusalemClean:="Jerusalem"]
-
-dLocation[,isGazaNOJERUSALEM:=isGaza]
-dLocation[district=="East Jerusalem (J1)",isGazaNOJERUSALEM:=NA]
-dLocation[,gazaWBEJ:="West Bank (Not East J)"]
-dLocation[isGaza==1,gazaWBEJ:="Gaza"]
-dLocation[district=="East Jerusalem (J1)",gazaWBEJ:="East Jerusalem"]
 
 
 # WORKER CODES
@@ -592,6 +745,7 @@ sum(!is.na(dWorkers$BOTHdoctor_specialization))
 dWorkerCodes <- list()
 for(i in c(
            "Doctor",
+          "residentdoctor",
            "Specialized doctor",
            "Dentist",
            "Pharmacist",
@@ -641,7 +795,8 @@ professionVarsTemp <- c(
   "isProf_FamilyPhysician",
   "isProf_Radiologist",
   "isProf_LabTech",
-  "isProf_PharmacyAssistant"
+  "isProf_PharmacyAssistant",
+  "isProf_residentdoctor"
   )
 
 professionVarsTempHealthCare <- c(
@@ -742,49 +897,90 @@ cat(dFacilities$IDH00[duplicated(dFacilities$IDH00)],file=file.path(SHARED_TODAY
 # SAVING FILES
 openxlsx::write.xlsx(dFacilities,file.path(SHARED_TODAY,"dFacilities.xlsx"))
 openxlsx::write.xlsx(dWorkers,file.path(SHARED_TODAY,"dWorkers.xlsx"))
+openxlsx::write.xlsx(masterdED03,file.path(SHARED_TODAY,"dED03.xlsx"))
 
 
-# 
-d1 <- readxl::read_excel(file.path(RAWmisc::PROJ$RAW,
-                                    "Data collected by PCBS - Gaza 1st phase",
-                                    "Gaza Phase I - After auditing by Fayez",
-                                    "WORKERS_ED03 (1).xlsx"))
 
-d2 <- readxl::read_excel(file.path(RAWmisc::PROJ$RAW,
-                                    "Data collected by PCBS - WB 1st phase",
-                                    "WB - Phase I",
-                                    "WORKERS_ED03 WB.xlsx"))
+# remove MOH retired, etc
+(a <- nrow(dWorkers))
+dWorkers <- dWorkers[!HR01 %in% dMOHToRemove]
+(b <- nrow(dWorkers))
+b-a
 
-d3 <- readxl::read_excel(file.path(
-  RAWmisc::PROJ$RAW,
-  "Data collected by PNIPH - Gaza 2nd phase",
-  "WORKERS_ED03_GAZA-2nd phase-final.xlsx"))
+dWorkers[,age:=floor(as.numeric(difftime("2018-01-01",HR03,units="days"))/365.25)]
 
-d4 <- readxl::read_excel(file.path(
-  RAWmisc::PROJ$RAW,
-  "Data collected by PNIPH - WB 2nd phase",
-  "WORKERS_ED03_WB-final-2nd phase.xlsx"))
+dWorkers[,ageCat:=as.character(NA)]
+dWorkers[age>=18 & age<=30,ageCat:="18-30"]
+dWorkers[age>=31 & age<=45,ageCat:="31-45"]
+dWorkers[age>=46 & age<=54,ageCat:="46-54"]
+dWorkers[age>=55 & age<=59,ageCat:="55-59"]
+dWorkers[age>=60,ageCat:="60+"]
 
-d5 <- haven::read_spss(file.path(
-  RAWmisc::PROJ$RAW,
-  "New 8,000 records for data importing-received from Fayez",
-  "worker_ed03 (4).sav"))
-
-dUNRWA <- readxl::read_excel(file.path(
-  RAWmisc::PROJ$RAW,
-  "New UNRWA West Bank employees",
-  "WORKER_ED03.xlsx"))
-
-if(EXTRA_8000){
-  masterdED03 <- dED03 <- data.table(rbind(d1,d2,d3[names(d1)],d4[names(d1)],d5[names(d1)],dUNRWA[names(d1)]))
-} else {
-  masterdED03 <- dED03 <- data.table(rbind(d1,d2,d3[names(d1)],d4[names(d1)],dUNRWA[names(d1)]))
-}
+sum(is.na(dWorkers$age))
 ```
 
 ```{r, warning=FALSE}
 nrow(dFacilities)
 nrow(dWorkers)
+```
+
+```{r, warning=F}
+dWorkers[,isGaza:=as.numeric(NA)]
+dWorkers[,isWB:=as.numeric(NA)]
+
+dWorkers[,isPalestineUrban:=as.numeric(NA)]
+dWorkers[,isGazaUrban:=as.numeric(NA)]
+dWorkers[,isWBUrban:=as.numeric(NA)]
+
+dWorkers[,isPalestineRural:=as.numeric(NA)]
+dWorkers[,isGazaRural:=as.numeric(NA)]
+dWorkers[,isWBRural:=as.numeric(NA)]
+
+dWorkers[,isPalestineCamp:=as.numeric(NA)]
+dWorkers[,isGazaCamp:=as.numeric(NA)]
+dWorkers[,isWBCamp:=as.numeric(NA)]
+
+dWorkers[,isPalestine:=1]
+dWorkers[IDH03 %in% dLocation[isGaza==1]$localityCode, isGaza:=1]
+dWorkers[IDH03 %in% dLocation[isGaza==0]$localityCode, isWB:=1]
+
+dWorkers[IDH03 %in% dLocation[urbanRural=="Urban"]$localityCode,
+         isPalestineUrban:=1]
+dWorkers[IDH03 %in% dLocation[isGaza==1 & urbanRural=="Urban"]$localityCode,
+         isGazaUrban:=1]
+dWorkers[IDH03 %in% dLocation[isGaza==0 & urbanRural=="Urban"]$localityCode,
+         isWBUrban:=1]
+
+dWorkers[IDH03 %in% dLocation[urbanRural=="Rural"]$localityCode,
+         isPalestineRural:=1]
+dWorkers[IDH03 %in% dLocation[isGaza==1 & urbanRural=="Rural"]$localityCode,
+         isGazaRural:=1]
+dWorkers[IDH03 %in% dLocation[isGaza==0 & urbanRural=="Rural"]$localityCode,
+         isWBRural:=1]
+
+dWorkers[IDH03 %in% dLocation[urbanRural=="Camp"]$localityCode,
+         isPalestineCamp:=1]
+dWorkers[IDH03 %in% dLocation[isGaza==1 & urbanRural=="Camp"]$localityCode,
+         isGazaCamp:=1]
+dWorkers[IDH03 %in% dLocation[isGaza==0 & urbanRural=="Camp"]$localityCode,
+         isWBCamp:=1]
+
+dWorkers[,isFemale:=HR02-1]
+
+districtNames <- c("isPalestine","isGaza","isWB",
+                   "isPalestineUrban","isGazaUrban","isWBUrban",
+                   "isPalestineRural","isGazaRural","isWBRural",
+                   "isPalestineCamp","isGazaCamp","isWBCamp")
+
+for(i in unique(dLocation$district)){
+  newName <- stringr::str_replace_all(i,"[& ,\\-\\(\\)]","")
+  newName <- sprintf("isDistrict_%s",newName)
+  districtNames <- c(districtNames, newName)
+  dWorkers[,(newName):=as.numeric(NA)]
+  dWorkers[IDH03 %in% dLocation[district==i]$localityCode, (newName):=1]
+}
+
+ALL_DISTRICT_NAMES <- districtNames
 ```
 
 ## MISSING FACILITIES
@@ -898,94 +1094,6 @@ sum(is.na(dF$IDH01_F_dist))
 openxlsx::write.xlsx(d[,c("IDH00","IDH02_W_dist","IDH03_W_loc","IDH01_F_dist","IDH03_F_loc","districtMatch","localityMatch")],file.path(SHARED_TODAY,"VALIDATING IDHs in WORKERS TO IDHs in FACILITIES.xlsx"))
 ```
 
-\newpage
-
-## MoH West Bank official list
-
-I have also included a list on our shared file called MoH West Bank official list, could you please cross-check our MoH West Bank records with the MoH official list by ID and let me know if we have any still missing in our records. 
-
-```{r, warning=FALSE}
-dMaster <- merge(dWorkers, dFacilities[facilitySector=="Ministry of Health" & IDH03 %in% dLocation[isGaza==0]$localityCode,c("IDH00","facilitySector")], by="IDH00")
-nrow(dWorkers)
-nrow(dMaster)
-#dMaster[HR01=="910435585"]
-
-dMOHMaster <- data.table(readxl::read_excel(file.path(RAWmisc::PROJ$RAW,"Fixed excels - to be included in calculations","2018 MoH WB employees with DOB - Richard.xlsx")))
-dMOHMaster[,HR01:=as.numeric(HR01)]
-dMOH <- unique(na.omit(data.table(HR01=as.numeric(dMOHMaster[["HR01"]]))))
-
-dMOH_From_System <- unique(dMaster[,c("HR01")])
-
-dMOH[,existsInMOH:="MOH"]
-dMOH_From_System[,existsInSystem:="SYSTEM"]
-
-final <- merge(dMOH_From_System,dMOH,by="HR01",all.x=T,all.y=T)
-nrow(final)
-nrow(dMOH)
-nrow(dMOH_From_System)
-final[,cat:="BOTH"]
-final[is.na(existsInSystem),cat:="MOH_ONLY"]
-final[is.na(existsInMOH),cat:="SYSTEM_ONLY"]
-
-#final[HR01=="910435585"]
-
-final[,num:=1:.N,by=cat]
-final <- dcast.data.table(final,num~cat,value.var="HR01")
-final[,num:=NULL]
-
-#final[MOH_ONLY=="910435585"]
-
-openxlsx::write.xlsx(final,file.path(SHARED_TODAY,"VALIDATING MoH West Bank official list.xlsx"))
-
-openxlsx::write.xlsx(dWorkers[HR01 %in% final$SYSTEM_ONLY,NAMES_OF_WORKERS_FILE,with=F],file.path(SHARED_TODAY,"VALIDATING MoH West Bank official list_DATASET_THAT_EXISTS_IN_SYSTEM_BUT_NOT_MOH_LIST.xlsx"))
-
-openxlsx::write.xlsx(dMOHMaster[HR01 %in% final$MOH_ONLY],file.path(SHARED_TODAY,"VALIDATING MoH West Bank official list_DATASET_THAT_EXISTS_IN_MOH_LIST_BUT_NOT_SYSTEM.xlsx"))
-
-## checking to see if date of births are different
-## TODO MORE HERE
-tabx <- unique(dMaster[HR01 %in% final$BOTH,c("HR00","HR01","CW00","CW00_T")])
-setnames(tabx,c("CW00","CW00_T"),c("CW00_OLD","CW00_T_OLD"))
-new <- unique(dMOHMaster[HR01 %in% final$BOTH,c("HR01","CW00","CW00_T")])
-setnames(new,c("CW00","CW00_T"),c("CW00_NEW","CW00_T_NEW"))
-
-tab <- merge(tabx,new,by="HR01",all.x=T,all.y=T)
-nrow(tabx)
-nrow(new)
-nrow(tab)
-tab <- tab[CW00_OLD!=CW00_NEW]
-setorder(tab,HR01)
-
-edu <- dED03[HR01 %in% final$BOTH & ED03A<=7,]
-edu[,m:=max(ED03A),by=HR01]
-edu <- unique(edu[ED03A==m])
-edu[,m:=NULL]
-edu[,m:=1:.N,by=HR01]
-edu <- edu[m==1]
-edu[,m:=NULL]
-
-tab2 <- merge(tab,edu,by="HR01",all.x=T)
-nrow(tab)
-nrow(tab2)
-
-openxlsx::write.xlsx(tab2,file.path(SHARED_TODAY,"VALIDATING MoH West Bank official list_WHEN_CW00_DISAGREES.xlsx"))
-## end
-sum(dMOHMaster$HR01 %in% final$BOTH)
-sum(dMOHMaster$HR01 %in% final$MOH_ONLY)
-sum(dMOHMaster[HR01 %in% final$MOH_ONLY]$HR01 %in% dxxx$HR01)
-sum(dMOHMaster[HR01 %in% final$MOH_ONLY]$HR01 %in% dxxx2$HR01)
-sum(dMOHMaster[HR01 %in% final$MOH_ONLY]$HR01 %in% dWorkers$HR01)
-
-
-#dWorkers[HR01 %in% dMOHMaster[ID %in% final$MOH_ONLY & ID %in% dxxx2$HR01]]
-
-problematic <- dMaster[HR01 %in% final$MOH_ONLY]
-xtabs(~problematic$facilitySector,addNA=T)
-xtabs(~problematic[is.na(facilitySector)]$IDH00,addNA=T)
-#problematic <- dWorkers[HR01 %in% final$MOH_ONLY]
-
-#dMaster[HR01 == 901077099]
-
-```
 
 # Sept 12 2018 Requests
 
@@ -1206,14 +1314,6 @@ dWorkers[,isWB:=as.numeric(NA)]
 dWorkers[,isPalestine:=1]
 dWorkers[IDH03 %in% dLocation[isGaza==1]$localityCode, isGaza:=1]
 dWorkers[IDH03 %in% dLocation[isGaza==0]$localityCode, isWB:=1]
-dWorkers[,age:=floor(as.numeric(difftime("2018-01-01",HR03,units="days"))/365.25)]
-
-dWorkers[,ageCat:=as.character(NA)]
-dWorkers[age>=18 & age<=30,ageCat:="18-30"]
-dWorkers[age>=31 & age<=45,ageCat:="31-45"]
-dWorkers[age>=46 & age<=54,ageCat:="46-54"]
-dWorkers[age>=55 & age<=59,ageCat:="55-59"]
-dWorkers[age>=60,ageCat:="60+"]
 
 for(prof in c("isProf_GP")) for(area in c(
     "isPalestine",
@@ -3967,6 +4067,46 @@ for(prof in professionVars) for(area in c(
 
 ```
 
+### FOR MOH GPs, IS06==4, by district
+
+```{r message=FALSE, warning=FALSE}
+specializations <- unique(dWorkers$doctor_specialization)
+
+for(area in ALL_DISTRICT_NAMES){
+    d <- dWorkers[isProf_GP==1 & get(area)==1 & IDH00 %in% keepIDH00]
+    d[,numerator:=1]
+  
+    d <- d[,.(
+     numerator=max(numerator,na.rm=T)
+    ),by=.(
+     HR01,
+     ageCat
+    )]
+    
+    d <- d[,.(numerator=sum(numerator)),by=ageCat]
+    d[!is.na(ageCat),denominator_excl_miss:=sum(numerator)]
+    d[,perc:=RAWmisc::Format(numerator/denominator_excl_miss*100,1)]
+    d[,ageCat:=factor(ageCat,levels=c(
+      "18-30",
+      "31-45",
+      "46-54",
+      "55-59",
+      "60+"
+      ))]
+    setorder(d,ageCat)
+
+    cat("*******\n")
+    cat(sprintf("%s\n",area))
+    if(nrow(d)==0){
+      print("THERE ARE NO PEOPLE HERE")
+    } else {
+      print(d)
+    }
+    cat("\n\n")
+  }
+
+```
+
 ### STRATIFIED BY SPECIALIZED DOCTOR FOR MINISTRY OF HEALTH AND IS06==4
 
 ```{r message=FALSE, warning=FALSE}
@@ -5187,6 +5327,40 @@ for(i in c("isPalestine","isGaza","isWB")){
 ```
 
 
+## WHAT COUNTRY DO MIDWIVES GRADUATE FROM
+
+```{r, warning=FALSE}
+dED03 <- masterdED03[ED03C %in% 720308 & ED03A>=4]
+dED03[,lowest:=min(ED03A),by=HR01]
+dED03 <- dED03[ED03A==lowest]
+dED03[,N:=1:.N,by=HR01]
+dED03 <- dED03[N==1]
+#dED03
+
+for(i in c("isPalestine","isGaza","isWB")){
+  print(i)
+  d <- dWorkers[isProf_Midwife==1 & get(i)==1]
+  nrow(d)
+  d <- merge(d,dED03,by="HR01",all.x=T)
+  nrow(d)
+  
+  dCountryCodes <- readxl::read_excel(file.path(
+    RAWmisc::PROJ$RAW,"county_codes.xlsx"))
+  setnames(dCountryCodes,c("english","x","ED03D","x2"))
+  
+  nrow(d)
+  d[,ED03D:=as.numeric(ED03D)]
+  d <- merge(d,dCountryCodes,by="ED03D",all.x=T)
+  nrow(d)
+  
+  d <- d[,.(numerator=.N),by=.(english)]
+  d[,denominator:=sum(numerator)]
+  d[,perc:=RAWmisc::Format(100*numerator/denominator,digits=2)]
+  setorder(d,-numerator)
+  print(d)
+}
+```
+
 ## Total number of working allied health sciences professionals in Palestine/WB/Gaza BY SECTOR
 
 ```{r message=FALSE, warning=FALSE}
@@ -5210,6 +5384,38 @@ for(i in c("isPalestine","isWB","isGaza")){
          )
          ]
   setorder(d,facilitySector)
+  
+  print(d)
+}
+```
+
+
+
+## Total number of resident doctors, by gender, by sector, by geographic area
+
+```{r message=FALSE, warning=FALSE}
+dMaster <- merge(dWorkers, dFacilities[,c("IDH00","facilitySector","IS06")], by="IDH00",all.x=T)
+nrow(dWorkers)
+nrow(dMaster)
+
+for(i in c("isPalestine","isWB","isGaza")){
+  cat(i,"\n")
+  d <- dMaster[get(i)==1]
+  d <- d[isProf_residentdoctor==1,.(
+    numerator=1
+  ),by=.(
+    HR01,
+    facilitySector,
+    isFemale
+  )]
+  d <- d[,
+         .(num=sum(numerator)),
+         by=.(
+           facilitySector,
+           isFemale
+         )
+         ]
+  setorder(d,facilitySector,isFemale)
   
   print(d)
 }
