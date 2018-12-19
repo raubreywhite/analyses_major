@@ -17,8 +17,8 @@ editor_options:
 
 # Loading in data
 ```{r, results='hide', message=FALSE, warning=FALSE}
-RAWmisc::AllowFileManipulationFromInitialiseProject()
-RAWmisc::InitialiseProject(
+org::AllowFileManipulationFromInitialiseProject()
+org::InitialiseProject(
   HOME = "/git/code_major/2017/hadeel_health_workforce/",
   RAW = "/dropbox/analyses/data_raw/code_major/2017/hadeel_health_workforce/",
   CLEAN = "/analyses/data_clean/code_major/2017/hadeel_health_workforce/",
@@ -55,10 +55,10 @@ if(CW00_AND_CW06){
   extraDir <- file.path(extraDir,"CW00")
 }
 
-SHARED_TODAY <- file.path(RAWmisc::PROJ$SHARED_TODAY,extraDir)
+SHARED_TODAY <- file.path(org::PROJ$SHARED_TODAY,extraDir)
 
 ## MOH WORKERS TO REMOVE
-dMOHToRemove <- readxl::read_excel(file.path(RAWmisc::PROJ$RAW,
+dMOHToRemove <- readxl::read_excel(file.path(org::PROJ$RAW,
                                              "Fixed excels - to be included in calculations",
                                              "Copy of MoH employees - to be removed from calculations 2018 latest.xlsx"),sheet=2)
 dMOHToRemove <- as.numeric(dMOHToRemove[[1]])
@@ -68,33 +68,33 @@ length(dMOHToRemove)
 
 
 # 
-d1 <- readxl::read_excel(file.path(RAWmisc::PROJ$RAW,
+d1 <- readxl::read_excel(file.path(org::PROJ$RAW,
                                     "Data collected by PCBS - Gaza 1st phase",
                                     "Gaza Phase I - After auditing by Fayez",
                                     "WORKERS_ED03 (1).xlsx"))
 
-d2 <- readxl::read_excel(file.path(RAWmisc::PROJ$RAW,
+d2 <- readxl::read_excel(file.path(org::PROJ$RAW,
                                     "Data collected by PCBS - WB 1st phase",
                                     "WB - Phase I",
                                     "WORKERS_ED03 WB.xlsx"))
 
 d3 <- readxl::read_excel(file.path(
-  RAWmisc::PROJ$RAW,
+  org::PROJ$RAW,
   "Data collected by PNIPH - Gaza 2nd phase",
   "WORKERS_ED03_GAZA-2nd phase-final.xlsx"))
 
 d4 <- readxl::read_excel(file.path(
-  RAWmisc::PROJ$RAW,
+  org::PROJ$RAW,
   "Data collected by PNIPH - WB 2nd phase",
   "WORKERS_ED03_WB-final-2nd phase.xlsx"))
 
 d5 <- haven::read_spss(file.path(
-  RAWmisc::PROJ$RAW,
+  org::PROJ$RAW,
   "New 8,000 records for data importing-received from Fayez",
   "worker_ed03 (4).sav"))
 
 dUNRWA <- readxl::read_excel(file.path(
-  RAWmisc::PROJ$RAW,
+  org::PROJ$RAW,
   "New UNRWA West Bank employees",
   "WORKER_ED03.xlsx"))
 
@@ -107,7 +107,7 @@ if(EXTRA_8000){
 # DISTRICTS
 dLocation <- list()
 for(i in c("North WB","Middle WB", "South WB", "North Gaza", "Middle Gaza", "South Gaza", "East Jerusalem (J1)")){
-  dLocation[[i]] <- readxl::read_excel(file.path(RAWmisc::PROJ$RAW,
+  dLocation[[i]] <- readxl::read_excel(file.path(org::PROJ$RAW,
                                                    "Districts and localities codes - Richard.xls"),
                                          sheet = i)
   dLocation[[i]]$region <- i
@@ -129,18 +129,18 @@ dLocation[district=="East Jerusalem (J1)",gazaWBEJ:="East Jerusalem"]
 
 
 dCountryCodes <- readxl::read_excel(file.path(
-    RAWmisc::PROJ$RAW,"county_codes.xlsx"))
+    org::PROJ$RAW,"county_codes.xlsx"))
   setnames(dCountryCodes,c("english","x","ED03D","x2"))
 
-jordanValley <- readxl::read_excel(file.path(RAWmisc::PROJ$RAW,
+jordanValley <- readxl::read_excel(file.path(org::PROJ$RAW,
                                              "Jordan valley villages (OCHA).xlsx"))
 
-updatedFacilitiesList <- readxl::read_excel(file.path(RAWmisc::PROJ$RAW,
+updatedFacilitiesList <- readxl::read_excel(file.path(org::PROJ$RAW,
                                     "data_richard",
                                     "All Facilities FINAL - Richard.xlsx"))
 
 # missing CW00
-updatedCW00 <- data.table(readxl::read_excel(file.path(RAWmisc::PROJ$RAW,
+updatedCW00 <- data.table(readxl::read_excel(file.path(org::PROJ$RAW,
                                     "data_richard",
                                     "missing_CW00.xlsx")))
 updatedCW00 <- na.omit(updatedCW00[,c("HR01","CW00")])
@@ -149,7 +149,7 @@ updatedCW00 <- updatedCW00[!duplicated(updatedCW00$HR01)]
 nrow(updatedCW00)
 setnames(updatedCW00,"CW00","updated_CW00")
 
-updatedCW00x <- data.table(readxl::read_excel(file.path(RAWmisc::PROJ$RAW,
+updatedCW00x <- data.table(readxl::read_excel(file.path(org::PROJ$RAW,
                                     "data_richard",
                                     "2018-08-missing_CW00.xlsx")))
 updatedCW00x <- na.omit(updatedCW00x[,c("HR01","CW00")])
@@ -158,7 +158,7 @@ updatedCW00x <- updatedCW00x[!duplicated(updatedCW00x$HR01)]
 nrow(updatedCW00x)
 setnames(updatedCW00x,"CW00","updated_CW00")
 
-updatedCW00xx <- data.table(readxl::read_excel(file.path(RAWmisc::PROJ$RAW,
+updatedCW00xx <- data.table(readxl::read_excel(file.path(org::PROJ$RAW,
                                     "data_richard",
                                     "2018-08-23_missing_CW00.xlsx")))
 updatedCW00xx <- na.omit(updatedCW00xx[,c("HR01","CW00")])
@@ -167,7 +167,7 @@ updatedCW00xx <- updatedCW00xx[!duplicated(updatedCW00xx$HR01)]
 nrow(updatedCW00xx)
 setnames(updatedCW00xx,"CW00","updated_CW00")
 
-updatedCW00xxx <- data.table(readxl::read_excel(file.path(RAWmisc::PROJ$RAW,
+updatedCW00xxx <- data.table(readxl::read_excel(file.path(org::PROJ$RAW,
                                     "data_richard",
                                     "2018-09-11_missing_CW00_updated.xlsx")))
 updatedCW00xxx <- na.omit(updatedCW00xxx[,c("HR01","CW00")])
@@ -189,25 +189,25 @@ updatedCW00[,n:=NULL]
 #updatedCW00$HR01 <- as.character(updatedCW00$HR01)
 
 # adding a list of GPs
-listOfGPs <- data.table(readxl::read_excel(file.path(RAWmisc::PROJ$RAW,
+listOfGPs <- data.table(readxl::read_excel(file.path(org::PROJ$RAW,
                                     "data_richard",
                                     "all GPs at MoH West Bank - from MoH list.xlsx")))
 
 # TO REMOVE
 # workers
-d1 <- readxl::read_excel(file.path(RAWmisc::PROJ$RAW,
+d1 <- readxl::read_excel(file.path(org::PROJ$RAW,
                                     "Workers records to be removed",
                                     "MoH Gaza - left facility.xlsx"))
-d2 <- readxl::read_excel(file.path(RAWmisc::PROJ$RAW,
+d2 <- readxl::read_excel(file.path(org::PROJ$RAW,
                                     "Workers records to be removed",
                                     "RICHARD_CARITAS_SELECTION.xlsx"))
-d3 <- readxl::read_excel(file.path(RAWmisc::PROJ$RAW,
+d3 <- readxl::read_excel(file.path(org::PROJ$RAW,
                                     "Workers records to be removed",
                                     "left facility - makassed.xlsx"))
-d4 <- readxl::read_excel(file.path(RAWmisc::PROJ$RAW,
+d4 <- readxl::read_excel(file.path(org::PROJ$RAW,
                                     "Workers records to be removed",
                                     "to remove.xlsx"))
-dxxx <- d5 <- readxl::read_excel(file.path(RAWmisc::PROJ$RAW,
+dxxx <- d5 <- readxl::read_excel(file.path(org::PROJ$RAW,
                                     "Workers records to be removed",
                                     "West Bank_ARABIC_WRITING_GOES_HERE.xlsx"))
 
@@ -215,34 +215,34 @@ TO_REMOVE <- unique(c(d1$HR01,d2$HR01,d3$HR01,d4$`ID number`,d5$HR01))
 length(TO_REMOVE)
 
 # FACILITIES
-d1 <- readxl::read_excel(file.path(RAWmisc::PROJ$RAW,
+d1 <- readxl::read_excel(file.path(org::PROJ$RAW,
                                     "Data collected by PCBS - Gaza 1st phase",
                                     "Gaza Phase I - After auditing by Fayez",
                                     "FACILITY_MAIN_Gaza I_Richard.xlsx"))
 
-d2 <- readxl::read_excel(file.path(RAWmisc::PROJ$RAW,
+d2 <- readxl::read_excel(file.path(org::PROJ$RAW,
                                     "Data collected by PCBS - WB 1st phase",
                                     "WB - Phase I",
                                     "FACILITY_MAIN WB I_Richard.xlsx"))
 
 d3 <- readxl::read_excel(file.path(
-  RAWmisc::PROJ$RAW,
+  org::PROJ$RAW,
   "Data collected by PNIPH - Gaza 2nd phase",
   "FACILITY_MAIN_GAZA-2nd phase-final-Richard.xlsx"))
 
 d4 <- readxl::read_excel(file.path(
-  RAWmisc::PROJ$RAW,
+  org::PROJ$RAW,
   "Data collected by PNIPH - WB 2nd phase",
   "FACILITY_MAIN_WB-second phase-final-Richard.xlsx"))
 
 d5 <- readxl::read_excel(file.path(
-  RAWmisc::PROJ$RAW,
+  org::PROJ$RAW,
   "New 8,000 records for data importing-received from Fayez",
   "Copy of facility_main.xlsx"))
 d5$IDH00 <- as.numeric(d5$IDH00)
 
 dUNRWA <- readxl::read_excel(file.path(
-  RAWmisc::PROJ$RAW,
+  org::PROJ$RAW,
   "New UNRWA West Bank employees",
   "facility_main.xlsx"
 ))
@@ -325,34 +325,34 @@ xtabs(~dFacilities$facilitySector,addNA=TRUE)
 xtabs(~dFacilities$IS04+dFacilities$facilitySector,addNA=TRUE)
 
 # WORKERS
-d1 <- readxl::read_excel(file.path(RAWmisc::PROJ$RAW,
+d1 <- readxl::read_excel(file.path(org::PROJ$RAW,
                                     "Data collected by PCBS - Gaza 1st phase",
                                     "Gaza Phase I - After auditing by Fayez",
                                     "WORKERS_MAIN (1).xlsx"))
 d1 <- d1[,names(d1)[1:which(names(d1)=="MD03_1_B")]]
 
-d2 <- readxl::read_excel(file.path(RAWmisc::PROJ$RAW,
+d2 <- readxl::read_excel(file.path(org::PROJ$RAW,
                                     "Data collected by PCBS - WB 1st phase",
                                     "WB - Phase I",
                                     "WORKERS_MAIN WB.xlsx"))
 d2 <- d2[,names(d2)[1:which(names(d2)=="MD03_1_B")]]
 
-d3 <- readxl::read_excel(file.path(RAWmisc::PROJ$RAW,
+d3 <- readxl::read_excel(file.path(org::PROJ$RAW,
                                     "Data collected by PNIPH - Gaza 2nd phase",
                                     "WORKERS_MAIN_GAZA-final-2nd phase.xlsx"))
 
-d4 <- readxl::read_excel(file.path(RAWmisc::PROJ$RAW,
+d4 <- readxl::read_excel(file.path(org::PROJ$RAW,
                                     "Data collected by PNIPH - WB 2nd phase",
                                     "WORKERS_MAIN_WB-second phase-final.xlsx"))
 
-dxxx2 <- d5 <- haven::read_spss(file.path(RAWmisc::PROJ$RAW,
+dxxx2 <- d5 <- haven::read_spss(file.path(org::PROJ$RAW,
                                     "New 8,000 records for data importing-received from Fayez",
                                     "worker_main (6).sav"))
-d6 <- readxl::read_excel(file.path(RAWmisc::PROJ$RAW,
+d6 <- readxl::read_excel(file.path(org::PROJ$RAW,
                                    "data_richard",
                                    "MoH West Bank records  - missing from system.xlsx"))
 dUNRWA <- readxl::read_excel(file.path(
-  RAWmisc::PROJ$RAW,
+  org::PROJ$RAW,
   "New UNRWA West Bank employees",
   "WORKER_MAIN.xlsx"
 ))
@@ -395,7 +395,7 @@ dWorkers[CW00=="",CW00:=NA]
 dWorkers[CW06=="",CW06:=NA]
 
 # workers from system
-workersFromSystem <- data.table(readxl::read_excel(file.path(RAWmisc::PROJ$RAW,
+workersFromSystem <- data.table(readxl::read_excel(file.path(org::PROJ$RAW,
                                     "Workers records from system.xlsx")))
 
 x1 <- data.table(table(dWorkers$HR01))
@@ -453,7 +453,7 @@ dWorkers[HR01 %in% c(
 ),CW00:=221102]
 
 # correcting ages that were wrong over two documents
-correctAges <- data.table(readxl::read_excel(file.path(RAWmisc::PROJ$RAW,"data_richard","conflicing_ages.xlsx")))
+correctAges <- data.table(readxl::read_excel(file.path(org::PROJ$RAW,"data_richard","conflicing_ages.xlsx")))
 changeHR01 <- correctAges[!is.na(changeHR01),c("HR01","HR03")]
 changeHR01[,flag:=TRUE]
 nrow(dWorkers)
@@ -471,7 +471,7 @@ dWorkers[!is.na(new_HR03),HR03:=new_HR03]
 dWorkers[,new_HR03:=NULL]
 
 # correcting ages that were wrong over two documents (round 2)
-changeHR03 <- data.table(readxl::read_excel(file.path(RAWmisc::PROJ$RAW,"data_richard","2018-09-12_conflicing_ages_overwrite.xlsx")))
+changeHR03 <- data.table(readxl::read_excel(file.path(org::PROJ$RAW,"data_richard","2018-09-12_conflicing_ages_overwrite.xlsx")))
 
 setnames(changeHR03,"HR03","new_HR03")
 nrow(dWorkers)
@@ -490,7 +490,7 @@ xtabs(~dWorkers$numAgesNotMissing)
 openxlsx::write.xlsx(dWorkers[numAgesNotMissing>1,c("HR01","HR03")],file.path(SHARED_TODAY,"conflicing_ages.xlsx"))
 
 # updating genders by their names
-dGender <- data.table(readxl::read_excel(file.path(RAWmisc::PROJ$RAW,
+dGender <- data.table(readxl::read_excel(file.path(org::PROJ$RAW,
                                     "2017_12_14_hadeel_missing_gender.xlsx")))
 dGender <- dGender[!is.na(HR01) & HR01!=999999999]
 dGender[tolower(Gender)=="male",HR02_new:=1]
@@ -514,7 +514,7 @@ dWorkers[,HR02_new:=NULL]
 length(unique(dWorkers[is.na(HR02)]$HR01)) #25
 
 # updating genders by their names 2
-dGender <- data.table(readxl::read_excel(file.path(RAWmisc::PROJ$RAW,
+dGender <- data.table(readxl::read_excel(file.path(org::PROJ$RAW,
                                     "data_richard",
                                     "2018-08-two_genders_same_name.xlsx")))
 dGender <- dGender[!is.na(HR01) & HR01!=999999999]
@@ -538,7 +538,7 @@ sum(is.na(dWorkers$HR02)) #32
 dWorkers[,HR02_new:=NULL]
 
 # GENDERS FIX 1
-updatedGender <- data.table(readxl::read_excel(file.path(RAWmisc::PROJ$RAW,
+updatedGender <- data.table(readxl::read_excel(file.path(org::PROJ$RAW,
                                     "data_richard",
                                     "2018-08-missing_gender.xlsx")))
 updatedGender <- unique(na.omit(updatedGender[,c("HR01","HR02")]))
@@ -553,13 +553,13 @@ dWorkers[,updated_HR02:=NULL]
 
 
 # midwives that should be female
-femaleWorkers <- data.table(readxl::read_excel(file.path(RAWmisc::PROJ$RAW,
+femaleWorkers <- data.table(readxl::read_excel(file.path(org::PROJ$RAW,
                                                          "data_richard",
                                                          "Workers to be changed from male to female.xlsx")))
 dWorkers[HR01 %in% femaleWorkers$`Worker ID Number`, HR02:=2]
 
 # updating genders for people with dual genders in same ID
-dGender <- data.table(readxl::read_excel(file.path(RAWmisc::PROJ$RAW,
+dGender <- data.table(readxl::read_excel(file.path(org::PROJ$RAW,
                                     "Workers records same ID but different gender.xlsx")))
 setnames(dGender,c("HR01","Gender"))
 dGender[tolower(Gender)=="male",HR02_new:=1]
@@ -590,7 +590,7 @@ nrow(dWorkers)
 nrow(dMaster)
 #dMaster[HR01=="910435585"]
 
-dMOHMaster <- data.table(readxl::read_excel(file.path(RAWmisc::PROJ$RAW,"Fixed excels - to be included in calculations","2018 MoH WB employees with DOB - Richard.xlsx")))
+dMOHMaster <- data.table(readxl::read_excel(file.path(org::PROJ$RAW,"Fixed excels - to be included in calculations","2018 MoH WB employees with DOB - Richard.xlsx")))
 dMOHMaster[,HR01:=as.numeric(HR01)]
 
 # remove MOH retired, etc
@@ -679,7 +679,33 @@ dWorkers[!is.na(HR03_new),HR03:=HR03_new]
 sum(!is.na(dWorkers$HR03))
 nrow(dWorkers)
 
+### UPDATING CW00 FOR ALL MOH WORKERS
+newCW00 <- unique(na.omit(dMOHMaster[,c("HR01","CW00")]))
+setnames(newCW00,c("HR01","CW00_new"))
+
+dWorkers <- merge(dWorkers,newCW00,by="HR01",all.x=T)
+nrow(dWorkers)
+sum(!is.na(dWorkers$CW00))
+dWorkers[!is.na(CW00_new),CW00:=as.character(CW00_new)]
+sum(!is.na(dWorkers$CW00))
+nrow(dWorkers)
+dWorkers[,CW00_new:=NULL]
+
+### FIX 
+
+#So, could you please make sure to change the codes in the MOH West Bank list: all 221213 needs to be changed to 221101.
+#We need to do that so that they are not be included under the indicator of doctors in residency training.
+MOH_WB <- dFacilities[facilitySector=="Ministry of Health" & IDH03 %in% dLocation[isGaza==0]$localityCode]$IDH00
+dWorkers[IDH00 %in% MOH_WB & CW00 == "221213", CW00:="221101"]
+dWorkers[IDH00 %in% MOH_WB & CW06 == "221213", CW06:="221101"]
+
+
 ######## MOH WORKERS END
+
+###To solve this, I would like us to delete the code 321302 and replace all records with CW00 or CW06 = 321302 to 532905. 532905 is the code you used for the calculations of pharmacy assistant.
+dWorkers[CW00 == "321302", CW00:="532905"]
+dWorkers[CW06 == "321302", CW06:="532905"]
+
 
 # update old workers facilities data with new facilities data
 xtabs(~updatedFacilitiesList$IDH01)
@@ -710,7 +736,7 @@ nrow(dWorkers)
 
 
 # WORKER CODES
-dSpecializedDoctors <- readxl::read_excel(file.path(RAWmisc::PROJ$RAW,
+dSpecializedDoctors <- readxl::read_excel(file.path(org::PROJ$RAW,
                                                    "Groups - ULTIMIT.xlsx"),
                                          sheet = "Specialized doctor")
 dSpecializedDoctors <- dSpecializedDoctors[,c("Code of profession","Profession")]
@@ -720,7 +746,7 @@ dWorkers[,CW00:=as.numeric(CW00)]
 dWorkers <- merge(dWorkers,dSpecializedDoctors[!is.na(dSpecializedDoctors$CW00),],by="CW00",all.x=T)
 nrow(dWorkers)
 
-dSpecializedDoctors <- readxl::read_excel(file.path(RAWmisc::PROJ$RAW,
+dSpecializedDoctors <- readxl::read_excel(file.path(org::PROJ$RAW,
                                                    "Groups - ULTIMIT.xlsx"),
                                          sheet = "Specialized doctor")
 dSpecializedDoctors <- dSpecializedDoctors[,c("Code of profession","Profession")]
@@ -762,7 +788,7 @@ for(i in c(
            "LabTech",
            "PharmacyAssistant"
 )){
-    dWorkerCodes[[i]] <- readxl::read_excel(file.path(RAWmisc::PROJ$RAW,
+    dWorkerCodes[[i]] <- readxl::read_excel(file.path(org::PROJ$RAW,
                                                    "Groups - ULTIMIT.xlsx"),
                                          sheet = i)
     dWorkerCodes[[i]]$groupedProfession <- i
@@ -879,10 +905,10 @@ dWorkers[BOTH_isProf_Midwife==1,HR02:=2]
 #dFacilities[NUMDUP>1,c("IDH00","IDH01","IDH03","IS04","IDH02")]
 
 # POPULATION
-pop <- data.table(readxl::read_excel(file.path(RAWmisc::PROJ$RAW,"data_richard/pop_estimates_2017.xlsx")))
+pop <- data.table(readxl::read_excel(file.path(org::PROJ$RAW,"data_richard/pop_estimates_2017.xlsx")))
 setnames(pop,c("districtName","pop","districtCode","area"))
 
-popunrwa <- data.table(readxl::read_excel(file.path(RAWmisc::PROJ$RAW,"data_richard/pop_estimates_2017_unrwa.xlsx")))
+popunrwa <- data.table(readxl::read_excel(file.path(org::PROJ$RAW,"data_richard/pop_estimates_2017_unrwa.xlsx")))
 setnames(popunrwa,c("districtName","pop","districtCode","area"))
 
 
@@ -1635,6 +1661,69 @@ setorder(d,IS06)
 print(d)
 ```
 
+
+## MOH GP GEOGRAPHY IS06==4/IS06==9
+
+```{r, warning=FALSE}
+
+dWorkers[,isPalestine:=1]
+dWorkers[,isGaza:=0]
+dWorkers[,isWB:=0]
+dWorkers[IDH03 %in% dLocation[isGaza==1]$localityCode, isGaza:=1]
+dWorkers[IDH03 %in% dLocation[isGaza==0]$localityCode, isWB:=1]
+
+dWorkers[,campUrbanRural:=as.character(NA)]
+dWorkers[IDH03 %in% dLocation[urbanRural=="Urban"]$localityCode,
+         campUrbanRural:="Urban"]
+dWorkers[IDH03 %in% dLocation[urbanRural=="Rural"]$localityCode,
+         campUrbanRural:="Rural"]
+dWorkers[IDH03 %in% dLocation[urbanRural=="Camp"]$localityCode,
+         campUrbanRural:="Camp"]
+
+districtNames <- c("isPalestine","isGaza","isWB")
+
+stack <- data.table(expand.grid(
+  prof="isProf_GP",
+  dist=ALL_DISTRICT_NAMES,
+  sector="Ministry of Health",
+  xIS06=c(4,9),
+  stringsAsFactors = F))
+
+dLocation[,IDH03:=localityCode]
+dMaster <- merge(dWorkers, dLocation[,c("IDH03","region","district")], by="IDH03",all.x=T)
+nrow(dWorkers)
+nrow(dMaster)
+
+nrow(dMaster)
+dMaster <- merge(dMaster, dFacilities[,c("IDH00","facilitySector","IS06")], by="IDH00", all.x=T)
+nrow(dMaster)
+
+unique(dMaster[is.na(region),"IDH03"])
+
+for(i in 1:nrow(stack)){
+  
+  ## by region
+  s <- stack[i]
+  d <- dMaster[get(s$prof)==1 & get(s$dist)==1]
+  d <- d[facilitySector==s$sector]
+  d <- d[IS06==s$xIS06]
+  
+  d[,numerator:=1]
+  d <- d[,.(
+      person=max(numerator,na.rm=T),
+      jobs=sum(numerator,na.rm=T)
+    ),by=.(
+      HR01
+    )]
+  
+  cat(sprintf("***** %s - %s - %s - IS06=%s *****\n",s$prof,s$dist,s$sector,s$xIS06))
+  print(sprintf("Number of jobs: %s",sum(d$jobs)))
+  print(sprintf("Number of people-regions: %s",sum(d$person)))
+  cat("\n\n")
+  
+}
+```
+
 \newpage
 
 # June 2018 UNRWA
@@ -1897,7 +1986,7 @@ for(i in professionVars){
 - people who answer as both male and female are recoded to female
 
 ```{r, warning=FALSE}
-workerLabels <- data.table(readxl::read_excel(file.path(RAWmisc::PROJ$RAW,
+workerLabels <- data.table(readxl::read_excel(file.path(org::PROJ$RAW,
                                              "Educational Specialty ED03 - C.xls")))
 setnames(workerLabels,c("arabic_names","ED03C"))
 workerLabels <- workerLabels[!is.na(ED03C)]
@@ -4028,11 +4117,7 @@ dWorkers[age>=46 & age<=54,ageCat:="46-54"]
 dWorkers[age>=55 & age<=59,ageCat:="55-59"]
 dWorkers[age>=60,ageCat:="60+"]
 
-for(prof in professionVars) for(area in c(
-    "isPalestine",
-    "isGaza",
-    "isWB"
-  )){
+for(prof in professionVars) for(area in ALL_DISTRICT_NAMES){
     d <- dWorkers[get(prof)==1 & get(area)==1 & IDH00 %in% keepIDH00]
     d[,numerator:=1]
   
@@ -4569,6 +4654,7 @@ for(i in 1:nrow(stack)){
   cat("\n\n")
 }
 ```
+
 
 ## RATIOS OF NURSES TO DOCTORS
 
@@ -5141,7 +5227,7 @@ for(i in c("isPalestine","isGaza","isWB")){
   nrow(d)
   
   dCountryCodes <- readxl::read_excel(file.path(
-    RAWmisc::PROJ$RAW,"county_codes.xlsx"))
+    org::PROJ$RAW,"county_codes.xlsx"))
   setnames(dCountryCodes,c("english","x","ED03D","x2"))
   
   nrow(d)
@@ -5168,7 +5254,7 @@ for(i in c("isPalestine","isGaza","isWB")){
   nrow(d)
   
   dCountryCodes <- readxl::read_excel(file.path(
-    RAWmisc::PROJ$RAW,"county_codes.xlsx"))
+    org::PROJ$RAW,"county_codes.xlsx"))
   setnames(dCountryCodes,c("english","x","ED03D","x2"))
   
   nrow(d)
@@ -5202,7 +5288,7 @@ for(i in c("isPalestine","isGaza","isWB")){
   nrow(d)
   
   dCountryCodes <- readxl::read_excel(file.path(
-    RAWmisc::PROJ$RAW,"county_codes.xlsx"))
+    org::PROJ$RAW,"county_codes.xlsx"))
   setnames(dCountryCodes,c("english","x","ED03D","x2"))
   
   nrow(d)
@@ -5236,7 +5322,7 @@ for(i in c("isPalestine","isGaza","isWB")){
   nrow(d)
   
   dCountryCodes <- readxl::read_excel(file.path(
-    RAWmisc::PROJ$RAW,"county_codes.xlsx"))
+    org::PROJ$RAW,"county_codes.xlsx"))
   setnames(dCountryCodes,c("english","x","ED03D","x2"))
   
   nrow(d)
@@ -5270,7 +5356,7 @@ for(i in c("isPalestine","isGaza","isWB")){
   nrow(d)
   
   dCountryCodes <- readxl::read_excel(file.path(
-    RAWmisc::PROJ$RAW,"county_codes.xlsx"))
+    org::PROJ$RAW,"county_codes.xlsx"))
   setnames(dCountryCodes,c("english","x","ED03D","x2"))
   
   nrow(d)
@@ -5309,7 +5395,7 @@ for(i in c("isPalestine","isGaza","isWB")){
     nrow(d)
     
     dCountryCodes <- readxl::read_excel(file.path(
-      RAWmisc::PROJ$RAW,"county_codes.xlsx"))
+      org::PROJ$RAW,"county_codes.xlsx"))
     setnames(dCountryCodes,c("english","x","ED03D","x2"))
     
     nrow(d)
@@ -5345,7 +5431,7 @@ for(i in c("isPalestine","isGaza","isWB")){
   nrow(d)
   
   dCountryCodes <- readxl::read_excel(file.path(
-    RAWmisc::PROJ$RAW,"county_codes.xlsx"))
+    org::PROJ$RAW,"county_codes.xlsx"))
   setnames(dCountryCodes,c("english","x","ED03D","x2"))
   
   nrow(d)
