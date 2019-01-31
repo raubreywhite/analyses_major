@@ -1,15 +1,15 @@
 
 
 WP1DataRaw <- function(){
-  if(RUN_ALL) unlink(file.path(RAWmisc::PROJ$CLEAN,"WP1_raw.RDS"))
-  bake(file.path(RAWmisc::PROJ$CLEAN,"WP1_raw.RDS"),{
-    dir.create(file.path(RAWmisc::PROJ$CLEAN,"WP1_waterworks"))
-    dir.create(file.path(RAWmisc::PROJ$FINAL,"WP1"))
+  if(RUN_ALL) unlink(file.path(org::PROJ$CLEAN,"WP1_raw.RDS"))
+  bake(file.path(org::PROJ$CLEAN,"WP1_raw.RDS"),{
+    dir.create(file.path(org::PROJ$CLEAN,"WP1_waterworks"))
+    dir.create(file.path(org::PROJ$FINAL,"WP1"))
     
     CleanDataWP1NVE()
     CleanDataWP1MET()
     CleanDataWaterworksRawWater()
-    d <- readRDS(file.path(RAWmisc::PROJ$CLEAN,"WP1_raw.RDS"))
+    d <- readRDS(file.path(org::PROJ$CLEAN,"WP1_raw.RDS"))
     d <- d[value>=0]
     
     d[,wp950_gridRunoffStandardised0_3:=wp950_gridRunoffStandardised0_0+wp950_gridRunoffStandardised1_1+wp950_gridRunoffStandardised2_2+wp950_gridRunoffStandardised3_3]
@@ -27,15 +27,15 @@ WP1DataRaw <- function(){
 }
 
 WP1DataClean <- function(){
-  if(RUN_ALL) unlink(file.path(RAWmisc::PROJ$CLEAN,"WP1_clean.RDS"))
-  bake(file.path(RAWmisc::PROJ$CLEAN,"WP1_clean.RDS"),{
-    dir.create(file.path(RAWmisc::PROJ$CLEAN,"WP1_waterworks_clean_water"))
-    dir.create(file.path(RAWmisc::PROJ$FINAL,"WP1"))
+  if(RUN_ALL) unlink(file.path(org::PROJ$CLEAN,"WP1_clean.RDS"))
+  bake(file.path(org::PROJ$CLEAN,"WP1_clean.RDS"),{
+    dir.create(file.path(org::PROJ$CLEAN,"WP1_waterworks_clean_water"))
+    dir.create(file.path(org::PROJ$FINAL,"WP1"))
     
     CleanDataWP1NVE()
     CleanDataWP1MET()
     CleanDataWaterworksCleanWater()
-    d <- readRDS(file.path(RAWmisc::PROJ$CLEAN,"WP1_clean.RDS"))
+    d <- readRDS(file.path(org::PROJ$CLEAN,"WP1_clean.RDS"))
     d <- d[value>=0]
     
     d[,wp950_gridRunoffStandardised0_3:=wp950_gridRunoffStandardised0_0+wp950_gridRunoffStandardised1_1+wp950_gridRunoffStandardised2_2+wp950_gridRunoffStandardised3_3]
@@ -53,8 +53,8 @@ WP1DataClean <- function(){
 }
 
 WP2Data <- function(initialDataCall=FALSE){
-  if(initialDataCall & RUN_ALL) system(paste0("rm -f ",file.path(RAWmisc::PROJ$CLEAN,"WP2.RDS")))
-  bake(file.path(RAWmisc::PROJ$CLEAN,"WP2.RDS"),{
+  if(initialDataCall & RUN_ALL) system(paste0("rm -f ",file.path(org::PROJ$CLEAN,"WP2.RDS")))
+  bake(file.path(org::PROJ$CLEAN,"WP2.RDS"),{
     CleanData()
   }) -> d
   return(d[year %in% c(2006:2014)])
@@ -62,12 +62,12 @@ WP2Data <- function(initialDataCall=FALSE){
 
 
 WP2WaterworkRawData <- function(){
-  d1 <- readRDS(file.path(RAWmisc::PROJ$CLEAN,"WP1_raw.RDS"))
-  d2 <- readRDS(file.path(RAWmisc::PROJ$CLEAN,"WP2.RDS"))
+  d1 <- readRDS(file.path(org::PROJ$CLEAN,"WP1_raw.RDS"))
+  d2 <- readRDS(file.path(org::PROJ$CLEAN,"WP2.RDS"))
   
   d1 <- d1[type %in% c("Accredited","Internal")]
   
-  keys <- readxl::read_excel(file.path(RAWmisc::PROJ$RAW,"waterworks_to_kommune.xlsx"),skip=2,sheet=2)
+  keys <- readxl::read_excel(file.path(org::PROJ$RAW,"waterworks_to_kommune.xlsx"),skip=2,sheet=2)
   keys <- keys[,c("waterworkRaw","Mottatt - K nr","Forsynings-grad 2014")]
   keys <- data.table(keys)
   keys <- keys[!is.na(waterworkRaw)]
@@ -100,12 +100,12 @@ WP2WaterworkRawData <- function(){
 
 
 WP2WaterworkCleanData <- function(){
-  d1 <- readRDS(file.path(RAWmisc::PROJ$CLEAN,"WP1_clean.RDS"))
-  d2 <- readRDS(file.path(RAWmisc::PROJ$CLEAN,"WP2.RDS"))
+  d1 <- readRDS(file.path(org::PROJ$CLEAN,"WP1_clean.RDS"))
+  d2 <- readRDS(file.path(org::PROJ$CLEAN,"WP2.RDS"))
   
   d1 <- d1[type %in% c("Accredited","Internal")]
   
-  keys <- readxl::read_excel(file.path(RAWmisc::PROJ$RAW,"waterworks_to_kommune.xlsx"),skip=2,sheet=2)
+  keys <- readxl::read_excel(file.path(org::PROJ$RAW,"waterworks_to_kommune.xlsx"),skip=2,sheet=2)
   keys <- keys[,c("waterworkClean","Mottatt - K nr","Forsynings-grad 2014")]
   keys <- data.table(keys)
   keys <- keys[!is.na(waterworkClean)]

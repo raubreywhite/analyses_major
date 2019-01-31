@@ -319,19 +319,19 @@ CleanDataWaterworksCleanWaterInternal <- function(){
   
   ## ALTA
   d <- CleanWP1SpecificWaterWorkLong_MapGraph(
-    fileIn=file.path(RAWmisc::PROJ$RAW,"WP1_clean_water/Alta_Elvestrand/Rådata/Rapport siste 9 år Alta vannverk.xlsx"), 
+    fileIn=file.path(org::PROJ$RAW,"WP1_clean_water/Alta_Elvestrand/Rådata/Rapport siste 9 år Alta vannverk.xlsx"), 
     sheet=1,
     type="Accredited",
     waterwork="Alta",
     waterType="Clean"
   )
-  saveRDS(d, file.path(RAWmisc::PROJ$CLEAN,"WP1_waterworks_clean_water","Rapport siste 9 år Alta vannverk.RDS"))
+  saveRDS(d, file.path(org::PROJ$CLEAN,"WP1_waterworks_clean_water","Rapport siste 9 år Alta vannverk.RDS"))
   
   ## ARENDAL RORE
   
   d <- CleanWP1SpecificWaterWorkWide_MapGraph(
     fileIn=file.path(
-      RAWmisc::PROJ$RAW,
+      org::PROJ$RAW,
       "WP1_clean_water",
       "Arendal_Rore",
       "Rådata",
@@ -358,7 +358,7 @@ CleanDataWaterworksCleanWaterInternal <- function(){
     waterType="Clean"
   )
   d <- d[point=="02 Rentvann Hølen"]
-  saveRDS(d, file.path(RAWmisc::PROJ$CLEAN,"WP1_waterworks_clean_water","Arendal_Rore.RDS"))
+  saveRDS(d, file.path(org::PROJ$CLEAN,"WP1_waterworks_clean_water","Arendal_Rore.RDS"))
   
   ##
   ## Asker og Bærum IKS
@@ -366,7 +366,7 @@ CleanDataWaterworksCleanWaterInternal <- function(){
   
   d <- CleanWP1SpecificWaterWorkWide(
     fileIn=file.path(
-      RAWmisc::PROJ$RAW,
+      org::PROJ$RAW,
       "WP1_clean_water",
       "Asker og Bærum vannverk IKS_Holsfjorden Kattås",
       "Rådata",
@@ -398,11 +398,11 @@ CleanDataWaterworksCleanWaterInternal <- function(){
     point="Holsfjorden",
     dateAsNumber=TRUE
   )
-  saveRDS(d, file.path(RAWmisc::PROJ$CLEAN,"WP1_waterworks_clean_water","Asker_og_Baerum_IKS_Holsfjorden_1.RDS"))
+  saveRDS(d, file.path(org::PROJ$CLEAN,"WP1_waterworks_clean_water","Asker_og_Baerum_IKS_Holsfjorden_1.RDS"))
   
   d <- CleanWP1SpecificWaterWorkWide(
     fileIn=file.path(
-      RAWmisc::PROJ$RAW,
+      org::PROJ$RAW,
       "WP1_clean_water",
       "Asker og Bærum vannverk IKS_Holsfjorden Kattås",
       "Rådata",
@@ -429,11 +429,11 @@ CleanDataWaterworksCleanWaterInternal <- function(){
     dateAsNumber=TRUE
   )
   print(d)
-  saveRDS(d, file.path(RAWmisc::PROJ$CLEAN,"WP1_waterworks_clean_water","Asker_og_Baerum_IKS_Holsfjorden_2.RDS"))
+  saveRDS(d, file.path(org::PROJ$CLEAN,"WP1_waterworks_clean_water","Asker_og_Baerum_IKS_Holsfjorden_2.RDS"))
   
   d <- CleanWP1SpecificWaterWorkWide(
     fileIn=file.path(
-      RAWmisc::PROJ$RAW,
+      org::PROJ$RAW,
       "WP1_clean_water",
       "Asker og Bærum vannverk IKS_Holsfjorden Kattås",
       "Rådata",
@@ -459,11 +459,11 @@ CleanDataWaterworksCleanWaterInternal <- function(){
     dateAsNumber=TRUE
   )
   print(d)
-  saveRDS(d, file.path(RAWmisc::PROJ$CLEAN,"WP1_waterworks_clean_water","Asker_og_Baerum_IKS_Holsfjorden_3.RDS"))
+  saveRDS(d, file.path(org::PROJ$CLEAN,"WP1_waterworks_clean_water","Asker_og_Baerum_IKS_Holsfjorden_3.RDS"))
   
   d <- CleanWP1SpecificWaterWorkWide(
     fileIn=file.path(
-      RAWmisc::PROJ$RAW,
+      org::PROJ$RAW,
       "WP1_clean_water",
       "Asker og Bærum vannverk IKS_Holsfjorden Kattås",
       "Rådata",
@@ -489,7 +489,7 @@ CleanDataWaterworksCleanWaterInternal <- function(){
     dateAsNumber=TRUE
   )
   print(d)
-  saveRDS(d, file.path(RAWmisc::PROJ$CLEAN,"WP1_waterworks_clean_water","Asker_og_Baerum_IKS_Holsfjorden_4.RDS"))
+  saveRDS(d, file.path(org::PROJ$CLEAN,"WP1_waterworks_clean_water","Asker_og_Baerum_IKS_Holsfjorden_4.RDS"))
   
   ##
   ## Asker og Bærum IKS
@@ -497,7 +497,7 @@ CleanDataWaterworksCleanWaterInternal <- function(){
   
   d <- CleanWP1SpecificWaterWorkWide(
     fileIn=file.path(
-      RAWmisc::PROJ$RAW,
+      org::PROJ$RAW,
       "WP1_clean_water",
       "Asker og Bærum vannverk IKS_Aurevann",
       "Rådata",
@@ -527,11 +527,11 @@ CleanDataWaterworksCleanWaterInternal <- function(){
     dateAsNumber=TRUE
   )
   print(d)
-  saveRDS(d, file.path(RAWmisc::PROJ$CLEAN,"WP1_waterworks_clean_water","Asker_og_Baerum_IKS_Aurevann_1.RDS"))
+  saveRDS(d, file.path(org::PROJ$CLEAN,"WP1_waterworks_clean_water","Asker_og_Baerum_IKS_Aurevann_1.RDS"))
   
   d <- CleanWP1SpecificWaterWorkWide(
     fileIn=file.path(
-      RAWmisc::PROJ$RAW,
+      org::PROJ$RAW,
       "WP1_clean_water",
       "Asker og Bærum vannverk IKS_Aurevann",
       "Rådata",
@@ -562,11 +562,11 @@ CleanDataWaterworksCleanWaterInternal <- function(){
     dateAsNumber=TRUE
   )
   print(d)
-  saveRDS(d, file.path(RAWmisc::PROJ$CLEAN,"WP1_waterworks_clean_water","Asker_og_Baerum_IKS_Aurevann_2.RDS"))
+  saveRDS(d, file.path(org::PROJ$CLEAN,"WP1_waterworks_clean_water","Asker_og_Baerum_IKS_Aurevann_2.RDS"))
   
   d <- CleanWP1SpecificWaterWorkWide(
     fileIn=file.path(
-      RAWmisc::PROJ$RAW,
+      org::PROJ$RAW,
       "WP1_clean_water",
       "Asker og Bærum vannverk IKS_Aurevann",
       "Rådata",
@@ -598,11 +598,11 @@ CleanDataWaterworksCleanWaterInternal <- function(){
     dateAsNumber=TRUE
   )
   print(d)
-  saveRDS(d, file.path(RAWmisc::PROJ$CLEAN,"WP1_waterworks_clean_water","Asker_og_Baerum_IKS_Aurevann_3.RDS"))
+  saveRDS(d, file.path(org::PROJ$CLEAN,"WP1_waterworks_clean_water","Asker_og_Baerum_IKS_Aurevann_3.RDS"))
   
   d <- CleanWP1SpecificWaterWorkWide(
     fileIn=file.path(
-      RAWmisc::PROJ$RAW,
+      org::PROJ$RAW,
       "WP1_clean_water",
       "Asker og Bærum vannverk IKS_Aurevann",
       "Rådata",
@@ -632,11 +632,11 @@ CleanDataWaterworksCleanWaterInternal <- function(){
     dateAsNumber=TRUE
   )
   print(d)
-  saveRDS(d, file.path(RAWmisc::PROJ$CLEAN,"WP1_waterworks_clean_water","Asker_og_Baerum_IKS_Aurevann_4.RDS"))
+  saveRDS(d, file.path(org::PROJ$CLEAN,"WP1_waterworks_clean_water","Asker_og_Baerum_IKS_Aurevann_4.RDS"))
   
   d <- CleanWP1SpecificWaterWorkWide(
     fileIn=file.path(
-      RAWmisc::PROJ$RAW,
+      org::PROJ$RAW,
       "WP1_clean_water",
       "Asker og Bærum vannverk IKS_Aurevann",
       "Rådata",
@@ -665,7 +665,7 @@ CleanDataWaterworksCleanWaterInternal <- function(){
     dateAsNumber=TRUE
   )
   print(d)
-  saveRDS(d, file.path(RAWmisc::PROJ$CLEAN,"WP1_waterworks_clean_water","Asker_og_Baerum_IKS_Aurevann_5.RDS"))
+  saveRDS(d, file.path(org::PROJ$CLEAN,"WP1_waterworks_clean_water","Asker_og_Baerum_IKS_Aurevann_5.RDS"))
   
   ##
   ## Bergen_Espeland
@@ -673,7 +673,7 @@ CleanDataWaterworksCleanWaterInternal <- function(){
   
   d <- CleanWP1SpecificWaterWorkWide(
     fileIn=file.path(
-      RAWmisc::PROJ$RAW,
+      org::PROJ$RAW,
       "WP1_clean_water",
       "Bergen_Espeland",
       "Rådata",
@@ -707,11 +707,11 @@ CleanDataWaterworksCleanWaterInternal <- function(){
     dateAsNumber=TRUE
   )
   print(d)
-  saveRDS(d, file.path(RAWmisc::PROJ$CLEAN,"WP1_waterworks_clean_water","Bergen_Espeland_Espeland_1.RDS"))
+  saveRDS(d, file.path(org::PROJ$CLEAN,"WP1_waterworks_clean_water","Bergen_Espeland_Espeland_1.RDS"))
   
   d <- CleanWP1SpecificWaterWorkWide(
     fileIn=file.path(
-      RAWmisc::PROJ$RAW,
+      org::PROJ$RAW,
       "WP1_clean_water",
       "Bergen_Espeland",
       "Rådata",
@@ -745,7 +745,7 @@ CleanDataWaterworksCleanWaterInternal <- function(){
     dateAsNumber=TRUE
   )
   print(d)
-  saveRDS(d, file.path(RAWmisc::PROJ$CLEAN,"WP1_waterworks_clean_water","Bergen_Espeland_Espeland_2.RDS"))
+  saveRDS(d, file.path(org::PROJ$CLEAN,"WP1_waterworks_clean_water","Bergen_Espeland_Espeland_2.RDS"))
   
   ##
   ## Bergen_Sædalen
@@ -753,7 +753,7 @@ CleanDataWaterworksCleanWaterInternal <- function(){
   
   d <- CleanWP1SpecificWaterWorkWide(
     fileIn=file.path(
-      RAWmisc::PROJ$RAW,
+      org::PROJ$RAW,
       "WP1_clean_water",
       "Bergen_Sædalen",
       "Rådata",
@@ -787,11 +787,11 @@ CleanDataWaterworksCleanWaterInternal <- function(){
     dateAsNumber=TRUE
   )
   print(d)
-  saveRDS(d, file.path(RAWmisc::PROJ$CLEAN,"WP1_waterworks_clean_water","Bergen_Saedalen_Saedalen_1.RDS"))
+  saveRDS(d, file.path(org::PROJ$CLEAN,"WP1_waterworks_clean_water","Bergen_Saedalen_Saedalen_1.RDS"))
   
   d <- CleanWP1SpecificWaterWorkWide(
     fileIn=file.path(
-      RAWmisc::PROJ$RAW,
+      org::PROJ$RAW,
       "WP1_clean_water",
       "Bergen_Sædalen",
       "Rådata",
@@ -825,11 +825,11 @@ CleanDataWaterworksCleanWaterInternal <- function(){
     dateAsNumber=TRUE
   )
   print(d)
-  saveRDS(d, file.path(RAWmisc::PROJ$CLEAN,"WP1_waterworks_clean_water","Bergen_Saedalen_Saedalen_2.RDS"))
+  saveRDS(d, file.path(org::PROJ$CLEAN,"WP1_waterworks_clean_water","Bergen_Saedalen_Saedalen_2.RDS"))
   
   d <- CleanWP1SpecificWaterWorkWide(
     fileIn=file.path(
-      RAWmisc::PROJ$RAW,
+      org::PROJ$RAW,
       "WP1_clean_water",
       "Bergen_Sædalen",
       "Rådata",
@@ -856,7 +856,7 @@ CleanDataWaterworksCleanWaterInternal <- function(){
     dateAsNumber=TRUE
   )
   print(d)
-  saveRDS(d, file.path(RAWmisc::PROJ$CLEAN,"WP1_waterworks_clean_water","Bergen_Saedalen_Saedalen_3.RDS"))
+  saveRDS(d, file.path(org::PROJ$CLEAN,"WP1_waterworks_clean_water","Bergen_Saedalen_Saedalen_3.RDS"))
   
   ##
   ## Bergen_Svartediket
@@ -864,7 +864,7 @@ CleanDataWaterworksCleanWaterInternal <- function(){
   
   d <- CleanWP1SpecificWaterWorkWide(
     fileIn=file.path(
-      RAWmisc::PROJ$RAW,
+      org::PROJ$RAW,
       "WP1_clean_water",
       "Bergen_Svartediket",
       "Rådata",
@@ -898,11 +898,11 @@ CleanDataWaterworksCleanWaterInternal <- function(){
     dateAsNumber=TRUE
   )
   print(d)
-  saveRDS(d, file.path(RAWmisc::PROJ$CLEAN,"WP1_waterworks_clean_water","Bergen_Svartediket_Svartediket_1.RDS"))
+  saveRDS(d, file.path(org::PROJ$CLEAN,"WP1_waterworks_clean_water","Bergen_Svartediket_Svartediket_1.RDS"))
   
   d <- CleanWP1SpecificWaterWorkWide(
     fileIn=file.path(
-      RAWmisc::PROJ$RAW,
+      org::PROJ$RAW,
       "WP1_clean_water",
       "Bergen_Svartediket",
       "Rådata",
@@ -936,11 +936,11 @@ CleanDataWaterworksCleanWaterInternal <- function(){
     dateAsNumber=TRUE
   )
   print(d)
-  saveRDS(d, file.path(RAWmisc::PROJ$CLEAN,"WP1_waterworks_clean_water","Bergen_Svartediket_Svartediket_2.RDS"))
+  saveRDS(d, file.path(org::PROJ$CLEAN,"WP1_waterworks_clean_water","Bergen_Svartediket_Svartediket_2.RDS"))
   
   d <- CleanWP1SpecificWaterWorkWide(
     fileIn=file.path(
-      RAWmisc::PROJ$RAW,
+      org::PROJ$RAW,
       "WP1_clean_water",
       "Bergen_Svartediket",
       "Rådata",
@@ -968,7 +968,7 @@ CleanDataWaterworksCleanWaterInternal <- function(){
     dateAsNumber=TRUE
   )
   print(d)
-  saveRDS(d, file.path(RAWmisc::PROJ$CLEAN,"WP1_waterworks_clean_water","Bergen_Svartediket_Svartediket_3.RDS"))
+  saveRDS(d, file.path(org::PROJ$CLEAN,"WP1_waterworks_clean_water","Bergen_Svartediket_Svartediket_3.RDS"))
   
   ##
   ## Bergen_Kismul
@@ -976,7 +976,7 @@ CleanDataWaterworksCleanWaterInternal <- function(){
   
   d <- CleanWP1SpecificWaterWorkWide(
     fileIn=file.path(
-      RAWmisc::PROJ$RAW,
+      org::PROJ$RAW,
       "WP1_clean_water",
       "Bergen_Kismul",
       "Rådata",
@@ -1010,11 +1010,11 @@ CleanDataWaterworksCleanWaterInternal <- function(){
     dateAsNumber=TRUE
   )
   print(d)
-  saveRDS(d, file.path(RAWmisc::PROJ$CLEAN,"WP1_waterworks_clean_water","Bergen_Kismul_Kismul_1.RDS"))
+  saveRDS(d, file.path(org::PROJ$CLEAN,"WP1_waterworks_clean_water","Bergen_Kismul_Kismul_1.RDS"))
   
   d <- CleanWP1SpecificWaterWorkWide(
     fileIn=file.path(
-      RAWmisc::PROJ$RAW,
+      org::PROJ$RAW,
       "WP1_clean_water",
       "Bergen_Kismul",
       "Rådata",
@@ -1048,11 +1048,11 @@ CleanDataWaterworksCleanWaterInternal <- function(){
     dateAsNumber=TRUE
   )
   print(d)
-  saveRDS(d, file.path(RAWmisc::PROJ$CLEAN,"WP1_waterworks_clean_water","Bergen_Kismul_Kismul_2.RDS"))
+  saveRDS(d, file.path(org::PROJ$CLEAN,"WP1_waterworks_clean_water","Bergen_Kismul_Kismul_2.RDS"))
   
   d <- CleanWP1SpecificWaterWorkWide(
     fileIn=file.path(
-      RAWmisc::PROJ$RAW,
+      org::PROJ$RAW,
       "WP1_clean_water",
       "Bergen_Kismul",
       "Rådata",
@@ -1081,7 +1081,7 @@ CleanDataWaterworksCleanWaterInternal <- function(){
     dateAsNumber=TRUE
   )
   print(d)
-  saveRDS(d, file.path(RAWmisc::PROJ$CLEAN,"WP1_waterworks_clean_water","Bergen_Kismul_Kismul_3.RDS"))
+  saveRDS(d, file.path(org::PROJ$CLEAN,"WP1_waterworks_clean_water","Bergen_Kismul_Kismul_3.RDS"))
   
   ##
   ## Bergen_Jordalsvatnet
@@ -1089,7 +1089,7 @@ CleanDataWaterworksCleanWaterInternal <- function(){
   
   d <- CleanWP1SpecificWaterWorkWide(
     fileIn=file.path(
-      RAWmisc::PROJ$RAW,
+      org::PROJ$RAW,
       "WP1_clean_water",
       "Bergen_Jordalsvatnet",
       "Rådata",
@@ -1123,11 +1123,11 @@ CleanDataWaterworksCleanWaterInternal <- function(){
     dateAsNumber=TRUE
   )
   print(d)
-  saveRDS(d, file.path(RAWmisc::PROJ$CLEAN,"WP1_waterworks_clean_water","Bergen_Jordalsvatnet_Jordalsvatnet_1.RDS"))
+  saveRDS(d, file.path(org::PROJ$CLEAN,"WP1_waterworks_clean_water","Bergen_Jordalsvatnet_Jordalsvatnet_1.RDS"))
   
   d <- CleanWP1SpecificWaterWorkWide(
     fileIn=file.path(
-      RAWmisc::PROJ$RAW,
+      org::PROJ$RAW,
       "WP1_clean_water",
       "Bergen_Jordalsvatnet",
       "Rådata",
@@ -1161,11 +1161,11 @@ CleanDataWaterworksCleanWaterInternal <- function(){
     dateAsNumber=TRUE
   )
   print(d)
-  saveRDS(d, file.path(RAWmisc::PROJ$CLEAN,"WP1_waterworks_clean_water","Bergen_Jordalsvatnet_Jordalsvatnet_2.RDS"))
+  saveRDS(d, file.path(org::PROJ$CLEAN,"WP1_waterworks_clean_water","Bergen_Jordalsvatnet_Jordalsvatnet_2.RDS"))
   
   d <- CleanWP1SpecificWaterWorkWide(
     fileIn=file.path(
-      RAWmisc::PROJ$RAW,
+      org::PROJ$RAW,
       "WP1_clean_water",
       "Bergen_Jordalsvatnet",
       "Rådata",
@@ -1193,7 +1193,7 @@ CleanDataWaterworksCleanWaterInternal <- function(){
     dateAsNumber=TRUE
   )
   print(d)
-  saveRDS(d, file.path(RAWmisc::PROJ$CLEAN,"WP1_waterworks_clean_water","Bergen_Jordalsvatnet_Jordalsvatnet_3.RDS"))
+  saveRDS(d, file.path(org::PROJ$CLEAN,"WP1_waterworks_clean_water","Bergen_Jordalsvatnet_Jordalsvatnet_3.RDS"))
   
   ##
   ## FREVAR_Høyfjell
@@ -1201,7 +1201,7 @@ CleanDataWaterworksCleanWaterInternal <- function(){
   
   d <- CleanWP1SpecificWaterWorkWide(
     fileIn=file.path(
-      RAWmisc::PROJ$RAW,
+      org::PROJ$RAW,
       "WP1_clean_water",
       "FREVAR_Høyfjell",
       "Rådata",
@@ -1236,7 +1236,7 @@ CleanDataWaterworksCleanWaterInternal <- function(){
     dateAsNumber=TRUE
   )
   print(d)
-  saveRDS(d, file.path(RAWmisc::PROJ$CLEAN,"WP1_waterworks_clean_water","FREVAR_Høyfjell_1.RDS"))
+  saveRDS(d, file.path(org::PROJ$CLEAN,"WP1_waterworks_clean_water","FREVAR_Høyfjell_1.RDS"))
   
   ##
   ## FREVAR_Høyfjell
@@ -1244,7 +1244,7 @@ CleanDataWaterworksCleanWaterInternal <- function(){
   
   d <- CleanWP1SpecificWaterWorkWide(
     fileIn=file.path(
-      RAWmisc::PROJ$RAW,
+      org::PROJ$RAW,
       "WP1_clean_water",
       "FREVAR_Høyfjell",
       "Rådata",
@@ -1285,7 +1285,7 @@ CleanDataWaterworksCleanWaterInternal <- function(){
     dateAsNumber=TRUE
   )
   print(d)
-  saveRDS(d, file.path(RAWmisc::PROJ$CLEAN,"WP1_waterworks_clean_water","FREVAR_Høyfjell_2.RDS"))
+  saveRDS(d, file.path(org::PROJ$CLEAN,"WP1_waterworks_clean_water","FREVAR_Høyfjell_2.RDS"))
   
   ##
   ## Glitrevannverket IKS_Kleivdammen
@@ -1293,7 +1293,7 @@ CleanDataWaterworksCleanWaterInternal <- function(){
   
   d <- CleanWP1SpecificWaterWorkWide(
     fileIn=file.path(
-      RAWmisc::PROJ$RAW,
+      org::PROJ$RAW,
       "WP1_clean_water",
       "Glitrevannverket IKS_Kleivdammen",
       "Rådata",
@@ -1353,7 +1353,7 @@ CleanDataWaterworksCleanWaterInternal <- function(){
     dateAsNumber=TRUE
   )
   print(d)
-  saveRDS(d, file.path(RAWmisc::PROJ$CLEAN,"WP1_waterworks_clean_water","Glitrevannverket_IKS_Kleivdammen.RDS"))
+  saveRDS(d, file.path(org::PROJ$CLEAN,"WP1_waterworks_clean_water","Glitrevannverket_IKS_Kleivdammen.RDS"))
   
   ##
   ## Glitrevannverket IKS_Landfall
@@ -1361,7 +1361,7 @@ CleanDataWaterworksCleanWaterInternal <- function(){
   
   d <- CleanWP1SpecificWaterWorkWide(
     fileIn=file.path(
-      RAWmisc::PROJ$RAW,
+      org::PROJ$RAW,
       "WP1_clean_water",
       "Glitrevannverket IKS_Landfall",
       "Rådata",
@@ -1395,7 +1395,7 @@ CleanDataWaterworksCleanWaterInternal <- function(){
     dateAsNumber=TRUE
   )
   print(d)
-  saveRDS(d, file.path(RAWmisc::PROJ$CLEAN,"WP1_waterworks_clean_water","Glitrevannverket_IKS_Landfall.RDS"))
+  saveRDS(d, file.path(org::PROJ$CLEAN,"WP1_waterworks_clean_water","Glitrevannverket_IKS_Landfall.RDS"))
   
   
   ##
@@ -1404,7 +1404,7 @@ CleanDataWaterworksCleanWaterInternal <- function(){
   
   d <- CleanWP1SpecificWaterWorkWide(
     fileIn=file.path(
-      RAWmisc::PROJ$RAW,
+      org::PROJ$RAW,
       "WP1_clean_water",
       "Halden_Lille Erte",
       "Rådata",
@@ -1443,7 +1443,7 @@ CleanDataWaterworksCleanWaterInternal <- function(){
     dateAsNumber=TRUE
   )
   print(d)
-  saveRDS(d, file.path(RAWmisc::PROJ$CLEAN,"WP1_waterworks_clean_water","Halden_Lille Erte.RDS"))
+  saveRDS(d, file.path(org::PROJ$CLEAN,"WP1_waterworks_clean_water","Halden_Lille Erte.RDS"))
   
   ##
   ## HIAS_Hamar
@@ -1451,7 +1451,7 @@ CleanDataWaterworksCleanWaterInternal <- function(){
   
   d <- CleanWP1SpecificWaterWorkLong_MapGraphMini(
     fileIn=file.path(
-      RAWmisc::PROJ$RAW,
+      org::PROJ$RAW,
       "WP1_clean_water",
       "HIAS_Hamar",
       "Rådata",
@@ -1463,11 +1463,11 @@ CleanDataWaterworksCleanWaterInternal <- function(){
     waterType="Clean"
   )
   print(d)
-  saveRDS(d, file.path(RAWmisc::PROJ$CLEAN,"WP1_waterworks_clean_water","HIAS_Hamar_1.RDS"))
+  saveRDS(d, file.path(org::PROJ$CLEAN,"WP1_waterworks_clean_water","HIAS_Hamar_1.RDS"))
   
   d <- CleanWP1SpecificWaterWorkWide(
     fileIn=file.path(
-      RAWmisc::PROJ$RAW,
+      org::PROJ$RAW,
       "WP1_clean_water",
       "HIAS_Hamar",
       "Rådata",
@@ -1495,7 +1495,7 @@ CleanDataWaterworksCleanWaterInternal <- function(){
     dateAsNumber=TRUE
   )
   print(d)
-  saveRDS(d, file.path(RAWmisc::PROJ$CLEAN,"WP1_waterworks_clean_water","HIAS_Hamar_2.RDS"))
+  saveRDS(d, file.path(org::PROJ$CLEAN,"WP1_waterworks_clean_water","HIAS_Hamar_2.RDS"))
   
   ##
   ## HIAS_Stange
@@ -1503,7 +1503,7 @@ CleanDataWaterworksCleanWaterInternal <- function(){
   
   d <- CleanWP1SpecificWaterWorkLong_MapGraphMini(
     fileIn=file.path(
-      RAWmisc::PROJ$RAW,
+      org::PROJ$RAW,
       "WP1_clean_water",
       "HIAS_Hamar",
       "Rådata",
@@ -1515,11 +1515,11 @@ CleanDataWaterworksCleanWaterInternal <- function(){
     waterType="Clean"
   )
   print(d)
-  saveRDS(d, file.path(RAWmisc::PROJ$CLEAN,"WP1_waterworks_clean_water","HIAS_Stange_1.RDS"))
+  saveRDS(d, file.path(org::PROJ$CLEAN,"WP1_waterworks_clean_water","HIAS_Stange_1.RDS"))
   
   d <- CleanWP1SpecificWaterWorkWide(
     fileIn=file.path(
-      RAWmisc::PROJ$RAW,
+      org::PROJ$RAW,
       "WP1_clean_water",
       "HIAS_Hamar",
       "Rådata",
@@ -1547,7 +1547,7 @@ CleanDataWaterworksCleanWaterInternal <- function(){
     dateAsNumber=TRUE
   )
   print(d)
-  saveRDS(d, file.path(RAWmisc::PROJ$CLEAN,"WP1_waterworks_clean_water","HIAS_Stange_2.RDS"))
+  saveRDS(d, file.path(org::PROJ$CLEAN,"WP1_waterworks_clean_water","HIAS_Stange_2.RDS"))
   
   ##
   ## IVAR IKS_Langevatn
@@ -1555,7 +1555,7 @@ CleanDataWaterworksCleanWaterInternal <- function(){
   
   d <- CleanWP1SpecificWaterWorkWide(
     fileIn=file.path(
-      RAWmisc::PROJ$RAW,
+      org::PROJ$RAW,
       "WP1_clean_water",
       "IVAR IKS_Langevatn",
       "Rådata",
@@ -1601,7 +1601,7 @@ CleanDataWaterworksCleanWaterInternal <- function(){
     dateAsNumber=TRUE
   )
   print(d)
-  saveRDS(d, file.path(RAWmisc::PROJ$CLEAN,"WP1_waterworks_clean_water","IVAR IKS_Langevatn.RDS"))
+  saveRDS(d, file.path(org::PROJ$CLEAN,"WP1_waterworks_clean_water","IVAR IKS_Langevatn.RDS"))
   
   ##
   ## Karmøy_Brekke
@@ -1609,7 +1609,7 @@ CleanDataWaterworksCleanWaterInternal <- function(){
   
   d <- CleanWP1SpecificWaterWorkLong_Custom(
     fileIn=file.path(
-      RAWmisc::PROJ$RAW,
+      org::PROJ$RAW,
       "WP1_clean_water",
       "Karmøy_Brekke",
       "Rådata",
@@ -1638,7 +1638,7 @@ CleanDataWaterworksCleanWaterInternal <- function(){
     point="Brekke"
   )
   print(d)
-  saveRDS(d, file.path(RAWmisc::PROJ$CLEAN,"WP1_waterworks_clean_water","Karmøy_Brekke.RDS"))
+  saveRDS(d, file.path(org::PROJ$CLEAN,"WP1_waterworks_clean_water","Karmøy_Brekke.RDS"))
   
   ##
   ## Kongsvinger_Granli_GIVAS
@@ -1646,7 +1646,7 @@ CleanDataWaterworksCleanWaterInternal <- function(){
   
   d <- CleanWP1SpecificWaterWorkWide_MapGraph(
     fileIn=file.path(
-      RAWmisc::PROJ$RAW,
+      org::PROJ$RAW,
       "WP1_clean_water",
       "Kongsvinger_Granli_GIVAS",
       "Rådata",
@@ -1674,14 +1674,14 @@ CleanDataWaterworksCleanWaterInternal <- function(){
   )
   d[,point:="Granli"]
 
-  saveRDS(d, file.path(RAWmisc::PROJ$CLEAN,"WP1_waterworks_clean_water","Kongsvinger_Granli_GIVAS.RDS"))
+  saveRDS(d, file.path(org::PROJ$CLEAN,"WP1_waterworks_clean_water","Kongsvinger_Granli_GIVAS.RDS"))
   
   ##
   ## Kristiansand - Rossevann
   ##
   
   d <- CleanWP1SpecificWaterWorkLong_MapGraph(
-    fileIn=file.path(RAWmisc::PROJ$RAW,"WP1_clean_water/Kristiansand_Rossevann/Rådata/Renvann/Rossevann + Tronstadvann - Rentvann 2006 - 2016.xlsx"), 
+    fileIn=file.path(org::PROJ$RAW,"WP1_clean_water/Kristiansand_Rossevann/Rådata/Renvann/Rossevann + Tronstadvann - Rentvann 2006 - 2016.xlsx"), 
     sheet=1,
     skip=8,
     type="Accredited",
@@ -1690,14 +1690,14 @@ CleanDataWaterworksCleanWaterInternal <- function(){
   )
   d[,point:="Rossevann"]
   d <- d[date>=as.Date("2010-01-01")]
-  saveRDS(d, file.path(RAWmisc::PROJ$CLEAN,"WP1_waterworks_clean_water","Kristiansand_Rossevann.RDS"))
+  saveRDS(d, file.path(org::PROJ$CLEAN,"WP1_waterworks_clean_water","Kristiansand_Rossevann.RDS"))
   
   ##
   ## Kristiansand - Tronstadvann
   ##
   
   d <- CleanWP1SpecificWaterWorkLong_MapGraph(
-    fileIn=file.path(RAWmisc::PROJ$RAW,"WP1_clean_water/Kristiansand_Rossevann/Rådata/Renvann/Rossevann + Tronstadvann - Rentvann 2006 - 2016.xlsx"), 
+    fileIn=file.path(org::PROJ$RAW,"WP1_clean_water/Kristiansand_Rossevann/Rådata/Renvann/Rossevann + Tronstadvann - Rentvann 2006 - 2016.xlsx"), 
     sheet=2,
     skip=8,
     type="Accredited",
@@ -1706,13 +1706,13 @@ CleanDataWaterworksCleanWaterInternal <- function(){
   )
   d[,point:="Tronstadvann"]
   
-  saveRDS(d, file.path(RAWmisc::PROJ$CLEAN,"WP1_waterworks_clean_water","Kristiansand_Tronstadvann.RDS"))
+  saveRDS(d, file.path(org::PROJ$CLEAN,"WP1_waterworks_clean_water","Kristiansand_Tronstadvann.RDS"))
 
   ## Lillehammer
   
   d <- CleanWP1SpecificWaterWorkWide(
     fileIn=file.path(
-      RAWmisc::PROJ$RAW,
+      org::PROJ$RAW,
       "WP1_clean_water",
       "Lillehammer",
       "Rådata",
@@ -1739,13 +1739,13 @@ CleanDataWaterworksCleanWaterInternal <- function(){
   )
   d <- d[point=="LILLEHAMMER-KORGEN-RENVANN"]
   d[,point:="Lillehammer"]
-  saveRDS(d, file.path(RAWmisc::PROJ$CLEAN,"WP1_waterworks_clean_water","Lillehammer_1.RDS"))
+  saveRDS(d, file.path(org::PROJ$CLEAN,"WP1_waterworks_clean_water","Lillehammer_1.RDS"))
   
   ## Lillehammer_2
   
   d <- CleanWP1SpecificWaterWorkLong_Custom(
     fileIn=file.path(
-      RAWmisc::PROJ$RAW,
+      org::PROJ$RAW,
       "WP1_clean_water",
       "Lillehammer",
       "Rådata",
@@ -1773,13 +1773,13 @@ CleanDataWaterworksCleanWaterInternal <- function(){
     point="Lillehammer"
   )
   print(d)
-  saveRDS(d, file.path(RAWmisc::PROJ$CLEAN,"WP1_waterworks_clean_water","Lillehammer_2.RDS"))
+  saveRDS(d, file.path(org::PROJ$CLEAN,"WP1_waterworks_clean_water","Lillehammer_2.RDS"))
 
   ## movar vansjø
   
   d <- CleanWP1SpecificWaterWorkWide(
     fileIn=file.path(
-      RAWmisc::PROJ$RAW,
+      org::PROJ$RAW,
       "WP1_clean_water",
       "MOVAR_Vansjø",
       "Rådata",
@@ -1806,13 +1806,13 @@ CleanDataWaterworksCleanWaterInternal <- function(){
     point="Vansjø"
   )
   
-  saveRDS(d, file.path(RAWmisc::PROJ$CLEAN,"WP1_waterworks_clean_water","movar_vansjø.RDS"))
+  saveRDS(d, file.path(org::PROJ$CLEAN,"WP1_waterworks_clean_water","movar_vansjø.RDS"))
   
   ## oppegård
   
   d <- CleanWP1SpecificWaterWorkLong_Custom(
     fileIn=file.path(
-      RAWmisc::PROJ$RAW,
+      org::PROJ$RAW,
       "WP1_clean_water",
       "Oppegård",
       "Rådata",
@@ -1841,13 +1841,13 @@ CleanDataWaterworksCleanWaterInternal <- function(){
     waterType="Clean"
   )
   print(d)
-  saveRDS(d, file.path(RAWmisc::PROJ$CLEAN,"WP1_waterworks_clean_water","Oppegård.RDS"))
+  saveRDS(d, file.path(org::PROJ$CLEAN,"WP1_waterworks_clean_water","Oppegård.RDS"))
   
   ## Oslo_Oset 1
   
   d <- CleanWP1SpecificWaterWorkWide(
     fileIn=file.path(
-      RAWmisc::PROJ$RAW,
+      org::PROJ$RAW,
       "WP1_clean_water",
       "Oslo_Oset",
       "Rådata",
@@ -1872,13 +1872,13 @@ CleanDataWaterworksCleanWaterInternal <- function(){
     point="Oset"
   )
   print(d)
-  saveRDS(d, file.path(RAWmisc::PROJ$CLEAN,"WP1_waterworks_clean_water","Oslo_Oset_1.RDS"))
+  saveRDS(d, file.path(org::PROJ$CLEAN,"WP1_waterworks_clean_water","Oslo_Oset_1.RDS"))
   
   ## Oslo_Oset 2
   
   d <- CleanWP1SpecificWaterWorkWide(
     fileIn=file.path(
-      RAWmisc::PROJ$RAW,
+      org::PROJ$RAW,
       "WP1_clean_water",
       "Oslo_Oset",
       "Rådata",
@@ -1901,13 +1901,13 @@ CleanDataWaterworksCleanWaterInternal <- function(){
     point="Oset"
   )
   print(d)
-  saveRDS(d, file.path(RAWmisc::PROJ$CLEAN,"WP1_waterworks_clean_water","Oslo_Oset_2.RDS"))
+  saveRDS(d, file.path(org::PROJ$CLEAN,"WP1_waterworks_clean_water","Oslo_Oset_2.RDS"))
   
   ## Oslo_Skullerud 1
   
   d <- CleanWP1SpecificWaterWorkWide(
     fileIn=file.path(
-      RAWmisc::PROJ$RAW,
+      org::PROJ$RAW,
       "WP1_clean_water",
       "Oslo_Skullerud",
       "Rådata",
@@ -1931,13 +1931,13 @@ CleanDataWaterworksCleanWaterInternal <- function(){
     point="Skullerud"
   )
   print(d)
-  saveRDS(d, file.path(RAWmisc::PROJ$CLEAN,"WP1_waterworks_clean_water","Oslo_Skullerud_1.RDS"))
+  saveRDS(d, file.path(org::PROJ$CLEAN,"WP1_waterworks_clean_water","Oslo_Skullerud_1.RDS"))
   
   ## Oslo_Oset 2
   
   d <- CleanWP1SpecificWaterWorkWide(
     fileIn=file.path(
-      RAWmisc::PROJ$RAW,
+      org::PROJ$RAW,
       "WP1_clean_water",
       "Oslo_Skullerud",
       "Rådata",
@@ -1960,13 +1960,13 @@ CleanDataWaterworksCleanWaterInternal <- function(){
     point="Skullerud"
   )
   print(d)
-  saveRDS(d, file.path(RAWmisc::PROJ$CLEAN,"WP1_waterworks_clean_water","Oslo_Skullerud_2.RDS"))
+  saveRDS(d, file.path(org::PROJ$CLEAN,"WP1_waterworks_clean_water","Oslo_Skullerud_2.RDS"))
   
   ## Sarpsborg_Baterød
   
   d <- CleanWP1SpecificWaterWorkLong_Custom(
     fileIn=file.path(
-      RAWmisc::PROJ$RAW,
+      org::PROJ$RAW,
       "WP1_clean_water",
       "Sarpsborg_Baterød",
       "Rådata",
@@ -1995,13 +1995,13 @@ CleanDataWaterworksCleanWaterInternal <- function(){
     waterType="Clean"
   )
   print(d)
-  saveRDS(d, file.path(RAWmisc::PROJ$CLEAN,"WP1_waterworks_clean_water","Sarpsborg_Baterød.RDS"))
+  saveRDS(d, file.path(org::PROJ$CLEAN,"WP1_waterworks_clean_water","Sarpsborg_Baterød.RDS"))
   
   ## Tromsø_Kvaløya
   
   d <- CleanWP1SpecificWaterWorkLong_MapGraphMini(
     fileIn=file.path(
-      RAWmisc::PROJ$RAW,
+      org::PROJ$RAW,
       "WP1_clean_water",
       "Tromsø_Kvaløya",
       "Rådata",
@@ -2014,13 +2014,13 @@ CleanDataWaterworksCleanWaterInternal <- function(){
   )
   print(d)
   d <- d[point=="0103 Simavik Rentvann"]
-  saveRDS(d, file.path(RAWmisc::PROJ$CLEAN,"WP1_waterworks_clean_water","Tromsø_Kvaløya.RDS"))
+  saveRDS(d, file.path(org::PROJ$CLEAN,"WP1_waterworks_clean_water","Tromsø_Kvaløya.RDS"))
   
   ## Tromsø_Kvaløya
   
   d <- CleanWP1SpecificWaterWorkLong_MapGraphMini(
     fileIn=file.path(
-      RAWmisc::PROJ$RAW,
+      org::PROJ$RAW,
       "WP1_clean_water",
       "Tromsø_Simavik",
       "Rådata",
@@ -2033,13 +2033,13 @@ CleanDataWaterworksCleanWaterInternal <- function(){
   )
   print(d)
   d <- d[point=="0202 Kvaløya Rentvann"]
-  saveRDS(d, file.path(RAWmisc::PROJ$CLEAN,"WP1_waterworks_clean_water","Tromsø_Simavik.RDS"))
+  saveRDS(d, file.path(org::PROJ$CLEAN,"WP1_waterworks_clean_water","Tromsø_Simavik.RDS"))
   
   ## Trondheim_Vikelvdalen
   
   d <- CleanWP1SpecificWaterWorkWide(
     fileIn=file.path(
-      RAWmisc::PROJ$RAW,
+      org::PROJ$RAW,
       "WP1_clean_water",
       "Trondheim_Vikelvdalen",
       "Rådata",
@@ -2073,12 +2073,12 @@ CleanDataWaterworksCleanWaterInternal <- function(){
     dateAsNumber=TRUE
   )
   print(d)
-  saveRDS(d, file.path(RAWmisc::PROJ$CLEAN,"WP1_waterworks_clean_water","Trondheim_Vikelvdalen.RDS"))
+  saveRDS(d, file.path(org::PROJ$CLEAN,"WP1_waterworks_clean_water","Trondheim_Vikelvdalen.RDS"))
   
   ## Univann_Sjunken
   d <- CleanWP1SpecificWaterWorkLong_MapGraph(
     fileIn=file.path(
-      RAWmisc::PROJ$RAW,
+      org::PROJ$RAW,
       "WP1_clean_water",
       "Univann_Sjunken",
       "Rådata",
@@ -2090,13 +2090,13 @@ CleanDataWaterworksCleanWaterInternal <- function(){
     waterType="Clean"
   )
   print(d)
-  saveRDS(d, file.path(RAWmisc::PROJ$CLEAN,"WP1_waterworks_clean_water","Univann_Sjunken.RDS"))
+  saveRDS(d, file.path(org::PROJ$CLEAN,"WP1_waterworks_clean_water","Univann_Sjunken.RDS"))
   
   ## Vestfold Vann IKS_Eidsfoss 1
   
   d <- CleanWP1SpecificWaterWorkWide(
     fileIn=file.path(
-      RAWmisc::PROJ$RAW,
+      org::PROJ$RAW,
       "WP1_clean_water",
       "Vestfold Vann IKS_Eidsfoss",
       "Rådata",
@@ -2124,14 +2124,14 @@ CleanDataWaterworksCleanWaterInternal <- function(){
     point="Eidsfoss"
   )
   print(d)
-  saveRDS(d, file.path(RAWmisc::PROJ$CLEAN,"WP1_waterworks_clean_water","Vestfold Vann IKS_Eidsfoss_1.RDS"))
+  saveRDS(d, file.path(org::PROJ$CLEAN,"WP1_waterworks_clean_water","Vestfold Vann IKS_Eidsfoss_1.RDS"))
   
   
   ## Vestfold Vann IKS_Eidsfoss 2
   
   d <- CleanWP1SpecificWaterWorkWide(
     fileIn=file.path(
-      RAWmisc::PROJ$RAW,
+      org::PROJ$RAW,
       "WP1_clean_water",
       "Vestfold Vann IKS_Eidsfoss",
       "Rådata",
@@ -2157,14 +2157,14 @@ CleanDataWaterworksCleanWaterInternal <- function(){
     point="Eidsfoss"
   )
   print(d)
-  saveRDS(d, file.path(RAWmisc::PROJ$CLEAN,"WP1_waterworks_clean_water","Vestfold Vann IKS_Eidsfoss_2.RDS"))
+  saveRDS(d, file.path(org::PROJ$CLEAN,"WP1_waterworks_clean_water","Vestfold Vann IKS_Eidsfoss_2.RDS"))
   
   
   ## Vestfold Vann IKS_Seierstad 1
   
   d <- CleanWP1SpecificWaterWorkWide(
     fileIn=file.path(
-      RAWmisc::PROJ$RAW,
+      org::PROJ$RAW,
       "WP1_clean_water",
       "Vestfold Vann IKS_Seierstad",
       "Rådata",
@@ -2192,14 +2192,14 @@ CleanDataWaterworksCleanWaterInternal <- function(){
     point="Seierstad"
   )
   print(d)
-  saveRDS(d, file.path(RAWmisc::PROJ$CLEAN,"WP1_waterworks_clean_water","Vestfold Vann IKS_Seierstad_1.RDS"))
+  saveRDS(d, file.path(org::PROJ$CLEAN,"WP1_waterworks_clean_water","Vestfold Vann IKS_Seierstad_1.RDS"))
   
   
   ## Vestfold Vann IKS_Eidsfoss 2
   
   d <- CleanWP1SpecificWaterWorkWide(
     fileIn=file.path(
-      RAWmisc::PROJ$RAW,
+      org::PROJ$RAW,
       "WP1_clean_water",
       "Vestfold Vann IKS_Seierstad",
       "Rådata",
@@ -2222,13 +2222,13 @@ CleanDataWaterworksCleanWaterInternal <- function(){
     point="Seierstad"
   )
   print(d)
-  saveRDS(d, file.path(RAWmisc::PROJ$CLEAN,"WP1_waterworks_clean_water","Vestfold Vann IKS_Seierstad_2.RDS"))
+  saveRDS(d, file.path(org::PROJ$CLEAN,"WP1_waterworks_clean_water","Vestfold Vann IKS_Seierstad_2.RDS"))
   
   ## Vestfold Vann IKS_Eidsfoss 3
   
   d <- CleanWP1SpecificWaterWorkWide(
     fileIn=file.path(
-      RAWmisc::PROJ$RAW,
+      org::PROJ$RAW,
       "WP1_clean_water",
       "Vestfold Vann IKS_Seierstad",
       "Rådata",
@@ -2250,13 +2250,13 @@ CleanDataWaterworksCleanWaterInternal <- function(){
     point="Seierstad"
   )
   print(d)
-  saveRDS(d, file.path(RAWmisc::PROJ$CLEAN,"WP1_waterworks_clean_water","Vestfold Vann IKS_Seierstad_3.RDS"))
+  saveRDS(d, file.path(org::PROJ$CLEAN,"WP1_waterworks_clean_water","Vestfold Vann IKS_Seierstad_3.RDS"))
   
   ## ålesund_Vasstrandlia
   
   d <- CleanWP1SpecificWaterWorkWide(
     fileIn=file.path(
-      RAWmisc::PROJ$RAW,
+      org::PROJ$RAW,
       "WP1_clean_water",
       "Ålesund_Vasstrandlia",
       "Rådata",
@@ -2284,7 +2284,7 @@ CleanDataWaterworksCleanWaterInternal <- function(){
     point="Vasstrandlia"
   )
   print(d)
-  saveRDS(d, file.path(RAWmisc::PROJ$CLEAN,"WP1_waterworks_clean_water","ålesund_Vasstrandlia.RDS"))
+  saveRDS(d, file.path(org::PROJ$CLEAN,"WP1_waterworks_clean_water","ålesund_Vasstrandlia.RDS"))
   
   
 }

@@ -1,29 +1,15 @@
 suppressMessages(library(ggplot2))
-if(.Platform$OS.type=="unix"){
-  RAWmisc::UseRClone()
-  RAWmisc::AllowFileManipulationFromInitialiseProject()
-  
-  if(dir.exists("/dropbox")){
-    SHARED <- "/dropbox/analyses/results_shared/code_major/2017/klima_analyses/"
-    RCLONE_SHARED <- NULL
-  } else {
-    SHARED <- "/tmp/results_shared/code_major/2017/klima_analyses/"
-    RCLONE_SHARED <- "data:/analyses/results_shared/code_major/2017/klima_analyses/"
-  }
-  
-  RAWmisc::InitialiseProject(
-    HOME = "/git/code_major/2017/klima_analyses/",
-    RAW = "/tmp/data_raw/code_major/2017/klima_analyses/",
-    CLEAN = "/tmp/data_clean/code_major/2017/klima_analyses",
-    BAKED = "/tmp/results_baked/code_major/2017/klima_analyses/",
-    FINAL = "/tmp/results_final/code_major/2017/klima_analyses/",
-    SHARED = SHARED,
-    RCLONE_RAW = "crypt:/data_raw/code_major/2017/klima_analyses/",
-    RCLONE_SHARED = RCLONE_SHARED
-  )
-}
+org::AllowFileManipulationFromInitialiseProject()
+org::InitialiseProject(
+  HOME = "/git/code_major/2017/klima_analyses/",
+  RAW = "/Volumes/crypt_data/org/data_raw/code_major/2017/klima_analyses/",
+  CLEAN = "/tmp/data_clean/code_major/2017/klima_analyses",
+  BAKED = "/tmp/results_baked/code_major/2017/klima_analyses/",
+  FINAL = "/tmp/results_final/code_major/2017/klima_analyses/",
+  SHARED = "/dropbox/analyses/results_shared/code_major/2017/klima_analyses/"
+)
 
-dir.create(file.path(RAWmisc::PROJ$SHARED_TODAY,"waterwork_specific_predictions"))
+dir.create(file.path(org::PROJ$SHARED_TODAY,"waterwork_specific_predictions"))
 
 Bin.int <- function(var,breaks){
   b1 <- findInterval(var,breaks)
@@ -79,8 +65,8 @@ registerDoParallel()
 assign("RUN_ALL", TRUE, envir=globalenv())
 
 importantDirs <- c(
-  file.path(RAWmisc::PROJ$CLEAN,"WP1_waterworks"),
-  file.path(RAWmisc::PROJ$CLEAN,"WP1_waterworks_clean_water")
+  file.path(org::PROJ$CLEAN,"WP1_waterworks"),
+  file.path(org::PROJ$CLEAN,"WP1_waterworks_clean_water")
 )
 for(i in importantDirs) if(!dir.exists(i)) dir.create(i,recursive=TRUE)
 
@@ -89,10 +75,10 @@ WP2Data()
 
 
 
-mCOORDS <- fread(file.path(RAWmisc::PROJ$RAW,"FutureScenariosAndControlRuns","CoordsUTM.csv"))
+mCOORDS <- fread(file.path(org::PROJ$RAW,"FutureScenariosAndControlRuns","CoordsUTM.csv"))
 setnames(mCOORDS,"WW.NO","met")
 mNames <- data.table(readxl::read_excel(file.path(
-  RAWmisc::PROJ$RAW,
+  org::PROJ$RAW,
   "names.xlsx"
 )))
 mNames[,met:=as.numeric(met)]
@@ -134,7 +120,7 @@ for(i in c(
   "MPI_CCLM_prec_temp_rain_2006-2015.csv",
   "MPI_CCLM_prec_temp_rain_2071-2100.csv")){
   print(i)
-  md <- fread(file.path(RAWmisc::PROJ$RAW,"FutureScenariosAndControlRuns",i))
+  md <- fread(file.path(org::PROJ$RAW,"FutureScenariosAndControlRuns",i))
   md[,TEMP:=NULL]
   
   
@@ -146,8 +132,8 @@ for(i in c(
   
   # RUNOFF
   runoffdata <- list()
-  for(j in list.files(file.path(RAWmisc::PROJ$RAW,"Runoff_Proj",md$MODEL[1]))){
-    tmp <- fread(file.path(RAWmisc::PROJ$RAW,"Runoff_Proj",md$MODEL[1],j))
+  for(j in list.files(file.path(org::PROJ$RAW,"Runoff_Proj",md$MODEL[1]))){
+    tmp <- fread(file.path(org::PROJ$RAW,"Runoff_Proj",md$MODEL[1],j))
     if(stringr::str_detect(j,"rcp45")){
       tmp[,SCENARIO:="rcp45"]
     } else {
@@ -164,8 +150,8 @@ for(i in c(
   
   # TEMP
   tempdata <- list()
-  for(j in list.files(file.path(RAWmisc::PROJ$RAW,"Tmax_Proj",md$MODEL[1]))){
-    tmp <- fread(file.path(RAWmisc::PROJ$RAW,"Tmax_Proj",md$MODEL[1],j))
+  for(j in list.files(file.path(org::PROJ$RAW,"Tmax_Proj",md$MODEL[1]))){
+    tmp <- fread(file.path(org::PROJ$RAW,"Tmax_Proj",md$MODEL[1],j))
     if(stringr::str_detect(j,"rcp45")){
       tmp[,SCENARIO:="rcp45"]
     } else {
@@ -286,7 +272,7 @@ for(type in c("raw","clean","raw_outbreaks","clean_outbreaks")){
     q <- q + scale_x_continuous("Value")
     q <- q + scale_y_continuous("Proportion",lim=c(0,1))
     q <- q + theme_gray(16)
-    RAWmisc::saveA4(q,filename=file.path(RAWmisc::PROJ$SHARED_TODAY,sprintf("descriptives_%s.png",type)),landscape=T)
+    RAWmisc::saveA4(q,filename=file.path(org::PROJ$SHARED_TODAY,sprintf("descriptives_%s.png",type)),landscape=T)
     
     d[,seasonchar:=as.character(season)]
     RAWmisc::RecodeDT(d,c(
@@ -546,7 +532,7 @@ for(type in c("raw","clean","raw_outbreaks","clean_outbreaks")){
     
     for(i in unique(predResults$id)){
       openxlsx::write.xlsx(predResults[id==i],file = file.path(
-        RAWmisc::PROJ$SHARED_TODAY,"waterwork_specific_predictions",sprintf("future_predictions_%s.xlsx",i)
+        org::PROJ$SHARED_TODAY,"waterwork_specific_predictions",sprintf("future_predictions_%s.xlsx",i)
       ))
     }
     
@@ -568,7 +554,7 @@ for(type in c("raw","clean","raw_outbreaks","clean_outbreaks")){
     tab[,(toDrop):=NULL]
     
     setnames(tab,c("region","outcome","season","p99_2006_2014","rain_p99_2071_2100","runoff_p99_2071_2100","temp_p99_2071_2100"))
-    openxlsx::write.xlsx(tab,file.path(RAWmisc::PROJ$SHARED_TODAY,"future_predictions_rcp85.xlsx"))
+    openxlsx::write.xlsx(tab,file.path(org::PROJ$SHARED_TODAY,"future_predictions_rcp85.xlsx"))
     
     
   }
@@ -612,7 +598,7 @@ for(type in c("raw","clean","raw_outbreaks","clean_outbreaks")){
     # q <- q + scale_x_discrete("Weeks lag")
     # q <- q + scale_y_discrete("Exposure (continuous)")
     # q <- q + labs(caption="X denotes a non-significant interaction term with season")
-    # RAWmisc::saveA4(q,filename=file.path(RAWmisc::PROJ$SHARED_TODAY,
+    # RAWmisc::saveA4(q,filename=file.path(org::PROJ$SHARED_TODAY,
     #                 sprintf("WP10_%s.png",type)))
     # 
     # table
@@ -656,7 +642,7 @@ for(type in c("raw","clean","raw_outbreaks","clean_outbreaks")){
     res[,season:=factor(season,level=c("Whole year","Winter","Spring","Summer","Autumn"))]
     setorder(res,season,outcome,exposure)
     openxlsx::write.xlsx(res,file = file.path(
-      RAWmisc::PROJ$SHARED_TODAY,sprintf("WP10_%s.xlsx",type)
+      org::PROJ$SHARED_TODAY,sprintf("WP10_%s.xlsx",type)
     ))
   } else {
     res[,effect:=sprintf("%spp (%spp, %spp)",
@@ -708,7 +694,7 @@ for(type in c("raw","clean","raw_outbreaks","clean_outbreaks")){
     res[,season:=factor(season,level=c("Whole year","Winter","Spring","Summer","Autumn"))]
     setorder(res,-age,season,outcome,exposure)
     openxlsx::write.xlsx(res,file = file.path(
-      RAWmisc::PROJ$SHARED_TODAY,sprintf("WP15_%s.xlsx",type)
+      org::PROJ$SHARED_TODAY,sprintf("WP15_%s.xlsx",type)
     ))
   }
   
@@ -786,7 +772,7 @@ q <- q + theme_gray(12)
 q <- q + theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust=0.5))
 q <- q + theme(legend.position="bottom")
 q <- q + labs(caption="Exposure on x-axis, outcome on y-axis")
-RAWmisc::saveA4(q,filename=file.path(RAWmisc::PROJ$SHARED_TODAY,"WP1.png"),landscape=F)
+RAWmisc::saveA4(q,filename=file.path(org::PROJ$SHARED_TODAY,"WP1.png"),landscape=F)
 
-RAWmisc::SaveProject()
+#RAWmisc::SaveProject()
 

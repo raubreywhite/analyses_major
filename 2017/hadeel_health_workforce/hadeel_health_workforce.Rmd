@@ -736,13 +736,33 @@ nrow(dWorkers)
 
 
 # WORKER CODES
+dWorkers[,CW00:=as.numeric(CW00)]
+dWorkers[,CW06:=as.numeric(CW06)]
+
+oldToNew <- readxl::read_excel(file.path(org::PROJ$RAW,"Groups - specialists_changing.xlsx"))
+
 dSpecializedDoctors <- readxl::read_excel(file.path(org::PROJ$RAW,
                                                    "Groups - ULTIMIT.xlsx"),
                                          sheet = "Specialized doctor")
 dSpecializedDoctors <- dSpecializedDoctors[,c("Code of profession","Profession")]
 setnames(dSpecializedDoctors,c("CW00","doctor_specialization"))
+setnames(oldToNew,c("CW00","newVal"))
+nrow(dSpecializedDoctors)
+dSpecializedDoctors <- merge(dSpecializedDoctors,oldToNew,by="CW00",all=T)
+nrow(dSpecializedDoctors)
+setDT(dSpecializedDoctors)
+dSpecializedDoctors[!is.na(newVal),CW00:=newVal]
+dSpecializedDoctors[,newVal:=NULL]
+dSpecializedDoctors <- dSpecializedDoctors[,paste0(doctor_specialization,collapse="/"),by=CW00]
+setnames(dSpecializedDoctors,"V1","doctor_specialization")
+
 nrow(dWorkers)
-dWorkers[,CW00:=as.numeric(CW00)]
+dWorkers <- merge(dWorkers,oldToNew,by="CW00",all.x=T)
+nrow(dWorkers)
+dWorkers[!is.na(newVal),CW00:=newVal]
+dWorkers[,newVal:=NULL]
+
+nrow(dWorkers)
 dWorkers <- merge(dWorkers,dSpecializedDoctors[!is.na(dSpecializedDoctors$CW00),],by="CW00",all.x=T)
 nrow(dWorkers)
 
@@ -751,8 +771,23 @@ dSpecializedDoctors <- readxl::read_excel(file.path(org::PROJ$RAW,
                                          sheet = "Specialized doctor")
 dSpecializedDoctors <- dSpecializedDoctors[,c("Code of profession","Profession")]
 setnames(dSpecializedDoctors,c("CW06","CW06doctor_specialization"))
+setnames(oldToNew,c("CW06","newVal"))
+nrow(dSpecializedDoctors)
+dSpecializedDoctors <- merge(dSpecializedDoctors,oldToNew,by="CW06",all=T)
+nrow(dSpecializedDoctors)
+setDT(dSpecializedDoctors)
+dSpecializedDoctors[!is.na(newVal),CW06:=newVal]
+dSpecializedDoctors[,newVal:=NULL]
+
 nrow(dWorkers)
-dWorkers[,CW06:=as.numeric(CW06)]
+dWorkers <- merge(dWorkers,oldToNew,by="CW06",all.x=T)
+nrow(dWorkers)
+dWorkers[!is.na(newVal),CW06:=newVal]
+dWorkers[,newVal:=NULL]
+dSpecializedDoctors <- dSpecializedDoctors[,paste0(CW06doctor_specialization,collapse="/"),by=CW06]
+setnames(dSpecializedDoctors,"V1","CW06doctor_specialization")
+
+nrow(dWorkers)
 dWorkers <- merge(dWorkers,dSpecializedDoctors[!is.na(dSpecializedDoctors$CW06),],by="CW06",all.x=T)
 nrow(dWorkers)
 
@@ -786,7 +821,11 @@ for(i in c(
            "FamilyPhysician",
            "Radiologist",
            "LabTech",
-           "PharmacyAssistant"
+           "PharmacyAssistant",
+          "medgroupspecialists",
+          "surgicalgroupspecialists",
+          "othergroupspecialists",
+          "physiotherapists012019"
 )){
     dWorkerCodes[[i]] <- readxl::read_excel(file.path(org::PROJ$RAW,
                                                    "Groups - ULTIMIT.xlsx"),
@@ -822,7 +861,11 @@ professionVarsTemp <- c(
   "isProf_Radiologist",
   "isProf_LabTech",
   "isProf_PharmacyAssistant",
-  "isProf_residentdoctor"
+  "isProf_residentdoctor",
+  "isProf_medgroupspecialists",
+  "isProf_surgicalgroupspecialists",
+  "isProf_othergroupspecialists",
+  "isProf_physiotherapists012019"
   )
 
 professionVarsTempHealthCare <- c(
@@ -1219,7 +1262,7 @@ for(i in c("isPalestine","isWB","isGaza")){
 
 ```
 
-## Distribution of GPs by sector
+## Distribution of GPs by sector in Palestine, West Bank, Gaza
 
 ```{r, warning=FALSE}
 dMaster <- merge(dWorkers, dFacilities[,c("IDH00","facilitySector")], by="IDH00",all.x=T)
@@ -1232,11 +1275,11 @@ nrow(dMaster)
 ### Results
 
 ```{r message=FALSE, warning=FALSE}
-for(i in unique(dMaster$facilitySector)){
+for(j in c("isPalestine","isWB","isGaza")) for(i in unique(dMaster$facilitySector)){
   if(is.na(i)){
-    d <- dMaster[is.na(facilitySector) & isProf_GP==1]
+    d <- dMaster[get(j)==1 & is.na(facilitySector) & isProf_GP==1]
   } else {
-    d <- dMaster[facilitySector==i & isProf_GP==1]
+    d <- dMaster[get(j)==1 & facilitySector==i & isProf_GP==1]
   }
   
   d <- d[,.(
@@ -1245,10 +1288,25 @@ for(i in unique(dMaster$facilitySector)){
     HR01
   )]
   
-  d[is.infinite(numerator),numerator:=NA]
-  cat(sprintf("***** %s *****\n",i))
-  PrintTableNPerc(d)
-  cat("\n\n")
+  cat(sprintf("***** %s %s *****\n",j,i))
+
+   if(j=="isPalestine"){
+    usePop <- pop[districtName=="Palestine population"]$pop
+  } else if(j=="isGaza"){
+    usePop <- pop[districtName=="Gaza Population"]$pop
+  } else if(j=="isWB"){
+    usePop <- pop[districtName=="West Bank Population"]$pop
+  } else if(j=="isEJerusalem"){
+    usePop <- 0
+  }
+  
+  cat(sprintf("\nNumber of people=%s\n",
+              nrow(d)
+              ))
+  
+  cat(sprintf("People per 1,000 pop: %s\n\n",
+              round(nrow(d)/usePop*1000,4)
+              ))
 }
 ```
 
@@ -4960,6 +5018,47 @@ for(i in c("isPalestine","isGaza","isWB")){
 
 ```
 
+## Numbers and per 1000 by sector
+
+```{r, warning=FALSE}
+
+stack <- data.table(expand.grid(
+  type=sort(unique(dFacilities$IS06)),
+  sector=unique(dFacilities$facilitySector),
+  location=c("isPalestine","isGaza","isWB","isEJerusalem")
+  , stringsAsFactors = F
+))
+
+for(i in 1:nrow(stack)){
+  s <- stack[i]
+  d <- dFacilities[IS06==s$type & facilitySector==s$sector & get(s$location)==1]
+  
+  if(s$location=="isPalestine"){
+    usePop <- pop[districtName=="Palestine population"]$pop
+  } else if(s$location=="isGaza"){
+    usePop <- pop[districtName=="Gaza Population"]$pop
+  } else if(s$location=="isWB"){
+    usePop <- pop[districtName=="West Bank Population"]$pop
+  } else if(s$location=="isEJerusalem"){
+    usePop <- 0
+  }
+  
+  cat(sprintf("\n\n*********\nNumber of IS06=%s in %s in %s: %s\n",
+              s$type,
+              s$sector,
+              s$location,
+              nrow(d)
+              ))
+  
+  cat(sprintf("\n\nIS06=%s in %s in %s per 1,000 pop: %s\n",
+              s$type,
+              s$sector,
+              s$location,
+              round(nrow(d)/usePop*1000,4)
+              ))
+}
+
+```
 
 # Palestine Medical Council (July 2018)
 
@@ -5508,4 +5607,80 @@ for(i in c("isPalestine","isWB","isGaza")){
 ```
 
 
+## 2019-01-21
 
+### combined specialties for comparisons
+
+```{r message=FALSE, warning=FALSE}
+for(i in c("isPalestine","isWB","isGaza")) for(j in c(
+  "isProf_surgicalgroupspecialists",
+  "isProf_medgroupspecialists",
+  "isProf_othergroupspecialists")){
+  
+  cat(i," - ",j,"\n")
+  if(i=="isPalestine"){
+    p <- pop[districtName=="Palestine population"]$pop
+  } else if(i=="isWB"){
+    p <- pop[districtName=="West Bank Population"]$pop
+  } else if(i=="isGaza"){
+    p <- pop[districtName=="Gaza Population"]$pop
+  }
+  
+  d <- dWorkers[get(i)==1 & get(j)==1]
+  d <- d[,.(
+    N=1
+  ),by=.(
+    HR01,
+    isFemale,
+    ageCat
+  )]
+  
+  res <- nrow(res)
+  cat(sprintf("Num: %s, Pop: %s, Num/1000: %s\n",res,round(p),res/p*1000))
+  
+  res <- d[,.(
+    num=.N
+  ),keyby=.(isFemale)]
+  
+  cat("by sex:\n")
+  print(res)
+  
+  res <- d[,.(
+    num=.N
+  ),keyby=.(ageCat)]
+  
+  cat("by age:\n")
+  print(res)
+  
+  cat("\n\n")
+  
+}
+```
+
+## Total number of isProf_physiotherapists012019by sector, by geographic area
+
+```{r message=FALSE, warning=FALSE}
+dMaster <- merge(dWorkers, dFacilities[,c("IDH00","facilitySector","IS06")], by="IDH00",all.x=T)
+nrow(dWorkers)
+nrow(dMaster)
+
+for(i in c("isPalestine","isWB","isGaza")){
+  cat(i,"\n\n")
+  d <- dMaster[get(i)==1]
+  d <- d[isProf_physiotherapists012019==1,.(
+    numerator=1
+  ),by=.(
+    HR01,
+    facilitySector,
+    isFemale
+  )]
+  d <- d[,
+         .(num=sum(numerator)),
+         keyby=.(
+           facilitySector
+         )
+         ]
+  
+  print(d)
+}
+```

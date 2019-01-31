@@ -1,27 +1,13 @@
 suppressMessages(library(ggplot2))
-if(.Platform$OS.type=="unix"){
-  RAWmisc::UseRClone()
-  RAWmisc::AllowFileManipulationFromInitialiseProject()
-  
-  if(dir.exists("/dropbox")){
-    SHARED <- "/dropbox/analyses/results_shared/code_major/2017/klima_analyses/"
-    RCLONE_SHARED <- NULL
-  } else {
-    SHARED <- "/tmp/results_shared/code_major/2017/klima_analyses/"
-    RCLONE_SHARED <- "data:/analyses/results_shared/code_major/2017/klima_analyses/"
-  }
-  
-  RAWmisc::InitialiseProject(
-    HOME = "/git/code_major/2017/klima_analyses/",
-    RAW = "/tmp/data_raw/code_major/2017/klima_analyses/",
-    CLEAN = "/tmp/data_clean/code_major/2017/klima_analyses",
-    BAKED = "/tmp/results_baked/code_major/2017/klima_analyses/",
-    FINAL = "/tmp/results_final/code_major/2017/klima_analyses/",
-    SHARED = SHARED,
-    RCLONE_RAW = "crypt:/data_raw/code_major/2017/klima_analyses/",
-    RCLONE_SHARED = RCLONE_SHARED
-  )
-}
+org::AllowFileManipulationFromInitialiseProject()
+org::InitialiseProject(
+  HOME = "/git/code_major/2017/klima_analyses/",
+  RAW = "/Volumes/crypt_data/org/data_raw/code_major/2017/klima_analyses/",
+  CLEAN = "/tmp/data_clean/code_major/2017/klima_analyses",
+  BAKED = "/tmp/results_baked/code_major/2017/klima_analyses/",
+  FINAL = "/tmp/results_final/code_major/2017/klima_analyses/",
+  SHARED = "/dropbox/analyses/results_shared/code_major/2017/klima_analyses/"
+)
 
 suppressMessages(library(data.table))
 suppressMessages(library(ggplot2))
@@ -36,7 +22,7 @@ d <- WP2Data()
 
 stack <- data.table(expand.grid(c("Whole year",unique(d$season)),
                                 rev(unique(d$age)),
-                                c("wp950_a_runoff0_3","wp950_c_rain0_3","wp950_c_temperature0_3"),
+                                c("wp950_a_runoff0_3","wp950_a_rain0_3","wp950_c_temperature0_3"),
                                 stringsAsFactors = FALSE))
 setnames(stack,c("season","age","exposure"))
 stack <- stack[!(exposure=="wp950_c_temperature0_3" & season!="Whole year")]
@@ -122,7 +108,7 @@ res <- res[,c("var","age","season","outcomeSummary","exposureSummary","effect","
 res
 
 openxlsx::write.xlsx(res,file = file.path(
-  RAWmisc::PROJ$SHARED_TODAY,"WP_20.xlsx"
+  org::PROJ$SHARED_TODAY,"WP_20.xlsx"
 ))
 
 
@@ -153,7 +139,7 @@ q <- q + theme_gray(12)
 q <- q + theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust=0.5))
 q <- q + theme(legend.position="bottom")
 q <- q + labs(caption="Exposure on panel titles, stratified analyses on x-axis and y-axis")
-ggsave(file.path(RAWmisc::PROJ$SHARED_TODAY,"WP2.png"), plot = q, width = 210, height = 297/2, 
+ggsave(file.path(org::PROJ$SHARED_TODAY,"WP2.png"), plot = q, width = 210, height = 297/2, 
        units = "mm")
 
 
