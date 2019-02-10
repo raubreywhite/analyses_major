@@ -1,0 +1,54 @@
+---
+title: "If statements/data selection/NA"
+output: rmarkdown::html_document
+---
+
+## What is TRUE or FALSE?
+
+Today we will be working a lot with `TRUE` and `FALSE`.
+
+Let us start off with a recap of last week. `TRUE`/`FALSE` are `boolean` variables. We can print them:
+
+```{r}
+print(TRUE)
+print(FALSE)
+```
+
+We can also assign them:
+
+```{r}
+a <- TRUE
+print(a)
+```
+
+```{r}
+b <- FALSE
+print(b)
+```
+
+We can also **CREATE** them from questions:
+
+```{r}
+print(3==4)
+```
+
+Note the use of the `==`. Double `==` is a **QUESTION**. Single `=` is an **ASSIGNMENT**.
+
+We can also save the result of the question ("is 3 equal to 4?") in the variable `a` and then print the result:
+
+```{r}
+a <- 3==4
+print(a)
+```
+
+We can also ask other questions:
+
+```{r}
+print(3!=4) # is 3 not equal to 4?
+print(3<4) # is 3 less than 4?
+print(3<=4) # is 3 less than or equal to 4?
+print(3>4) # is 3 greater than 4?
+print(3>=4) # is 3 greater than or equal to 4?
+print(3 %in% c(1,2)) # is 3 equal to 1 or 2?
+print(!3 %in% c(1,2)) # is 3 NOT equal to 1 or 2?
+```

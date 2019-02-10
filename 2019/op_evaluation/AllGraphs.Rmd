@@ -1,0 +1,63 @@
+---
+title: "Svarfordeling i % på alle spørsmål stratifisert per område og bakgrunnsvariabler"
+output: pdf_document
+editor_options: 
+  chunk_output_type: console
+header-includes:
+  - \usepackage{pdflscape}
+  - \usepackage{svg}
+  - \extrafloats{100}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+org::AllowFileManipulationFromInitialiseProject()
+org::InitialiseProject(
+  HOME = "/git/code_major/2019/op_evaluation/",
+  RAW = "/Volumes/crypt_data/org/data_raw/code_major/2019/op_evaluation/",
+  SHARED = "/dropbox/analyses/results_shared/code_major/2019/op_evaluation/"
+)
+
+library(data.table)
+library(ggplot2)
+
+dir.create(file.path(org::PROJ$SHARED_TODAY,"requests"))
+dir.create(file.path(org::PROJ$SHARED_TODAY,"descriptives"))
+dir.create(file.path(org::PROJ$SHARED_TODAY,"factor_analysis"))
+dir.create(file.path(org::PROJ$SHARED_TODAY,"presentation"))
+
+dInfo <- haven::read_sav(file.path(org::PROJ$RAW,"op_spss.sav"))
+vars <- names(dInfo)
+res <- CleanData(dInfo)
+resd <- CleanData(dInfo,detailed=T)
+vars <- names(dInfo)[-c(1:3)]
+
+omrade <- haven::as_factor(dInfo$op_1)
+```
+
+
+\begin{landscape}
+
+```{r cars, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE, results='asis'}
+
+for(i in seq_along(vars)){
+  varx <- vars[i]
+  if(stringr::str_detect(varx,"^op_13")) next
+  if(stringr::str_detect(varx,"^op_38")) next
+  if(varx %in% c("op_18_10","op_22_2","op_23_4","op_57","op_58","svartid")) next
+  
+  q <- PlotMatrix(resd=resd,varx=varx)
+  f <- sprintf("%s.png",tempfile())
+  ggsave(f, plot = q, width = 297*0.75, height = 210*0.75, units = "mm")
+  
+  cat("\\begin{figure}")
+  cat("\\begin{center}")
+  cat("\\includegraphics{",f,"}",sep="")
+  cat("\\end{center}")
+  cat("\\end{figure}")
+}
+
+```
+
+\end{landscape}

@@ -64,7 +64,7 @@ CleanData <- function(dInfo,detailed=F){
     setDT(labs)
     if(nrow(labs)==0) next
     
-    d[get(var) %in% labs[value %in% c("Vet ikke","Vet ikke, Ikke relevant","Vet ikke/ikke svart")]$get, (var):=10]
+    d[get(var) %in% labs[value %in% c("Vet ikke","Vet ikke, Ikke relevant")]$get, (var):=10]
     d[is.na(get(var)),(var):=10]
     resx <- d[,.(
       N=.N
@@ -72,7 +72,6 @@ CleanData <- function(dInfo,detailed=F){
     
     labs[value %in% c("Vet ikke","Vet ikke, Ikke relevant"),get:=10]
     labs[value %in% c("Vet ikke","Vet ikke, Ikke relevant"),value:="Vet ikke/ikke svart"]
-    labs[value=="Vet ikke/ikke svart",get:=10]
     
     skeleton <- expand.grid(
       c_omrade=unique(d$c_omrade),
@@ -88,7 +87,7 @@ CleanData <- function(dInfo,detailed=F){
     resx[,varName:=at$label]
     resx[is.na(N), N:=0]
     resx[is.na(x),x:=10]
-    resx[is.na(value),value:="Vet ikke/ikke svart"]
+    resx[is.na(value),value:="Ikke valgt"]
     
     res[[i]] <- resx
   }
