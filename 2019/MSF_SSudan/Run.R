@@ -115,7 +115,7 @@ counties <- c("Oestfold",
 
 for(i in counties) for(CUTOFFALPHA in c(0.95,0.975,0.995)){
   q <- RunComparisons(d[countyName==i],CUTOFFALPHA=CUTOFFALPHA)
-  xlsx::saveWorkbook(q,file.path(org::PROJ$SHARED_TODAY,sprintf("RAW_NORWAY_%s_%s.xlsx",i,CUTOFFALPHA)))
+  xlsx::write.xlsx(q,file.path(org::PROJ$SHARED_TODAY,sprintf("RAW_NORWAY_%s_%s.xlsx",i,CUTOFFALPHA)))
   FormatComparisons(q,i,CUTOFFALPHA=CUTOFFALPHA)
 }
 
