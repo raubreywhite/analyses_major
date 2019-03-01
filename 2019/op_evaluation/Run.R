@@ -330,7 +330,7 @@ for(i in seq_along(vars)){
 
 pd <- res[stringr::str_detect(var,"^op_13") & c_lenge=="Alle" & c_omrade=="Alle"]
 pd[,place:=stringr::str_extract(string = varName, pattern = "(?<=; ).*(?=;)")]
-pd[value=="Ikke valgt",value:="Nei"]
+pd[value %in% c("Ikke valgt","Vet ikke/ikke svart"),value:="Nei"]
 pd[value!="Nei",value:="Ja"]
 pd[,value:=factor(value,levels=c("Nei","Ja"))]
 pd[place=="Kjenner ikke til noen av disse",place:="Kjenner ikke"]
@@ -391,8 +391,8 @@ RAWmisc::saveA4(q,
 pd <- res[stringr::str_detect(var,"^op_38") & c_lenge=="Alle" & c_omrade=="Alle" & c_arbeidsoppgaver=="Alle" & N>0]
 pd[,place:=stringr::str_extract(string = varName, pattern = "(?<=; ).*(?=;)")]
 pd[is.na(x), value:="Nei"]
-pd[!is.na(x) & place=="Vet ikke", value:="Ja"]
-pd[value=="Ikke valgt",value:="Nei"]
+pd[!is.na(x) & place%in% c("Ikke valgt","Vet ikke/ikke svart","Vet ikke"), value:="Ja"]
+pd[value%in% c("Ikke valgt","Vet ikke/ikke svart","Vet ikke"),value:="Nei"]
 pd[value!="Nei",value:="Ja"]
 pd[,value:=factor(value,levels=c("Nei","Ja"))]
 

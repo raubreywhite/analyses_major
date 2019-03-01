@@ -1,27 +1,12 @@
+org::AllowFileManipulationFromInitialiseProject()
+org::InitialiseProject(
+  HOME = "/git/code_major/2017/water_longitudinal/",
+  RAW = "/Volumes/crypt_data/org/data_raw/code_major/2017/water_longitudinal/",
+  SHARED = "/dropbox/analyses/results_shared/code_major/2017/water_longitudinal/"
+)
 
-setwd("F:/Felles/Protocol on Water and Health/Intervensjonsstudie/SMSstudiePowerCalc")
-
-# Change if you want local setup to be pulled from github
-upgradeRLocalSetup <- FALSE
-source("RLocalSetup.R")
-
-# Packrat
-packrat::on(auto.snapshot=FALSE)
-#packrat::status()
-#packrat::snapshot()
-
-# Load package
-devtools::load_all("SMSstudiePowerCalc")
 library(data.table)
-
-# Commit to Git
-CommitToGit(paste0("Committing while loading at ",Sys.time()))
-
-r <- git2r::repository()
-git2r::summary(r)
-git2r::contributions(r,by="author")
-
-# Your code starts here
+library(pbmcapply)
 
 # water exposures
 data <- data.table(x = SampleWaterExposure(10000))
@@ -65,6 +50,16 @@ d1025
 apply(d1025, 2, sum)
 
 #
+res <- pbmclapply(1:400,
+                  function(x) RunMultipleRisk(npeople=5600),
+                  mc.cores = parallel::detectCores()
+)
+res <- rbindlist(res)
+res[,.(
+  powerInteraction=mean(anovaPval<0.05),
+  powerCombined=mean(pvalCombined<0.05)
+)]
+
 sampleSizes <- c(8600,1950)
 saveRDS(sampleSizes[1], "results_final/n_large_sample.RDS")
 saveRDS(sampleSizes[2], "results_final/n_small_sample.RDS")
@@ -81,6 +76,10 @@ close(pb)
 saveRDS(res, "results_final/res_large_sample.RDS")
 
 res <- vector("list",100)
+res <- pbmclapply(1:10,
+                  function(x) RunMultipleRisk(sampleSizes[1]),
+                  mc.cores = parallel::detectCores()
+)
 pb <- txtProgressBar(min=1,max=length(res),style=3)
 for(i in 1:length(res)){
   res[[i]] <- RunMultipleRisk(sampleSizes[2])

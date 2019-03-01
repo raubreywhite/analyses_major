@@ -1,0 +1,159 @@
+---
+title: "Exercises"
+output:
+  rmarkdown::html_document
+---
+
+# Introduction
+
+Please install the packages:
+
+- ggplot2
+- tufte
+
+## Task 1
+
+Write a "question" that tests if `a` is equal to `b`:
+
+```{r}
+a <- 3
+b <- 4
+
+# your code here
+```
+
+## Task 2
+
+Write a "question" that tests which values in `a` are equal to the value "d":
+
+```{r}
+a <- c("a", "b", "c", "d", "e")
+
+# your code here
+```
+
+## Task 3
+
+Write a "question" that tests which values in `a` are equal to the value "d":
+
+```{r}
+a <- c("a", "b", "c", "d", "e")
+
+# your code here
+```
+
+## Task 4
+
+Select all rows from the data.frame diamonds with "Premium" cut
+
+In STATA, the code would be:
+
+browse if cut=="Premium"
+
+```{r}
+data("diamonds", package="ggplot2")
+diamonds <- diamonds[1:20,]
+
+# your code here
+```
+
+## Task 5
+
+For all rows in the data.frame diamonds, set the price to 300
+
+In STATA, the code would be:
+
+replace price = 300
+
+```{r}
+data("diamonds", package="ggplot2")
+diamonds <- diamonds[1:20,]
+
+# your code here
+diamonds$price <- 300
+```
+
+## Task 6
+
+For all rows in the data.frame diamonds where the cut is "Ideal" and the color is "E", set the price to 2*depth
+
+In STATA, the code would be:
+
+replace price = 2*depth if cut=="Ideal" & color=="E"
+
+```{r}
+data("diamonds", package="ggplot2")
+diamonds <- diamonds[1:20,]
+
+# your code here
+rows <- diamonds$cut=="Ideal" & diamonds$color=="E"
+diamonds[rows,]$price <- 2*diamonds[rows,]$depth
+```
+
+## Task 7
+
+Count how many rows have a color "E"
+
+In STATA, the code would be:
+
+count if color=="E"
+
+```{r}
+data("diamonds", package="ggplot2")
+diamonds <- diamonds[1:20,]
+
+# your code here
+```
+
+## Task 8
+
+What is the mean price for diamonds with carat greater than 0.23 and color is "E", "I", or "J"?
+
+In STATA, the code would be:
+
+sum price if carat>0.23 & (color=="E" | color=="I" | color=="J")
+
+```{r}
+data("diamonds", package="ggplot2")
+diamonds <- diamonds[1:20,]
+
+# your code here
+```
+
+## Task 9
+
+Set the price for all diamonds with "Good" cut to NA and then find the overall mean price
+
+In STATA, the code would be:
+
+replace price = . if cut=="Good"
+sum price
+
+```{r}
+data("diamonds", package="ggplot2")
+diamonds <- diamonds[1:20,]
+
+# your code here
+```
+
+## Task 10
+
+Within the diamonds whose cut is "Very Good", find the proportion whose price is under 340
+
+In STATA, the code would be:
+
+gen under340=0 if cut=="Very Good"
+replace under340=1 if cut=="Very Good" & price<340
+sum under340
+
+```{r}
+data("diamonds", package="ggplot2")
+diamonds <- diamonds[1:20,]
+
+# your code here
+```
+
+
+
+
+

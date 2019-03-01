@@ -805,27 +805,33 @@ sum(!is.na(dWorkers$BOTHdoctor_specialization))
 
 dWorkerCodes <- list()
 for(i in c(
-           "Doctor",
-          "residentdoctor",
-           "Specialized doctor",
-           "Dentist",
-           "Pharmacist",
-           "Nurse",
-           "Midwife",
-           "Psychologist,counselors, therap",
-           "Psychiatrist",
-           "Allied health sciences",
-           "Alternative  Medicine",
-           "Administrative & support staff",
-           "GP",
-           "FamilyPhysician",
-           "Radiologist",
-           "LabTech",
-           "PharmacyAssistant",
-          "medgroupspecialists",
-          "surgicalgroupspecialists",
-          "othergroupspecialists",
-          "physiotherapists012019"
+  "Doctor",
+  "residentdoctor",
+  "Specialized doctor",
+  "Dentist",
+  "Pharmacist",
+  "Nurse",
+  "Midwife",
+  "Psychologist,counselors, therap",
+  "Psychiatrist",
+  "Allied health sciences",
+  "Alternative  Medicine",
+  "Administrative & support staff",
+  "GP",
+  "FamilyPhysician",
+  "Radiologist",
+  "LabTech",
+  "PharmacyAssistant",
+  "medgroupspecialists",
+  "surgicalgroupspecialists",
+  "othergroupspecialists",
+  "physiotherapists012019",
+  "speech",
+  "audio",
+  "dietnut",
+  "foot",
+  "rehabilitation",
+  "chw"
 )){
     dWorkerCodes[[i]] <- readxl::read_excel(file.path(org::PROJ$RAW,
                                                    "Groups - ULTIMIT.xlsx"),
@@ -865,7 +871,13 @@ professionVarsTemp <- c(
   "isProf_medgroupspecialists",
   "isProf_surgicalgroupspecialists",
   "isProf_othergroupspecialists",
-  "isProf_physiotherapists012019"
+  "isProf_physiotherapists012019",
+  "isProf_speech",
+  "isProf_audio",
+  "isProf_dietnut",
+  "isProf_foot",
+  "isProf_rehabilitation",
+  "isProf_chw"
   )
 
 professionVarsTempHealthCare <- c(
@@ -903,6 +915,8 @@ dWorkers[,CW06:=as.numeric(CW06)]
 dWorkers <- merge(dWorkers,dWorkerCodes,by="CW06",all.x=T)
 nrow(dWorkers)
 
+
+
 for(i in professionVars){
   newVar <- sprintf("BOTH_%s",i)
   oldVar1 <- i
@@ -925,6 +939,13 @@ sum(is.na(dWorkers$CW00) & is.na(dWorkers$CW06))
 sum(is.na(dWorkers$CW00) & !is.na(dWorkers$CW06))
 
 professionVarsBOTH <- paste0("BOTH_",professionVars)
+
+# save CW00 as CW00!
+for(i in professionVars){
+  newVar <- sprintf("CW00%s",i)
+  oldVar1 <- i
+  dWorkers[,(newVar):=get(i)]
+}
 
 # if CW00_AND_CW06==TRUE then copy professionVarsBOTH values into professionVars
 if(CW00_AND_CW06){
@@ -4393,6 +4414,7 @@ for(i in 1:nrow(stack)){
 
 ```
 
+
 ### IS06==9 & MINISTRY OF HEALTH
 
 ```{r, warning=FALSE}
@@ -4463,6 +4485,44 @@ for(i in 1:nrow(stack)){
 }
 ```
 
+
+### Gender Distribution by Age
+
+```{r}
+stack <- na.omit(data.table(expand.grid(prof=c("isProf_Doctor","isProf_Dentist"),age=unique(dWorkers$ageCat),stringsAsFactors = F)))
+setorder(stack,prof,age)
+
+for(i in 1:nrow(stack)){
+  s <- stack[i]
+  d <- dWorkers[get(s$prof)==1 & ageCat==s$age]
+  #allFemalesInPalestine <- length(unique(dWorkers[get(s$prof)==1 & isFemale==TRUE]$HR01))
+  d[,numerator:=1]
+
+  d <- d[,.(
+   numerator=max(numerator,na.rm=T)
+  ),by=.(
+   HR01,
+   isFemale
+  )]
+  
+  d <- d[,.(numerator=sum(numerator)),by=isFemale]
+  d[!is.na(isFemale),denominator_excl_miss:=sum(numerator)]
+  d[,perc:=RAWmisc::Format(numerator/denominator_excl_miss*100,1)]
+  d[,ratio:=RAWmisc::Format(numerator/(denominator_excl_miss-numerator),2)]
+  #d[,allFemalesInPalestine:=allFemalesInPalestine]
+  #d[isFemale==1,percOfAllFemalesInPalestine:=RAWmisc::Format(numerator/allFemalesInPalestine*100,1)]
+  setorder(d,isFemale)
+  cat("*******\n")
+  cat(sprintf("%s %s\n",s$prof,s$age))
+  if(nrow(d)==0){
+    print("THERE ARE NO PEOPLE HERE")
+  } else {
+    print(d)
+  }
+  cat("\n\n")
+}
+
+```
 
 ### STRATIFIED BY SPECIALIZED DOCTORS
 
@@ -5679,6 +5739,36 @@ for(i in c("isPalestine","isWB","isGaza")){
          keyby=.(
            facilitySector
          )
+         ]
+  
+  print(d)
+}
+```
+
+# 2019-20-27
+
+## Healthcare workers with another non-healthcare job in the same facility
+
+```{r message=FALSE, warning=FALSE}
+dMaster <- merge(dWorkers, dFacilities[,c("IDH00","facilitySector","IS06")], by="IDH00",all.x=T)
+nrow(dWorkers)
+nrow(dMaster)
+
+for(i in c("isPalestine","isWB","isGaza")){
+  cat(i,"\n\n")
+  d <- dMaster[get(i)==1]
+  d <- d[
+    (CW00isProf_Healthworker==1 & CW06isProf_Healthworker==0) |
+    (CW00isProf_Healthworker==0 & CW06isProf_Healthworker==1)
+    ,.(
+    numerator=1
+  ),by=.(
+    HR01,
+    facilitySector
+  )]
+  d <- d[,
+         .(num=sum(numerator)),
+         keyby=.(facilitySector)
          ]
   
   print(d)

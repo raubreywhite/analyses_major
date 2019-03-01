@@ -1,0 +1,423 @@
+# # Introduction
+# 
+# Please install the packages:
+# 
+# - ggplot2
+# - tufte
+# 
+# # What is TRUE/FALSE?
+# 
+# Today we will be working a lot with `TRUE` and `FALSE`.
+# 
+# Let us start off with a recap of last week. `TRUE`/`FALSE` are `boolean` variables. We can print them:
+#   
+
+print(TRUE)
+print(FALSE)
+
+# We can also assign them:
+  
+a <- TRUE
+print(a)
+
+b <- FALSE
+print(b)
+
+# We can also **CREATE** them from questions:
+  
+# Note the use of == <br> Double == is a **QUESTION** <br> Single = is an **ASSIGNMENT**
+
+3==4
+
+# We can also save the result of the question ("is 3 equal to 4?") in the variable `a` and then print the result:
+  
+a <- 3==4
+a
+
+# We can also ask other questions:
+  
+# ! means **NOT***
+
+3!=4 # is 3 not equal to 4?
+3<4 # is 3 less than 4?
+3<=4 # is 3 less than or equal to 4?
+3>4 # is 3 greater than 4?
+3>=4 # is 3 greater than or equal to 4?
+c(1,2,3,4) == 3 # FOUR questions simultaneously
+c(3,4)<c(4,1) # TWO questions simultaneously (not recommended)
+
+# The above questions (`==`, `!=`, `<`, `<=`, `>`, `>=`) **MUST** have either:
+#   
+# 1. Have one single value on the right side of the question (recommended)
+# 2. Have variables that are the same length on the left and the right of the question (not recommended)
+
+# The number of questions we ask **ALWAYS** corresponds to the length of the variable on the left side of the question
+
+# The below questions can have different length variables on each side of the question:
+  
+3 %in% c(1,2) # is 3 equal to 1 or 2?
+!3 %in% c(1,2) # is 3 NOT equal to 1 or 2?
+c(1,3) %in% c(2,3,4,5) # TWO questions simultaneously
+
+# We do not use **c** as a variable because it is already a function
+
+# We can obviously repeat all of these questions using variables instead of numbers:
+  
+a <- 3
+b <- 4
+x <- c(1,2)
+a!=b # is 3 not equal to 4?
+a<b # is 3 less than 4?
+a<=b # is 3 less than or equal to 4?
+a>b # is 3 greater than 4?
+a>=b # is 3 greater than or equal to 4?
+a %in% x # is 3 equal to 1 or 2?
+!a %in% x # is 3 NOT equal to 1 or 2?
+
+## Exercises
+
+# Check to see if `myAge` is greater than or equal to `ageLimitForBuyingAlcohol`:
+  
+myAge <- 13
+ageLimitForBuyingAlcohol <- 18
+
+# your code goes here
+
+# Check to see if `myFriendsAges` are greater than or equal to `ageLimitForBuyingAlcohol`:
+  
+myFriendsAges <- c(15, 16, 16, 14, 20)
+ageLimitForBuyingAlcohol <- 18
+
+# your code goes here
+
+# Check to see if `placeWhereILive` exists in `validCityNames`:
+  
+placeWhereILive <- "Norway"
+validCityNames <- c("Oslo", "Bergen", "Trondheim")
+
+# your code goes here
+
+# Check to see if `placesWhereMyFriendsLive` are **NOT** in `placesInTheEU`:
+  
+placesWhereMyFriendsLive <- c("Australia", "UK", "London", "Paris")
+placesInTheEU <- c("France", "Paris", "Sweden")
+
+# your code goes here
+
+# AND/OR
+
+# If we have multiple questions we can join them together using `&` (AND) and `|` (OR).
+
+TRUE & TRUE
+TRUE & FALSE
+FALSE & FALSE
+TRUE | TRUE
+TRUE | FALSE
+FALSE | FALSE
+
+# Whenever using | and & it is always smart to use () to ensure your order of operations is correct
+
+# Put into more practical examples:
+
+(3<4) & (2<5)
+(3<4) & (5<2)
+(4<3) & (5<2)
+(3<4) | (2<5)
+(3<4) | (5<2)
+(4<3) | (5<2)
+
+# Data Selection
+
+## Vectors 
+
+# When we want to select data, we can either provide the location of the data we want (index) or a vector of `TRUE/FALSE` that essentially specifies `include/exclude` for every datapoint.
+
+myData <- c("a", "b", "c", "d", "e")
+myData
+myData[2] # using indexes
+myData[c(2,4)] # using indexes
+myData[c(FALSE, TRUE, TRUE, FALSE, FALSE)] # using TRUE/FALSE
+
+## data.frames
+
+# We use a data.frame provided to us by the R package `ggplot2` (you might need to install this package):
+
+data(diamonds, package="ggplot2")
+diamonds <- diamonds[1:20,]
+diamonds
+
+# Remember that each column of a data.frame is a vector, so we can reuse what we learnt with vectors (selecting the first three values in the vector):
+  
+diamonds$carat[c(1:3)]
+diamonds$cut[c(1:3)]
+
+# We can also select the first three rows of a data.frame:
+  
+# We reference cells in data.frames by [ROWS, COLUMNS]. So diamonds[c(1:3),] means 'first three rows, all the columns'
+
+diamonds[c(1:3),]
+
+# The first two rows and the second and third columns (not recommended):
+  
+diamonds[c(1:2),c(2:3)]
+
+# We can also specify the columns by name (recommended):
+  
+diamonds[c(1:2),c("cut","color")]
+
+# We can also use a vector of `TRUE/FALSE` instead of indexes:
+  
+diamonds[c(TRUE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE),c("cut","color")]
+
+# **Most importantly** we can select rows by asking questions:
+  
+isCutPremium <- diamonds$cut=="Premium"
+isCutPremium
+diamonds[isCutPremium,]
+
+# And we can make this more elegant:
+  
+diamonds[diamonds$cut=="Premium",]
+
+# We can also ask multiple questions:
+  
+diamonds[diamonds$cut=="Premium" & diamonds$color=="E",]
+diamonds[diamonds$cut=="Premium" | diamonds$color=="E",]
+diamonds[diamonds$cut %in% c("Premium","Good") | diamonds$color=="E",]
+diamonds[diamonds$cut %in% c("Premium","Good") & diamonds$price<350,]
+
+# Once we have selected the rows we are interested in, we can then choose columns/variables:
+  
+diamonds[diamonds$cut=="Premium" & diamonds$color=="E",]$price
+diamonds[diamonds$cut=="Premium" | diamonds$color=="E",]$price
+diamonds[diamonds$cut %in% c("Premium","Good") | diamonds$color=="E",]$price
+diamonds[diamonds$cut %in% c("Premium","Good") & diamonds$price<350,]$price
+
+# You can start to work with the data to get summary statistics:
+  
+mean(diamonds[diamonds$cut=="Premium" & diamonds$color=="E",]$price)
+sd(diamonds[diamonds$cut=="Premium" & diamonds$color=="E",]$price)
+quantile(diamonds[diamonds$cut=="Premium" & diamonds$color=="E",]$price)
+
+# Remember that behind each of these row selections is a vector containing `TRUE`/`FALSE` that includes/excludes certain rows:
+  
+diamonds$cut=="Premium" & diamonds$color=="E"
+diamonds$cut=="Premium" | diamonds$color=="E"
+diamonds$cut %in% c("Premium","Good") | diamonds$color=="E"
+diamonds$cut %in% c("Premium","Good") & diamonds$price<350
+
+## Data manipulation/cleaning
+
+# Once you have selected your rows, you can also manipulate your data:
+  
+diamonds # before
+diamonds[diamonds$cut=="Premium" & diamonds$color=="E",]$y <- 1000 # manipulate
+diamonds # after
+
+# This is how we clean our data. Here we change `cut=="Premium"` to `Ideal`:
+  
+diamonds # before
+diamonds[diamonds$cut=="Premium",]$cut <- "Ideal" # manipulate
+diamonds # after
+
+# We can also add different columns together:
+  
+diamonds # before
+diamonds[diamonds$cut=="Ideal",]$x <- diamonds[diamonds$cut=="Ideal",]$y + diamonds[diamonds$cut=="Ideal",]$z
+diamonds # after
+
+# When we need to make multiple references to particular row selections, it is often cleaner to create a variable that contains the row selections:
+  
+# get row selection
+rows <- diamonds$cut %in% c("Ideal","Good") | diamonds$color=="E"
+rows
+
+diamonds # before
+diamonds[rows,]$x <- diamonds[rows,]$y + diamonds[rows,]$z*100
+diamonds # after
+
+## Creating new data.frames
+
+# Once you have selected your rows, you can also save it to a new data.frame:
+  
+myNewDataFrame <- diamonds[diamonds$cut=="Ideal" & diamonds$color=="E",]
+myNewDataFrame
+
+## Exercises
+
+# **Task 1:** Select all rows with:
+  
+# - `colour` equals `E` or `I` AND
+# - `price` less than `400`
+# 
+# Solution 1:
+  
+diamonds[diamonds$color %in% c("E","I") & diamonds$price<400,]
+
+# **Task 2:** Select all rows with:
+  
+# - `depth` less than 63
+# - `price` more than `300`
+# 
+# Solution 2:
+  
+# your code goes here
+
+# **Task 3:** 
+  
+# Set `z` to `400` for all rows with:
+  
+# - `cut` not `Ideal`
+# - `price` more than `300`
+
+# Solution 3:
+  
+# your code goes here
+
+# Control flow (if statements)
+
+# Today's module has so far only focused on using `TRUE`/`FALSE` to select data.
+
+# We can also use `TRUE`/`FALSE` to change the flow of the program.
+
+if(TRUE){
+  print("a")
+} else {
+  print("b")
+}
+
+# Above we have used `TRUE`/`FALSE` to select which lines of code would run. This is called an `if` statement.
+
+# These will be used more frequently in further modules, but at this stage you could use them in conjuction with `flags` at the start of your script.
+
+analyseCheapDiamonds <- TRUE # a flag
+
+if(analyseCheapDiamonds){
+  analysisData <- diamonds[diamonds$price<350,]
+} else {
+  analysisData <- diamonds
+}
+
+analysisData
+
+# In the above script the user can change the top line `analyseCheapDiamonds <- TRUE` to be `TRUE`/`FALSE` if they want `analysisData` to be only cheap diamonds or all of the diamonds. The rest of the script would continue using `analysisData`, which would mean that you could write 1 analysis script that could be used for 2 (or more) different datasets.
+
+# We can also write more complicated `if` statements. In the following code, the flag `analysis` can take the values: `main`, `sensitivity1`, `sensitivity2` and changes the dataset accordingly:
+
+analysis <- "main"
+
+if(analysis=="main"){
+  analysisData <- diamonds
+} else if(analysis=="sensitivity1"){
+  analysisData <- diamonds[diamonds$cut!="Good",]
+} else if(analysis=="sensitivity2"){
+  analysisData <- diamonds[diamonds$color=="E",]
+} else {
+  stop("not a valid analysis!")
+}
+
+analysisData
+
+# If you were running regression analyses, then you could take it even further and have different outcomes, exposures, and confounders for each analysis:
+
+analysis <- "main"
+
+if(analysis=="main"){
+  analysisData <- diamonds
+  outcome <- "price"
+  exposure <- "carat"
+  confounders <- c("color","clarity","depth")
+} else if(analysis=="sensitivity1"){
+  analysisData <- diamonds[diamonds$cut!="Good",]
+  outcome <- "price"
+  exposure <- "carat"
+  confounders <- c("cut","clarity")
+} else if(analysis=="sensitivity2"){
+  analysisData <- diamonds[diamonds$color=="E",]
+  outcome <- "price"
+  exposure <- "cut"
+  confounders <- c("depth")
+} else {
+  stop("not a valid analysis!")
+}
+
+# create new data.frame
+analysisData <- analysisData[,c(outcome,exposure,confounders)]
+analysisData
+
+# rename variables in the data.frame
+names(analysisData)[c(1:2)] <- c("outcome","exposure")
+names(analysisData)[c(3:ncol(analysisData))] <- paste0("confounder",1:length(confounders))
+analysisData
+
+# 'analyse' some of the data.frame
+mean(analysisData$outcome)
+mean(analysisData$exposure)
+cor(analysisData$outcome,analysisData$exposure)
+
+plot(outcome~exposure, data=analysisData)
+
+# NA/Missing/Invalid Data
+
+# There are two kinds of missing/invalid data:
+
+# - What **YOU** know is missing/invalid
+# - What **R** knows is missing/invalid
+
+myWeightOverTime <- c(80, 86, 76, 80, -9, -9, -9, 0, 0, 0, 89)
+myWeightOverTime
+mean(myWeightOverTime)
+
+# Here, it is obvious to **me** that the values between 70 and 90 are valid, while `-9` and `0` are obviously missing data.
+
+# For **R** all of these values are valid and real. The **ONLY** value that **R** considers to be missing/invalid is `NA`. So we need to translate my knowledge of the data, and my understanding of what values are missing/invalid into `NA`s that R can understand:
+
+myWeightOverTime[(myWeightOverTime<70) | (myWeightOverTime>90)] <- NA
+myWeightOverTime
+
+# We can now analyse the data:
+
+mean(myWeightOverTime)
+
+# This doesn't work, because there are `NA`s in the data. We need to explicitly tell R to ignore the `NA`s:
+
+mean(myWeightOverTime, na.rm=TRUE)
+
+# Of course, all of this applies to data.frames:
+
+diamonds # before
+diamonds[diamonds$cut %in% c("Good","Fair"),]$price <- NA # manipulation
+diamonds # after
+
+mean(diamonds$price)
+mean(diamonds$price, na.rm=TRUE)
+
+# We can now introduce the function (question) `is.na`:
+
+is.na(4)
+is.na("hello")
+is.na(NA)
+
+# And if we apply it to a vector that contains `NA`s:
+
+diamonds$price
+is.na(diamonds$price)
+
+# So we can then use `is.na` in row selections, the same as all of the other questions (`==`, `!=`, `<`, `<=`, `>`, `>=`, `%in%`):
+
+diamonds[is.na(diamonds$price),]
+diamonds[!is.na(diamonds$price),]
+
+# Sum and Mean on TRUE/FALSE
+
+# You can use `sum` to count how many observations are true:
+
+sum(c(TRUE,TRUE,FALSE,FALSE,FALSE,NA),na.rm=T)
+sum(diamonds$price<350,na.rm=T)
+
+# You can use `mean` to see the proportion of values that are true:
+
+mean(c(TRUE,TRUE,FALSE,FALSE,FALSE,NA),na.rm=T)
+mean(diamonds$price<350,na.rm=T)
+
+

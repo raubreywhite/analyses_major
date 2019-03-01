@@ -113,11 +113,24 @@ counties <- c("Oestfold",
               "Troms",
               "Finnmark-Finnmarku")
 
+testRes <- list()
 for(i in counties) for(CUTOFFALPHA in c(0.95,0.975,0.995)){
   q <- RunComparisons(d[countyName==i],CUTOFFALPHA=CUTOFFALPHA)
+  testRes[[length(testRes)+1]] <- q
+  testRes[[length(testRes)]][,CUTOFF:=CUTOFFALPHA]
   xlsx::write.xlsx(q,file.path(org::PROJ$SHARED_TODAY,sprintf("RAW_NORWAY_%s_%s.xlsx",i,CUTOFFALPHA)))
   FormatComparisons(q,i,CUTOFFALPHA=CUTOFFALPHA)
 }
+
+testRes <- rbindlist(testRes)
+testRes[stringr::str_detect(variable,"Random"),variable:="Random"]
+TABLE1 <- testRes[seasonWk==42 & !is.na(cumsum) & season>="2007/2008",.(
+  m=mean(cumsum),
+  s=sd(cumsum)
+),by=.(
+  variable,CUTOFF
+)]
+xlsx::write.xlsx(TABLE1,file.path(org::PROJ$SHARED_TODAY,"TABLE_1.xlsx"))
 
 stack <- expand.grid(counties,c(0.95,0.975,0.995),stringsAsFactors = FALSE)
 names(stack) <- c("names","CUTOFFALPHA")
