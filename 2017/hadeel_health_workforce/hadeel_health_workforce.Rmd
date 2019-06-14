@@ -57,6 +57,8 @@ if(CW00_AND_CW06){
 
 SHARED_TODAY <- file.path(org::PROJ$SHARED_TODAY,extraDir)
 
+dir.create(fs::path(SHARED_TODAY,"crosscheck"))
+
 ## MOH WORKERS TO REMOVE
 dMOHToRemove <- readxl::read_excel(file.path(org::PROJ$RAW,
                                              "Fixed excels - to be included in calculations",
@@ -439,7 +441,7 @@ dWorkers[,updated_CW00:=NULL]
 #xtabs(~dWorkers[HR01 %in% listOfGPs$HR01 & IDH00 %in% dFacilities[facilitySector=="Ministry of Health"]$IDH00]$CW00,addNA=T)
 dWorkers[HR01 %in% listOfGPs$HR01 & IDH00 %in% dFacilities[facilitySector=="Ministry of Health"]$IDH00,CW00:="221101"]
 
-dMaster <- merge(dWorkers, dFacilities[,c("IDH00","facilitySector")], by="IDH00",all.x=T)
+dMaster <- merge(dWorkers, unique(dFacilities[,c("IDH00","facilitySector")]), by="IDH00",all.x=T)
 
 # updating CW00 for MOH family physicians that hadeel gave me
 dWorkers[HR01 %in% c(
@@ -585,7 +587,7 @@ openxlsx::write.xlsx(namesIDGender[N>1],file.path(SHARED_TODAY,"two_genders_same
 
 ##### MOH WORKERS #############
 
-dMaster <- merge(dWorkers, dFacilities[facilitySector=="Ministry of Health" & IDH03 %in% dLocation[isGaza==0]$localityCode,c("IDH00","facilitySector")], by="IDH00")
+dMaster <- merge(dWorkers, unique(dFacilities[facilitySector=="Ministry of Health" & IDH03 %in% dLocation[isGaza==0]$localityCode,c("IDH00","facilitySector")]), by="IDH00")
 nrow(dWorkers)
 nrow(dMaster)
 #dMaster[HR01=="910435585"]
@@ -1009,6 +1011,135 @@ dWorkers[age>=60,ageCat:="60+"]
 sum(is.na(dWorkers$age))
 ```
 
+```{r}
+# crosscheck with system dir.create(fs::path(SHARED_TODAY,"crosscheck"))
+fac <- fread(fs::path(org::PROJ$RAW,"HRH Files","Facilities_27_2_2019.csv"),header=F)
+wor1 <- fread(fs::path(org::PROJ$RAW,"HRH Files","workers information27_2_2019.csv"))
+wor2 <- fread(fs::path(org::PROJ$RAW,"HRH Files","workers information_with_Experince27_2_2019.csv"))
+
+# facilities
+nrow(dFacilities)
+nrow(fac)
+
+dFac <- merge(
+  dFacilities,
+  unique(dLocation[,c("localityCode","localityName")]),
+  by.x=c("IDH03"),
+  by.y=c("localityCode")
+  )
+nrow(dFac)
+nrow(dFacilities)
+
+dFac <- merge(
+  dFac,
+  unique(dLocation[district!="East Jerusalem (J1)",c("districtCode","district")]),
+  by.x=c("IDH01"),
+  by.y=c("districtCode")
+  )
+nrow(dFac)
+nrow(dFacilities)
+
+dFac[,district:=only_letters(district)]
+fac[,V2:=only_letters(V2)]
+
+dFac[district=="toubas",district:="tubas"]
+dFac[district=="toulkarem",district:="tulkarm"]
+dFac[district=="qalqilya",district:="qalqiliya"]
+dFac[district=="ramallah",district:="ramallahandalbireh"]
+dFac[district=="gazacity",district:="gaza"]
+dFac[district=="deralbalah",district:="deirelbalah"]
+dFac[district=="khanyounis",district:="khanyunis"]
+
+unique(dFac$district)[!unique(dFac$district) %in% unique(fac$V2)]
+unique(fac$V2)[!unique(fac$V2) %in% unique(dFac$district)]
+
+
+dFac[,localityName:=only_letters(localityName)]
+fac[,V3:=only_letters(V3)]
+
+dFac[,from_richard:=TRUE]
+dFac[,richard_id1:=1:.N]
+fac[,from_system:=TRUE]
+fac[,richard_id2:=1:.N]
+
+xf <- merge(
+  dFac,
+  fac,
+  by.x=c("IDH02","district"),
+  by.y=c("V1","V2"),
+  all=T)
+
+xf <- xf[is.na(from_richard) | is.na(from_system)]
+nrow(xf)
+
+#idh02
+if(length(na.omit(xf$richard_id1))>0){
+  openxlsx::write.xlsx(
+    dFac[richard_id1 %in% na.omit(xf$richard_id1)],
+    fs::path(SHARED_TODAY,"crosscheck","fac_missing_in_system.xlsx")
+  )
+}
+if(length(na.omit(xf$richard_id2))>0){
+  openxlsx::write.xlsx(
+    fac[richard_id2 %in% na.omit(xf$richard_id2)],
+    fs::path(SHARED_TODAY,"crosscheck","fac_extra_in_system.xlsx")
+  )
+}
+
+
+#workers HR01
+dMaster <- merge(dWorkers, unique(dFacilities[,c("IDH00","IDH01","IDH02","IDH03")]), by="IDH00",all.x=T)
+nrow(dMaster)
+nrow(dWorkers)
+dMaster[,`Jobs Titles Groups`:="Undefined"]
+dMaster[is.na(CW00),`Jobs Titles Groups`:="Missing"]
+dMaster[CW00isProf_Administrativesupportstaff==TRUE,`Jobs Titles Groups`:="Administrative & support Staff"]
+dMaster[CW00isProf_Specializeddoctor==TRUE,`Jobs Titles Groups`:="Specialized doctor"]
+dMaster[CW00isProf_Alliedhealthsciences==TRUE,`Jobs Titles Groups`:="Allied health sciences"]
+dMaster[CW00isProf_Nurse==TRUE,`Jobs Titles Groups`:="Nurse"]
+dMaster[CW00isProf_AlternativeMedicine==TRUE,`Jobs Titles Groups`:="Alternative Medicine"]
+dMaster[CW00isProf_Dentist==TRUE,`Jobs Titles Groups`:="Dentist"]
+dMaster[CW00isProf_GP==TRUE,`Jobs Titles Groups`:="General Doctor"]
+dMaster[CW00isProf_Pharmacist==TRUE,`Jobs Titles Groups`:="Pharmacist"]
+dMaster[CW00isProf_Midwife==TRUE,`Jobs Titles Groups`:="Midwife"]
+
+dMaster[,from_richard:=TRUE]
+dMaster[,richard_id1:=1:.N]
+wor2[,from_system:=TRUE]
+wor2[,richard_id2:=1:.N]
+
+xf <- merge(
+  dMaster,
+  wor2,
+  by.x=c("HR01","Jobs Titles Groups","IDH02.y"),
+  by.y=c("ID No","Jobs Titles Groups","Facility"),
+  all=T
+  )
+
+xf <- xf[is.na(from_richard) | is.na(from_system)]
+nrow(xf)
+
+#idh02
+if(length(na.omit(xf$richard_id1))>0){
+  to_save <- dMaster[richard_id1 %in% na.omit(xf$richard_id1)]
+  print(nrow(to_save))
+  openxlsx::write.xlsx(
+    to_save,
+    fs::path(SHARED_TODAY,"crosscheck","work_missing_in_system.xlsx")
+  )
+}
+if(length(na.omit(xf$richard_id2))>0){
+  to_save <- wor2[richard_id2 %in% na.omit(xf$richard_id2)]
+  print(nrow(to_save))
+  openxlsx::write.xlsx(
+    to_save,
+    fs::path(SHARED_TODAY,"crosscheck","work_extra_in_system.xlsx")
+  )
+}
+           
+```
+
+
 ```{r, warning=FALSE}
 nrow(dFacilities)
 nrow(dWorkers)
@@ -1223,7 +1354,7 @@ openxlsx::write.xlsx(temp, file.path(SHARED_TODAY,"Facilities_missing_IDH01_and_
 ## Physicians who answered yes to receiving CPD in the last year by sector
 
 ```{r, warning=FALSE}
-dMaster <- merge(dWorkers, dFacilities[,c("IDH00","facilitySector")], by="IDH00",all.x=T)
+dMaster <- merge(dWorkers, unique(dFacilities[,c("IDH00","facilitySector")]), by="IDH00",all.x=T)
 nrow(dWorkers)
 nrow(dMaster)
 
@@ -1286,7 +1417,7 @@ for(i in c("isPalestine","isWB","isGaza")){
 ## Distribution of GPs by sector in Palestine, West Bank, Gaza
 
 ```{r, warning=FALSE}
-dMaster <- merge(dWorkers, dFacilities[,c("IDH00","facilitySector")], by="IDH00",all.x=T)
+dMaster <- merge(dWorkers, unique(dFacilities[,c("IDH00","facilitySector")]), by="IDH00",all.x=T)
 nrow(dWorkers)
 nrow(dMaster)
 
@@ -1334,7 +1465,7 @@ for(j in c("isPalestine","isWB","isGaza")) for(i in unique(dMaster$facilitySecto
 ## Distribution of GPs between PHC and hospitals by sector in Palestine, West Bank, Gaza
 
 ```{r, warning=FALSE}
-dMaster <- merge(dWorkers, dFacilities[,c("IDH00","facilitySector","IS06")], by="IDH00",all.x=T)
+dMaster <- merge(dWorkers, unique(dFacilities[,c("IDH00","facilitySector","IS06")]), by="IDH00",all.x=T)
 nrow(dWorkers)
 nrow(dMaster)
 dMaster[!is.na(IS06),isPHC:=0]
@@ -1376,7 +1507,7 @@ for(j in c("isPalestine","isWB","isGaza")) for(i in unique(dMaster$facilitySecto
 ## Total number of specialized doctors by specialty by sector in Palestine, West Bank, Gaza
 
 ```{r, warning=FALSE}
-dMaster <- merge(dWorkers, dFacilities[,c("IDH00","facilitySector","IS06")], by="IDH00",all.x=T)
+dMaster <- merge(dWorkers, unique(dFacilities[,c("IDH00","facilitySector","IS06")]), by="IDH00",all.x=T)
 nrow(dWorkers)
 nrow(dMaster)
 ```
@@ -1462,7 +1593,7 @@ for(prof in c("isProf_GP")) for(area in c(
 ## Age distribution of General Practitioners by sector in West Bank, Gaza
 
 ```{r, warning=FALSE}
-dMaster <- merge(dWorkers, dFacilities[,c("IDH00","facilitySector")], by="IDH00",all.x=T)
+dMaster <- merge(dWorkers, unique(dFacilities[,c("IDH00","facilitySector")]), by="IDH00",all.x=T)
 nrow(dWorkers)
 nrow(dMaster)
 ```
@@ -1558,7 +1689,7 @@ for(prof in c("isProf_GP")) for(area in c(
 ## Gender distribution of GPs by sector in West Bank, Gaza
 
 ```{r, warning=FALSE}
-dMaster <- merge(dWorkers, dFacilities[,c("IDH00","facilitySector")], by="IDH00",all.x=T)
+dMaster <- merge(dWorkers, unique(dFacilities[,c("IDH00","facilitySector")]), by="IDH00",all.x=T)
 nrow(dWorkers)
 nrow(dMaster)
 ```
@@ -1631,7 +1762,7 @@ for(i in c("isPalestine","isWB","isGaza")){
 ## Total number of Family physicians by sector in West Bank and Gaza
 
 ```{r, warning=FALSE}
-dMaster <- merge(dWorkers, dFacilities[,c("IDH00","facilitySector")], by="IDH00",all.x=T)
+dMaster <- merge(dWorkers, unique(dFacilities[,c("IDH00","facilitySector")]), by="IDH00",all.x=T)
 nrow(dWorkers)
 nrow(dMaster)
 
@@ -1697,7 +1828,7 @@ for(i in c("isPalestine","isWB","isGaza")){
 
 ```{r}
 dLocation[,IDH03:=localityCode]
-dMaster <- merge(dWorkers, dLocation[,c("IDH03","region","district")], by="IDH03",all.x=T)
+dMaster <- merge(dWorkers, unique(dLocation[,c("IDH03","region","district")]), by="IDH03",all.x=T)
 nrow(dWorkers)
 ```
 
@@ -1723,7 +1854,7 @@ for(i in unique(dMaster$region)){
 
 
 ```{r, warning=FALSE}
-dMaster <- merge(dWorkers, dFacilities[,c("IDH00","IS06")], by="IDH00",all.x=T)
+dMaster <- merge(dWorkers, unique(dFacilities[,c("IDH00","IS06")]), by="IDH00",all.x=T)
 nrow(dWorkers)
 nrow(dMaster)
 
@@ -1769,12 +1900,12 @@ stack <- data.table(expand.grid(
   stringsAsFactors = F))
 
 dLocation[,IDH03:=localityCode]
-dMaster <- merge(dWorkers, dLocation[,c("IDH03","region","district")], by="IDH03",all.x=T)
+dMaster <- merge(dWorkers, unique(dLocation[,c("IDH03","region","district")]), by="IDH03",all.x=T)
 nrow(dWorkers)
 nrow(dMaster)
 
 nrow(dMaster)
-dMaster <- merge(dMaster, dFacilities[,c("IDH00","facilitySector","IS06")], by="IDH00", all.x=T)
+dMaster <- merge(dMaster, unique(dFacilities[,c("IDH00","facilitySector","IS06")]), by="IDH00", all.x=T)
 nrow(dMaster)
 
 unique(dMaster[is.na(region),"IDH03"])
@@ -1812,7 +1943,7 @@ for(i in 1:nrow(stack)){
 ### Results
 
 ```{r message=FALSE, warning=FALSE}
-dMaster <- merge(dWorkers, dFacilities[,c("IDH00","facilitySector")], by="IDH00")
+dMaster <- merge(dWorkers, unique(dFacilities[,c("IDH00","facilitySector")]), by="IDH00")
 nrow(dWorkers)
 nrow(dMaster)
 unique(dMaster$facilitySector)
@@ -1849,7 +1980,7 @@ for(location in c("isPalestine","isWB","isGaza")){
 ### Results
 
 ```{r message=FALSE, warning=FALSE}
-dMaster <- merge(dWorkers, dFacilities[,c("IDH00","facilitySector")], by="IDH00")
+dMaster <- merge(dWorkers, unique(dFacilities[,c("IDH00","facilitySector")]), by="IDH00")
 nrow(dWorkers)
 nrow(dMaster)
 unique(dMaster$facilitySector)
@@ -2532,7 +2663,7 @@ for(i in professionVars){
 - Note: Note that this indicators is combined from 2 forms. We need the facility sector ) + this indicator needs to be repeated for each sector (Ministry of Health, Military Health Services, UNRWA, Private and NGO from IS04 ) and present percentage distribution and shows different values in same indicator
 
 ```{r, warning=FALSE}
-dMaster <- merge(dWorkers, dFacilities[,c("IDH00","facilitySector")], by="IDH00")
+dMaster <- merge(dWorkers, unique(dFacilities[,c("IDH00","facilitySector")]), by="IDH00")
 nrow(dWorkers)
 nrow(dMaster)
 
@@ -3105,7 +3236,7 @@ for(location in c("isPalestine","isWB","isGaza")){
 - Indicator description: Ratio of health workers to administrative and supportstaff in each sector of employment ( repeat for each sector of employment )
 
 ```{r, warning=FALSE}
-dMaster <- merge(dWorkers, dFacilities[,c("IDH00","facilitySector")], by="IDH00")
+dMaster <- merge(dWorkers, unique(dFacilities[,c("IDH00","facilitySector")]), by="IDH00")
 nrow(dWorkers)
 nrow(dMaster)
 ```
@@ -3152,7 +3283,7 @@ for(i in unique(dMaster$facilitySector)){
 - Indicator description: Percentge of total health workers at each sector to total health workers in all sectors ( repeat indicator for each sector of employment )
 
 ```{r, warning=FALSE}
-dMaster <- merge(dWorkers, dFacilities[,c("IDH00","facilitySector")], by="IDH00")
+dMaster <- merge(dWorkers, unique(dFacilities[,c("IDH00","facilitySector")]), by="IDH00")
 nrow(dWorkers)
 nrow(dMaster)
 
@@ -3200,7 +3331,7 @@ for(i in professionVars){
 ### BY SPECIALIZED DOCTOR
 
 ```{r, warning=FALSE}
-dMaster <- merge(dWorkers, dFacilities[,c("IDH00","facilitySector")], by="IDH00")
+dMaster <- merge(dWorkers, unique(dFacilities[,c("IDH00","facilitySector")]), by="IDH00")
 nrow(dWorkers)
 nrow(dMaster)
 
@@ -3257,7 +3388,7 @@ for(i in specializations){
 
 ```{r, warning=FALSE}
 # todo
-dMaster <- merge(dWorkers, dFacilities[,c("IDH00","facilitySector")], by="IDH00")
+dMaster <- merge(dWorkers, unique(dFacilities[,c("IDH00","facilitySector")]), by="IDH00")
 nrow(dWorkers)
 nrow(dMaster)
 
@@ -3302,7 +3433,7 @@ for(i in c("All",unique(dMaster$facilitySector))){
 
 ```{r, warning=FALSE}
 # todo
-dMaster <- merge(dWorkers, dFacilities[IS06==9,c("IDH00","facilitySector")], by="IDH00")
+dMaster <- merge(dWorkers, unique(dFacilities[IS06==9,c("IDH00","facilitySector")]), by="IDH00")
 nrow(dWorkers)
 nrow(dMaster)
 
@@ -3347,7 +3478,7 @@ for(i in c("All",unique(dMaster$facilitySector))){
 
 ```{r, warning=FALSE}
 # todo
-dMaster <- merge(dWorkers, dFacilities[IS06==9,c("IDH00","facilitySector")], by="IDH00")
+dMaster <- merge(dWorkers, unique(dFacilities[IS06==9,c("IDH00","facilitySector")]), by="IDH00")
 nrow(dWorkers)
 nrow(dMaster)
 
@@ -3391,7 +3522,7 @@ for(i in c("All",unique(dMaster$facilitySector))){
 ### Results
 
 ```{r, warning=FALSE}
-dMaster <- merge(dWorkers, dFacilities[,c("IDH00","facilitySector")], by="IDH00")
+dMaster <- merge(dWorkers, unique(dFacilities[,c("IDH00","facilitySector")]), by="IDH00")
 nrow(dWorkers)
 nrow(dMaster)
 unique(dMaster$facilitySector)
@@ -3432,7 +3563,7 @@ for(i in professionVars){
 ### BY SPECIALIZED DOCTOR
 
 ```{r, warning=FALSE}
-dMaster <- merge(dWorkers, dFacilities[,c("IDH00","facilitySector")], by="IDH00")
+dMaster <- merge(dWorkers, unique(dFacilities[,c("IDH00","facilitySector")]), by="IDH00")
 nrow(dWorkers)
 nrow(dMaster)
 unique(dMaster$facilitySector)
@@ -3481,7 +3612,7 @@ for(i in specializations){
 ### Results IN HOSPITALS
 
 ```{r, warning=FALSE}
-dMaster <- merge(dWorkers, dFacilities[IS06==9,c("IDH00","facilitySector")], by="IDH00")
+dMaster <- merge(dWorkers, unique(dFacilities[IS06==9,c("IDH00","facilitySector")]), by="IDH00")
 nrow(dWorkers)
 nrow(dMaster)
 unique(dMaster$facilitySector)
@@ -3522,7 +3653,7 @@ for(i in professionVars){
 ### BY SPECIALIZED DOCTOR IN HOSPITALS
 
 ```{r, warning=FALSE}
-dMaster <- merge(dWorkers, dFacilities[IS06==9,c("IDH00","facilitySector")], by="IDH00")
+dMaster <- merge(dWorkers, unique(dFacilities[IS06==9,c("IDH00","facilitySector")]), by="IDH00")
 nrow(dWorkers)
 nrow(dMaster)
 unique(dMaster$facilitySector)
@@ -3571,7 +3702,7 @@ for(i in specializations){
 ### Results IN HEALTH CENTERS
 
 ```{r, warning=FALSE}
-dMaster <- merge(dWorkers, dFacilities[IS06==4,c("IDH00","facilitySector")], by="IDH00")
+dMaster <- merge(dWorkers, unique(dFacilities[IS06==4,c("IDH00","facilitySector")]), by="IDH00")
 nrow(dWorkers)
 nrow(dMaster)
 unique(dMaster$facilitySector)
@@ -3612,7 +3743,7 @@ for(i in professionVars){
 ### BY SPECIALIZED DOCTOR IN HEALTH CENTERS
 
 ```{r, warning=FALSE}
-dMaster <- merge(dWorkers, dFacilities[IS06==4,c("IDH00","facilitySector")], by="IDH00")
+dMaster <- merge(dWorkers, unique(dFacilities[IS06==4,c("IDH00","facilitySector")]), by="IDH00")
 nrow(dWorkers)
 nrow(dMaster)
 unique(dMaster$facilitySector)
@@ -3833,7 +3964,7 @@ for(location in c("isPalestine","isWB","isGaza")){
 
 ```{r message=FALSE, warning=FALSE}
 
-dMaster <- merge(dWorkers, dFacilities[,c("IDH00","IS06")], by="IDH00")
+dMaster <- merge(dWorkers, unique(dFacilities[,c("IDH00","IS06")]), by="IDH00")
 
 for(i in professionVars){
   #d <- dWorkers[get(i)==1 & IDH03 %in% c(dLocation[district=="East Jerusalem (J1)"]$localityCode)]
@@ -3859,7 +3990,7 @@ for(i in professionVars){
 
 ```{r message=FALSE, warning=FALSE}
 
-dMaster <- merge(dWorkers, dFacilities[,c("IDH00","IS06")], by="IDH00")
+dMaster <- merge(dWorkers, unique(dFacilities[,c("IDH00","IS06")]), by="IDH00")
 
 specializations <- unique(dMaster$doctor_specialization)
 
@@ -4597,7 +4728,7 @@ for(i in 1:nrow(stack)){
 
 ```{r message=FALSE, warning=FALSE}
 
-dMaster <- merge(dWorkers, dFacilities[,c("IDH00","facilitySector")], by="IDH00")
+dMaster <- merge(dWorkers, unique(dFacilities[,c("IDH00","facilitySector")]), by="IDH00")
 nrow(dWorkers)
 nrow(dMaster)
 
@@ -4660,12 +4791,12 @@ stack <- data.table(expand.grid(prof=professionVars,dist=districtNames,
   sector=c("All sectors",unique(dFacilities$facilitySector)),stringsAsFactors = F))
 
 dLocation[,IDH03:=localityCode]
-dMaster <- merge(dWorkers, dLocation[,c("IDH03","region","district")], by="IDH03",all.x=T)
+dMaster <- merge(dWorkers, unique(dLocation[,c("IDH03","region","district")]), by="IDH03",all.x=T)
 nrow(dWorkers)
 nrow(dMaster)
 
 nrow(dMaster)
-dMaster <- merge(dMaster, dFacilities[,c("IDH00","facilitySector")], by="IDH00", all.x=T)
+dMaster <- merge(dMaster, unique(dFacilities[,c("IDH00","facilitySector")]), by="IDH00", all.x=T)
 nrow(dMaster)
 
 unique(dMaster[is.na(region),"IDH03"])
@@ -4798,12 +4929,12 @@ dWorkers[IDH03 %in% dLocation[urbanRural=="Camp"]$localityCode,
 districtNames <- c("isPalestine","isGaza","isWB")
 
 dLocation[,IDH03:=localityCode]
-dMaster <- merge(dWorkers, dLocation[,c("IDH03","region","district")], by="IDH03",all.x=T)
+dMaster <- merge(dWorkers, unique(dLocation[,c("IDH03","region","district")]), by="IDH03",all.x=T)
 nrow(dWorkers)
 nrow(dMaster)
 
 nrow(dMaster)
-dMaster <- merge(dMaster, dFacilities[,c("IDH00","facilitySector")], by="IDH00", all.x=T)
+dMaster <- merge(dMaster, unique(dFacilities[,c("IDH00","facilitySector")]), by="IDH00", all.x=T)
 nrow(dMaster)
 
 unique(dMaster[is.na(region),"IDH03"])
@@ -5301,7 +5432,7 @@ print(nrow(d[isProf_Nurse==TRUE]))
 
 ```{r, warning=FALSE}
 # todo
-dMaster <- merge(dWorkers, dFacilities[,c("IDH00","facilitySector")], by="IDH00")
+dMaster <- merge(dWorkers, unique(dFacilities[,c("IDH00","facilitySector")]), by="IDH00")
 nrow(dWorkers)
 nrow(dMaster)
 
@@ -5609,7 +5740,7 @@ for(i in c("isPalestine","isGaza","isWB")){
 ## Total number of working allied health sciences professionals in Palestine/WB/Gaza BY SECTOR
 
 ```{r message=FALSE, warning=FALSE}
-dMaster <- merge(dWorkers, dFacilities[,c("IDH00","facilitySector","IS06")], by="IDH00",all.x=T)
+dMaster <- merge(dWorkers, unique(dFacilities[,c("IDH00","facilitySector","IS06")]), by="IDH00",all.x=T)
 nrow(dWorkers)
 nrow(dMaster)
 
@@ -5639,7 +5770,7 @@ for(i in c("isPalestine","isWB","isGaza")){
 ## Total number of resident doctors, by gender, by sector, by geographic area
 
 ```{r message=FALSE, warning=FALSE}
-dMaster <- merge(dWorkers, dFacilities[,c("IDH00","facilitySector","IS06")], by="IDH00",all.x=T)
+dMaster <- merge(dWorkers, unique(dFacilities[,c("IDH00","facilitySector","IS06")]), by="IDH00",all.x=T)
 nrow(dWorkers)
 nrow(dMaster)
 
@@ -5720,7 +5851,7 @@ for(i in c("isPalestine","isWB","isGaza")) for(j in c(
 ## Total number of isProf_physiotherapists012019by sector, by geographic area
 
 ```{r message=FALSE, warning=FALSE}
-dMaster <- merge(dWorkers, dFacilities[,c("IDH00","facilitySector","IS06")], by="IDH00",all.x=T)
+dMaster <- merge(dWorkers, unique(dFacilities[,c("IDH00","facilitySector","IS06")]), by="IDH00",all.x=T)
 nrow(dWorkers)
 nrow(dMaster)
 
@@ -5747,30 +5878,70 @@ for(i in c("isPalestine","isWB","isGaza")){
 
 # 2019-20-27
 
-## Healthcare workers with another non-healthcare job in the same facility
+## Healthcare workers with another Administrativesupportstaff job in the same facility
 
 ```{r message=FALSE, warning=FALSE}
-dMaster <- merge(dWorkers, dFacilities[,c("IDH00","facilitySector","IS06")], by="IDH00",all.x=T)
+dMaster <- merge(dWorkers, unique(dFacilities[,c("IDH00","facilitySector","IS06")]), by="IDH00",all.x=T)
 nrow(dWorkers)
 nrow(dMaster)
 
-for(i in c("isPalestine","isWB","isGaza")){
-  cat(i,"\n\n")
-  d <- dMaster[get(i)==1]
-  d <- d[
-    (CW00isProf_Healthworker==1 & CW06isProf_Healthworker==0) |
-    (CW00isProf_Healthworker==0 & CW06isProf_Healthworker==1)
-    ,.(
-    numerator=1
-  ),by=.(
-    HR01,
-    facilitySector
-  )]
-  d <- d[,
-         .(num=sum(numerator)),
-         keyby=.(facilitySector)
-         ]
-  
-  print(d)
+for(p in professionVars){
+  for(i in c("isPalestine","isWB","isGaza")){
+    cat("\n\n**********\n",p,i,"\n\n")
+    d <- dMaster[get(i)==1]
+    
+    pCW00 <- sprintf("CW00%s",p)
+    pCW06 <- sprintf("CW06%s",p)
+    
+    d <- d[
+      (get(pCW00)==1 & CW06isProf_Administrativesupportstaff==1) |
+      (get(pCW06)==1 & CW00isProf_Administrativesupportstaff==1)
+      ,.(
+      numerator=1
+    ),by=.(
+      HR01,
+      facilitySector
+    )]
+    d <- d[,
+           .(num=sum(numerator)),
+           keyby=.(facilitySector)
+           ]
+    
+    print(d)
+  }
 }
+```
+
+
+## Number of Nurses/Doctors in hospitals by District/Sector
+
+```{r message=F, warning=F}
+
+districtNames <- c("isPalestine","isGaza","isWB")
+
+dLocation[,IDH03:=localityCode]
+dMaster <- merge(dWorkers, unique(dLocation[,c("IDH03","region","district")]), by="IDH03",all.x=T)
+nrow(dWorkers)
+nrow(dMaster)
+
+nrow(dMaster)
+dMaster <- merge(dMaster, unique(dFacilities[,c("IDH00","facilitySector","IS06")]), by="IDH00", all.x=T)
+nrow(dMaster)
+
+x <- dMaster[IS06==9,.(
+  nNurses=sum(isProf_Nurse, na.rm=T),
+  nDoctors=sum(isProf_Doctor, na.rm=T)
+),
+keyby=.(facilitySector,region)]
+print(x)
+
+x <- dMaster[IS06==9,.(
+  nNurses=sum(isProf_Nurse, na.rm=T),
+  nDoctors=sum(isProf_Doctor, na.rm=T)
+),
+keyby=.(facilitySector,district)]
+print(x)
+
+
+
 ```

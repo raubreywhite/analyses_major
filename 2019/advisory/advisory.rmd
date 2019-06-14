@@ -1,0 +1,124 @@
+---
+title: "Advisory service as of 2019-04-08"
+output: tufte::tufte_handout
+header-includes:
+  - \usepackage{booktabs}
+  - \usepackage{longtable}
+  - \usepackage{array}
+  - \usepackage{multirow}
+  - \usepackage{wrapfig}
+  - \usepackage{float}
+  - \usepackage{colortbl}
+  - \usepackage{pdflscape}
+  - \usepackage{tabu}
+  - \usepackage{threeparttable}
+  - \usepackage{threeparttablex}
+  - \usepackage[normalem]{ulem}
+  - \usepackage{makecell}
+  - \usepackage{xcolor}
+  - \makeatletter\renewcommand*{\fps@figure}{H}\makeatother
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+org::AllowFileManipulationFromInitialiseProject()
+org::InitialiseProject(
+  HOME = "/git/code_major/2019/advisory/",
+  SHARED = "/dropbox/analyses/results_shared/code_major/2019/advisory/",
+  RAW = "/data/org/data_raw/code_major/2019/advisory/"
+)
+
+library(data.table)
+library(ggplot2)
+library(kableExtra)
+
+d <- data.table(readxl::read_excel(fs::path(org::PROJ$RAW,"SMHB_advisory_service.xlsx"),skip = 1))
+setnames(d,"Status...3","status")
+
+setnames(d,"Status...19","status_at_contact")
+setnames(d,"Hva trenger du hjelp med?","what_need_help_with")
+setnames(d,"Type hjelp","help_type")
+setnames(d,"Avdeling (4 bokstaver)","dept")
+d[,dept:=toupper(dept)]
+setnames(d,"Timestamp","time")
+
+xtabs(~d$status)
+d <- d[status %in% c("Closed","Open")]
+d <- d[help_type != "Ingen hjelp - SMHB prosjekt registrering/No help - SMHB project registering"]
+d <- d[Responsible1 != Navn]
+d[,status:=NULL]
+
+d[,time:=as.Date(time)]
+d[,year:=lubridate::year(time)]
+d[,month:=lubridate::month(time)]
+
+d[,help_type:=sub('.*\\/', '', help_type)]
+
+```
+
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE, fig.fullwidth=TRUE, fig.height=11.69*0.4, fig.width=8.27*0.8}
+
+monthly_data <- d[,.(
+  N=.N
+),keyby=.(year,month)][CJ(year=unique(d$year),month=1:12)]
+monthly_data[is.na(N),N:=0]
+monthly_data[,x:=1:.N]
+monthly_data[,labs:=glue::glue("{year}-{month}",year=year,month=formatC(month,width=2,flag="0"))]
+
+labs <- monthly_data[seq(1,.N,2)]
+
+q <- ggplot(monthly_data, aes(x=x,y=N))
+q <- q + geom_col(fill=fhiplot::fhi_pal()(2)[2])
+q <- q + scale_y_continuous(expand=c(0,0),breaks=scales::pretty_breaks())
+q <- q + scale_x_continuous("",breaks=labs$x, labels=labs$labs, expand=c(0,0))
+q <- q + fhiplot::theme_fhi_lines()
+q <- q + theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust=0.5))
+q <- q + labs(title="Number of requests every month")
+q
+```
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE, fig.fullwidth=TRUE, fig.height=11.69*0.4, fig.width=8.27*0.8, results='asis'}
+tab <- d[,.(
+  N=.N
+),keyby=.(dept)]
+setorder(tab,-N)
+
+k <- knitr::kable(
+  tab,
+  "latex",
+  booktabs = T,
+  align = "c",
+  linesep = "",
+  caption="Departments requests"
+  )
+
+print(k)
+```
+
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE, fig.fullwidth=TRUE, fig.height=11.69*0.4, fig.width=8.27*0.8, results='asis'}
+tab <- d[,.(
+  N=.N
+),keyby=.(year,help_type)]
+tab2 <- d[,.(
+  N=.N
+),keyby=.(help_type)]
+tab2[,year:="All"]
+tab <- rbind(tab,tab2)
+setorder(tab,year,N)
+
+k <- knitr::kable(
+  tab,
+  "latex",
+  booktabs = T,
+  align = "c",
+  linesep = "",
+  caption="Type of requests"
+  ) %>%
+  kableExtra::collapse_rows(1, latex_hline = "major", valign="top")
+
+print(k)
+```
+

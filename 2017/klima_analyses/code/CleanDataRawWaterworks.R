@@ -3555,7 +3555,7 @@ CleanDataWaterworksInternal <- function(){
                                      skip = 6,
                                      col_names = FALSE,
                                      col_types = c("text", rep("text", 7))))
-  d[,X__1:=as.Date(as.numeric(X__1),origin="1899-12-30")]
+  d[,`...1`:=as.Date(as.numeric(`...1`),origin="1899-12-30")]
   
   setnames(d, c("date",
                 "Coliform Bacteria",
@@ -3656,7 +3656,7 @@ CleanDataWaterworksInternal <- function(){
                                      skip = 5,
                                      col_names = FALSE,
                                      col_types = c("text", rep("text", 4))))
-  d[,X__1:=as.Date(as.numeric(X__1),origin="1899-12-30")]
+  d[,`...1`:=as.Date(as.numeric(`...1`),origin="1899-12-30")]
   
   setnames(d, c("date",
                 "pH",
@@ -3698,7 +3698,7 @@ CleanDataWaterworksInternal <- function(){
                                      skip = 4,
                                      col_names = FALSE,
                                      col_types = c("text", rep("text", 4))))
-  d[,X__1:=as.Date(as.numeric(X__1),origin="1899-12-30")]
+  d[,`...1`:=as.Date(as.numeric(`...1`),origin="1899-12-30")]
   
   setnames(d, c("date",
                 "Coliform Bacteria",

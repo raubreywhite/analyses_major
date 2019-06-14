@@ -2,7 +2,7 @@ suppressMessages(library(ggplot2))
 org::AllowFileManipulationFromInitialiseProject()
 org::InitialiseProject(
   HOME = "/git/code_major/2017/klima_analyses/",
-  RAW = "/Volumes/crypt_data/org/data_raw/code_major/2017/klima_analyses/",
+  RAW = "/data/org/data_raw/code_major/2017/klima_analyses/",
   CLEAN = "/tmp/data_clean/code_major/2017/klima_analyses",
   BAKED = "/tmp/results_baked/code_major/2017/klima_analyses/",
   FINAL = "/tmp/results_final/code_major/2017/klima_analyses/",
@@ -325,7 +325,7 @@ for(type in c("raw","clean","raw_outbreaks","clean_outbreaks")){
   
   # Your code starts here
   #stackIter <- stack[35]
-  #stackIterX <- 38
+  #stackIterX <- 75
   predResults <- vector("list",length=nrow(stack))
   num <- 1
   res <- vector("list",length=nrow(stack))
@@ -337,16 +337,18 @@ for(type in c("raw","clean","raw_outbreaks","clean_outbreaks")){
   
     formulaBase <- sprintf("%s ~ factor(month)",outcomeVar)
     fitData <- d[variable==stackIter$watervariable]
+    nrow(fitData)
     
     if(!type %in% c("raw","clean")){
       totalData <- fitData[age!="Totalt"]
       fitData <- fitData[age==stackIter$age]
     }
     if(stackIter$season!="Whole year") fitData <- fitData[season==stackIter$season]
+    nrow(fitData)
     
     fitData$origValue <- fitData[[outcomeVar]]
     if(type %in% c("raw","clean") & stackIter$watervariable!="pH") fitData[,value:=log(1+value)]
-   
+    nrow(fitData)
     formulaWatersource <- formulaType <- "" 
     if(length(unique(fitData$type[!is.na(fitData[,stackIter$exposure,with=F])]))>1){
       formulaBase <- paste0(formulaBase,"+type")
@@ -358,7 +360,12 @@ for(type in c("raw","clean","raw_outbreaks","clean_outbreaks")){
     }
     formula <- paste0(formulaBase,"+",stackIter$exposure)
     
-    fitData <- fitData[c(!is.na(fitData[,stackIter$exposure,with=F]))]
+    if(type!="raw"){
+      fitData <- fitData[c(!is.na(fitData[,stackIter$exposure,with=F]))]
+    } else {
+      # ensure consistent numbers across analysis groups for predictions
+      for(l in unique(stack$exposure)) fitData <- fitData[c(!is.na(fitData[,l,with=F]))]
+    }
     fitData[,group:=as.numeric(as.factor(id))]
     fitData[,ngroup:=.N,by=group]
     
@@ -371,6 +378,8 @@ for(type in c("raw","clean","raw_outbreaks","clean_outbreaks")){
       x <- ExtractValues(fit,stackIter$exposure,removeLead=T,format=F)
     },TRUE)
     if(nrow(x)==0) next
+    
+    nrow(fitData)
     
     # FUTURE PREDICTIONS
     if(type=="raw" & stackIter$exposure %in% c("c_temperature0_3","c_gridRain0_3","c_gridRunoffStandardised0_3")){
@@ -389,6 +398,13 @@ for(type in c("raw","clean","raw_outbreaks","clean_outbreaks")){
         id,year,simulation,SCENARIO,region
       )]
 
+      # look at raw data
+      temp <- fitData[unique(md[,c("id","region")]),on="id"]
+      temp[,.(m=quantile(origValue,na.rm=T,probs=0.95)),
+                       by=.(
+                         region
+                       )]
+      
       percs <- fitData[,.(m=mean(origValue,na.rm=T)),
               by=.(
                 id
@@ -409,18 +425,21 @@ for(type in c("raw","clean","raw_outbreaks","clean_outbreaks")){
       
       pred[,modelled_exposure:=exposure]
       
-      simulations <- RepeatDataTable(pred[,c("id","year","simulation","SCENARIO","region","yearly_adjustment_factor","m","modelled_exposure")],1000)
+      simulations <- RepeatDataTable(pred[,c("id","year","simulation","SCENARIO","region","yearly_adjustment_factor","m","modelled_exposure")],2000)
       simulations[,adjusted_sampled_value:=0.0]
+      set.seed(4)
       for(i in unique(simulations$id)){
         simulations[id==i,adjusted_sampled_value:=sample(fitData[id==i]$origValue,.N,replace=T)*yearly_adjustment_factor]
       }
       
       simulations[,yearCat:="2006-2014"]
       simulations[year>2070,yearCat:="2071-2100"]
-      simulations[id=="Bodo||0101 Heggmoen VBA Råvann" & 
-                    SCENARIO=="rcp85",.(adjusted_sampled_value=mean(adjusted_sampled_value,na.rm=T),
-                     m=mean(m),
-                     modelled_exposure=mean(modelled_exposure,na.rm=T)),by=.(yearCat,region)]
+      simulations[SCENARIO=="rcp45",
+                     .(
+                       p99=quantile(adjusted_sampled_value,probs = 0.99)
+                     ),by=.(yearCat,region)]
+      
+      nrow(simulations)
       
       waterwork_simulations <- simulations[,.(
         p50=quantile(adjusted_sampled_value,probs = 0.5),
@@ -439,12 +458,12 @@ for(type in c("raw","clean","raw_outbreaks","clean_outbreaks")){
       ),by=.(id,yearCat,SCENARIO,region)]
       waterwork_mixedsimulations[,simulation:="ALL_MIXED"]
       
-      region_mixedsimulations <- waterwork_simulations[,.(
-        p50=median(p50),
-        p75=median(p75),
-        p95=median(p95),
-        p99=median(p99),
-        p100=median(p99)
+      region_mixedsimulations <- waterwork_mixedsimulations[,.(
+        p50=mean(p50),
+        p75=mean(p75),
+        p95=mean(p95),
+        p99=mean(p99),
+        p100=mean(p99)
       ),by=.(yearCat,SCENARIO,region)]
       region_mixedsimulations[,id:="REGION"]
       region_mixedsimulations[,simulation:="ALL_MIXED"]
@@ -456,6 +475,9 @@ for(type in c("raw","clean","raw_outbreaks","clean_outbreaks")){
       simulations$outcome <- stackIter$watervariable
       simulations$seasonStratified <- stackIter$season
       simulations$pval <- x$pval
+      
+      simulations[id=="REGION" & SCENARIO=="rcp45"]
+      
       predResults[[stackIterX]] <- simulations
     }
     
@@ -537,15 +559,18 @@ for(type in c("raw","clean","raw_outbreaks","clean_outbreaks")){
     }
     
     regionResults <- predResults[id=="REGION" & SCENARIO=="rcp85"]
+    #bonf *3 because we ignore the regions
     regionResults[,sigEffect:=pval<0.05]
+    regionResults[,sigEffectBonf:=pval<0.05*3/.N]
     regionResults[,sigInteraction:=interactionPvalSeason<0.05]
     regionResults[,isSigInteraction:=as.numeric(max(sigInteraction,na.rm=T)),by=.(exposure,outcome)]
     regionResults[,showResults:=FALSE]
-    regionResults[sigEffect==TRUE & seasonStratified=="Whole year",showResults:=TRUE]
-    regionResults[sigEffect==TRUE & seasonStratified!="Whole year" & isSigInteraction==1,showResults:=TRUE]
+    regionResults[seasonStratified=="Whole year",showResults:=TRUE]
+    regionResults[seasonStratified!="Whole year" & isSigInteraction==1,showResults:=TRUE]
     
     #regionResults[,clean95:=ifelse(showResults | yearCat=="2006-2014",p95,-9)]
     regionResults[,clean99:=ifelse(showResults | yearCat=="2006-2014",RAWmisc::Format(p99,1),"-")]
+    regionResults[showResults==TRUE & sigEffectBonf==T & yearCat!="2006-2014",clean99:=paste0(clean99,"*")]
     #regionResults[,clean100:=ifelse(showResults | yearCat=="2006-2014",p100,-9)]
     
     tab <- dcast.data.table(regionResults,region+outcome+seasonStratified~yearCat+exposure,value.var = c("clean99"))
@@ -554,8 +579,63 @@ for(type in c("raw","clean","raw_outbreaks","clean_outbreaks")){
     tab[,(toDrop):=NULL]
     
     setnames(tab,c("region","outcome","season","p99_2006_2014","rain_p99_2071_2100","runoff_p99_2071_2100","temp_p99_2071_2100"))
+    tab[,xunits:=""]
+    tab[outcome=="Coliform bacteria",xunits:="/100mL"]
+    tab[outcome=="Colour",xunits:="mg Pt/L"]
+    tab[outcome=="E. Coli",xunits:="/100mL"]
+    tab[outcome=="Intestinal Enterococci",xunits:="/100mL"]
+    tab[outcome=="Turbidity",xunits:="NTU"]
+    setcolorder(tab,c("region","outcome","xunits"))
     openxlsx::write.xlsx(tab,file.path(org::PROJ$SHARED_TODAY,"future_predictions_rcp85.xlsx"))
     
+    pd <- copy(regionResults[showResults==T])
+    RAWmisc::RecodeDT(pd,c(
+      "c_gridRain0_3"="Rain",
+      "c_gridRunoffStandardised0_3"="Runoff",
+      "c_temperature0_3"="Temperature"
+    ),"exposure")
+    
+    RAWmisc::RecodeDT(pd,c(
+      "east"="East",
+      "north"="North",
+      "west"="West"
+    ),"region")
+    
+    
+    pd[,x:=as.numeric(as.factor(region))]
+    
+    pd_wide <- dcast.data.table(pd, region + exposure + outcome + seasonStratified + showResults + sigEffectBonf~ yearCat, value.var = "p99")
+    pd_wide[,status:="Increased"]
+    pd_wide[`2071-2100`<`2006-2014`,status:="Decreased"]
+    pd_wide[sigEffectBonf==FALSE,status:="Not-significant"]
+    pd_wide[,status:=factor(status,levels=c("Increased","Not-significant","Decreased"))]
+    pd_wide[,xunits:=""]
+    pd_wide[outcome=="Coliform bacteria",xunits:="/100mL"]
+    pd_wide[outcome=="Colour",xunits:="mg Pt/L"]
+    pd_wide[outcome=="E. Coli",xunits:="/100mL"]
+    pd_wide[outcome=="Intestinal Enterococci",xunits:="/100mL"]
+    pd_wide[outcome=="Turbidity",xunits:="NTU"]
+    pd_wide[,outcome_with_units:=glue::glue("{outcome} ({xunits})",
+                                            outcome=outcome,
+                                            xunits=xunits)]
+    
+    q <- ggplot(pd_wide,
+                aes(x=region,ymin=`2006-2014`,ymax=`2071-2100`,shape=exposure, color=status))
+    q <- q + geom_linerange(position=position_dodge2(width=0.5, preserve = "total"), lwd=0.5)
+    q <- q + geom_point(position=position_dodge2(width=0.5, preserve = "total"),aes(y=`2006-2014`))
+    q <- q + geom_point(position=position_dodge2(width=0.5, preserve = "total"),aes(y=`2071-2100`))
+    q <- q + facet_grid(outcome_with_units~seasonStratified,scales="free")
+    q <- q + scale_color_manual("Change from\n2006-2014 to\n2071-2100",values=c(
+      "Increased"="#fc8d59",
+      "Not-significant"="black",
+      "Decreased"="#91bfdb"
+    ))
+    q <- q + scale_shape_discrete("Exposure")
+    q <- q + scale_y_continuous("Mean of waterworks' estimated 99th percentiles for meteorological and hydrological measurements in 2006-2014 and 2071-2100")
+    q <- q + scale_x_discrete("Region")
+    q <- q + expand_limits(y=0)
+    q <- q + labs(caption="Seasonal results are only shown for significant interaction effects")
+    RAWmisc::saveA4(q,filename=file.path(org::PROJ$SHARED_TODAY,"regional_predictions.png"),landscape=F)
     
   }
  
